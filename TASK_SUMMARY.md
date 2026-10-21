@@ -4,7 +4,6 @@
 **Chuyên ngành:** Mạng máy tính & Truyền thông dữ liệu  
 **Trọng tâm phụ trách:** Backend Flask, API Endpoints, Database SQLite & An toàn bảo mật  
 **Dự án:** CrawlInsight (Web Crawling & Book Data Analytics Platform) — Đề tài 07 (503073)  
-**Trạng thái chung:** **Chưa thực hiện** (Sẵn sàng tiếp nhận chỉ đạo thực thi)  
 
 ---
 
@@ -81,12 +80,3 @@ Phạm Ngọc Duy chịu trách nhiệm trực tiếp về mặt kỹ thuật v�
 
 ---
 
-## 4. Tình trạng thực tế & Cam kết tuân thủ quy trình
-
-1. **Hiện trạng:**
-   - File kế hoạch này được khởi tạo để định hình rõ toàn bộ đầu việc của **Phạm Ngọc Duy**.
-   - **Chưa có bất kỳ dòng code nào bị thay đổi** trong lần tương tác này.
-   - **Chưa có lệnh thực thi hệ thống nào làm thay đổi môi trường**.
-2. **Quy tắc thực hiện:**
-   - Chỉ bắt đầu tiến hành từng công việc cụ thể khi có yêu cầu và định hướng từ người dùng.
-   - Khi hoàn thành mỗi task, cập nhật trạng thái rõ ràng (`Chưa bắt đầu` → `Đang thực hiện` → `Đã kiểm chứng`), cung cấp log/test case minh chứng cụ thể.
