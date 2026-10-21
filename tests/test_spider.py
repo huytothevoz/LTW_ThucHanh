@@ -11,8 +11,8 @@ from crawler.spiders.books_spider import BooksSpider
 
 def test_catalogue_schedules_unique_details_and_real_next(monkeypatch):
     records = []
-    monkeypatch.setattr('crawler.spiders.books_spider.db.increment_catalogue',
-                        lambda job_id, discovered: records.append((job_id, discovered)))
+    monkeypatch.setattr('crawler.spiders.books_spider.db.record_catalogue_page',
+                        lambda job_id, url, page_number, discovered: records.append((job_id, url, page_number, discovered)))
     spider = BooksSpider(job_id=12, max_pages=2)
     url = 'https://books.toscrape.com/'
     html = (Path(__file__).parent / 'fixtures' / 'catalogue.html').read_bytes()
@@ -20,7 +20,7 @@ def test_catalogue_schedules_unique_details_and_real_next(monkeypatch):
     emitted = list(spider.parse(response))
     detail = [request for request in emitted if request.meta.get('kind') == 'detail']
     next_pages = [request for request in emitted if request.meta.get('kind') == 'catalogue']
-    assert records == [(12, 2)]
+    assert records == [(12, 'https://books.toscrape.com/', 1, 2)]
     assert len(detail) == 2
     assert len(next_pages) == 1
     assert next_pages[0].url == 'https://books.toscrape.com/catalogue/page-2.html'
@@ -28,8 +28,8 @@ def test_catalogue_schedules_unique_details_and_real_next(monkeypatch):
 
 
 def test_one_page_does_not_follow_next(monkeypatch):
-    monkeypatch.setattr('crawler.spiders.books_spider.db.increment_catalogue',
-                        lambda job_id, discovered: None)
+    monkeypatch.setattr('crawler.spiders.books_spider.db.record_catalogue_page',
+                        lambda job_id, url, page_number, discovered: None)
     spider = BooksSpider(job_id=13, max_pages=1)
     url = 'https://books.toscrape.com/'
     html = (Path(__file__).parent / 'fixtures' / 'catalogue.html').read_bytes()

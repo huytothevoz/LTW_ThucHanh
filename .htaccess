@@ -1,0 +1,8 @@
+# This folder contains private source, runtime SQLite files and .env values.
+# It is a Flask application: do NOT serve it directly from Apache htdocs.
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Deny from all
+</IfModule>

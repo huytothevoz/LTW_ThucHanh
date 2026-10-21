@@ -1,3 +1,5 @@
+> **Database V3 note:** Cấu trúc hai bảng được thay bằng 9 bảng chuẩn hóa và 3 SQL views theo [`SRS_ADDENDUM_DATABASE_V3.md`](SRS_ADDENDUM_DATABASE_V3.md) và [`../database/DATA_DICTIONARY.md`](../database/DATA_DICTIONARY.md). API và UI contract không thay đổi.
+
 # CrawlInsight — Technical Architecture
 
 **SRS version:** 2.0 (10-day baseline) · **Scope:** 1 educational source / 2 screens / 2 SQLite tables.

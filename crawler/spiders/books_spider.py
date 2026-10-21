@@ -46,7 +46,7 @@ class BooksSpider(scrapy.Spider):
                 self.seen_urls.add(url)
                 new_urls.append(url)
         # Counter records unique *scheduled* book detail URLs, not HTTP requests.
-        db.increment_catalogue(self.job_id, len(new_urls))
+        db.record_catalogue_page(self.job_id, response.url, page_number, len(new_urls))
         self.logger.info("Catalogue %s/%s: %s unique books", page_number, self.max_pages, len(new_urls))
         for url in new_urls:
             yield scrapy.Request(

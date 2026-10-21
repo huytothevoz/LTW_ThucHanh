@@ -24,3 +24,8 @@ Thumbs.db
 # Output artifacts
 *.zip
 *.log
+
+# Session signing key (private credential)
+data/*.key
+*.before-v4-*.sqlite3
+*.before-v3-*.sqlite3

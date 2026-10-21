@@ -1,12 +1,12 @@
 /* Dashboard -> Flask JSON APIs. No canned data and no fake progress percentage. */
 (function () {
   'use strict';
-  const { fetchJSON, toast, formatDate } = window.CrawlInsight;
+  const { fetchJSON, toast, formatDate, t, locale } = window.CrawlInsight;
   const $ = (id) => document.getElementById(id);
   const ACTIVE = new Set(['PENDING', 'RUNNING']);
   const TERMINAL = new Set(['COMPLETED', 'FAILED']);
   const STATUS_TEXT = {
-    PENDING: 'Queued', RUNNING: 'Running', COMPLETED: 'Completed', FAILED: 'Failed',
+    PENDING: t('queued'), RUNNING: t('processing'), COMPLETED: t('done'), FAILED: t('failed'),
   };
   let trackedJobId = null;
   let pollingHandle = null;
@@ -17,7 +17,7 @@
   const today = $('today-label');
   if (today) {
     const date = new Date();
-    today.lastChild.textContent = ` ${new Intl.DateTimeFormat('en-GB', { weekday: 'short', month: 'short', day: 'numeric' }).format(date)}`;
+    today.lastChild.textContent = ` ${new Intl.DateTimeFormat(locale==='vi'?'vi-VN':'en-GB', { weekday: 'short', month: 'short', day: 'numeric' }).format(date)}`;
   }
 
   function setStartDisabled(disabled) {
@@ -27,7 +27,7 @@
     if (content) {
       // Keep the existing SVG icon while updating the label.
       const textNodes = Array.from(content.childNodes).filter((node) => node.nodeType === Node.TEXT_NODE);
-      if (textNodes.length) textNodes[textNodes.length - 1].textContent = disabled ? ' Crawling in progress' : ' Start crawling';
+      if (textNodes.length) textNodes[textNodes.length - 1].textContent = disabled ? ` ${t('stop')}` : ` ${t('start')}`;
     }
   }
 
@@ -82,9 +82,9 @@
       const content = document.createElement('div');
       content.className = 'history-text';
       const title = document.createElement('strong');
-      title.textContent = `Crawl session #${job.id}`;
+      title.textContent = locale==='vi' ? `Phiên thu thập #${job.id}` : `Crawl session #${job.id}`;
       const subtitle = document.createElement('span');
-      subtitle.textContent = `${formatDate(job.created_at)} · ${job.items_saved} saved · ${job.max_pages} page${job.max_pages === 1 ? '' : 's'}`;
+      subtitle.textContent = `${formatDate(job.created_at)} · ${job.items_saved} ${t('saved')} · ${job.max_pages} ${t('pages')}`;
       content.append(title, subtitle);
       const status = document.createElement('span');
       status.className = `status-badge status-${job.status.toLowerCase()}`;
@@ -114,10 +114,11 @@
 
   function renderSummary(data) {
     $('dashboard-error-banner')?.remove();
-    $('total-books').textContent = Number(data.total_books).toLocaleString('en-GB');
-    $('completed-jobs').textContent = Number(data.completed_jobs).toLocaleString('en-GB');
-    $('last-status').textContent = data.last_job ? (STATUS_TEXT[data.last_job.status] || data.last_job.status) : 'No crawls';
-    $('last-job-meta').textContent = data.last_job ? `Job #${data.last_job.id} · ${formatDate(data.last_job.created_at)}` : 'Ready for your first run';
+    $('total-books').textContent = Number(data.total_books).toLocaleString(locale==='vi'?'vi-VN':'en-GB');
+    $('completed-jobs').textContent = Number(data.completed_jobs).toLocaleString(locale==='vi'?'vi-VN':'en-GB');
+    if ($('saved-count')) $('saved-count').textContent = Number(data.saved_books || 0).toLocaleString(locale==='vi'?'vi-VN':'en-GB');
+    $('last-status').textContent = data.last_job ? (STATUS_TEXT[data.last_job.status] || data.last_job.status) : t('noData');
+    $('last-job-meta').textContent = data.last_job ? `Job #${data.last_job.id} · ${formatDate(data.last_job.created_at)}` : t('noData');
     renderChart(data.rating_distribution);
     renderHistory(data.recent_jobs || []);
     if (data.last_job && ACTIVE.has(data.last_job.status)) {
@@ -159,17 +160,17 @@
     const dot = $('monitor-status-dot');
     dot.className = `status-dot is-${job.status.toLowerCase()}`;
     const messages = {
-      PENDING: 'Job queued. Preparing the crawler process...',
-      RUNNING: 'Crawling the approved source. Refreshing every 2 seconds.',
-      COMPLETED: job.error_count > 0 ? 'Books saved with some warnings.' : 'All done. Your books are ready to explore.',
-      FAILED: 'The crawler was unable to finish this job.',
+      PENDING: (locale==='vi'?'Đã xếp hàng chờ khởi chạy crawler.':'Queued for crawler startup.'),
+      RUNNING: (locale==='vi'?'Đang thu thập từ nguồn cho phép; cập nhật mỗi 2 giây.':'Crawling the approved source; refreshing every 2 seconds.'),
+      COMPLETED: job.error_count > 0 ? t('completedWithErrors') : (locale==='vi'?'Đã hoàn tất. Có thể mở kho sách.':'Crawl complete. Books are ready to explore.'),
+      FAILED: (locale==='vi'?'Crawler không thể hoàn tất phiên này.':'The crawler failed to finish this job.'),
     };
-    $('job-description').textContent = messages[job.status] || 'Checking job status...';
+    $('job-description').textContent = messages[job.status] || (locale==='vi'?'Đang kiểm tra trạng thái...':'Checking job status...');
     const err = $('job-error-text');
     err.hidden = !job.last_error;
     if (job.last_error) err.textContent = job.last_error;
     $('monitor-updated').textContent = ACTIVE.has(job.status)
-      ? 'Live status · checking every 2 seconds' : `Last updated ${formatDate(job.finished_at || job.created_at)}`;
+      ? (locale==='vi'?'Đang cập nhật · mỗi 2 giây':'Live status · every 2 seconds') : `${t('last')} ${formatDate(job.finished_at || job.created_at)}`;
     setStartDisabled(ACTIVE.has(job.status));
   }
 

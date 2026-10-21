@@ -2,6 +2,15 @@
 <svg width="{{ size }}" height="{{ size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{{ stroke }}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 {% if name == 'grid' %}<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
 {% elif name == 'books' %}<rect x="3" y="4" width="5" height="16" rx="1"/><rect x="9.5" y="5" width="5" height="15" rx="1"/><path d="m16 4 5 1.5-3 14.5-5-1.5"/><path d="M5 7h1M11.5 8h1"/>
+{% elif name == 'bookmark' %}<path d="M6 3h12v18l-6-4-6 4V3Z"/>
+{% elif name == 'chart' %}<path d="M3 20h18M6 16v-6m6 6V4m6 12v-9"/>
+{% elif name == 'history' %}<path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 7v5l4 2"/>
+{% elif name == 'user' %}<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>
+{% elif name == 'moon' %}<path d="M20.5 13.3A9 9 0 0 1 10.7 3.5a9 9 0 1 0 9.8 9.8Z"/>
+{% elif name == 'sun' %}<circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4m0-14.2-1.4 1.4M6.3 17.7l-1.4 1.4"/>
+{% elif name == 'logout' %}<path d="M10 4H5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h5m7-4 4-4-4-4m4 4H9"/>
+{% elif name == 'mail' %}<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/>
+{% elif name == 'lock' %}<rect x="4" y="11" width="16" height="11" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>
 {% elif name == 'globe' %}<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-6 5-6 13 0 18M12 3c6 5 6 13 0 18"/>
 {% elif name == 'activity' %}<path d="M3 12h4l3-7 4 14 3-7h4"/>
 {% elif name == 'arrow-up-right' %}<path d="M7 17 17 7M8 7h9v9"/>

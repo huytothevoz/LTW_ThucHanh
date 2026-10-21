@@ -1,16 +1,13 @@
 /* Real SQLite book browsing with server-side filters and pagination. */
 (function () {
   'use strict';
-  const { fetchJSON, toast } = window.CrawlInsight;
+  const { fetchJSON, toast, pounds, t, locale } = window.CrawlInsight;
   const $ = (id) => document.getElementById(id);
   let currentPage = 1;
   let currentFilters = { q: '', min_price: '', max_price: '' };
   let lastRequestController = null;
   const pricePattern = /^(?:0|[1-9]\d{0,3})(?:\.\d{1,2})?$/;
-  const pounds = (pence) => new Intl.NumberFormat('en-GB', {
-    style: 'currency', currency: 'GBP', minimumFractionDigits: 2,
-  }).format(Number(pence) / 100);
-
+  let bookmarkedIds = new Set();
   function safeSourceURL(url) {
     try {
       const parsed = new URL(url);
@@ -61,13 +58,28 @@
     body.append(priceRow);
     const link = document.createElement('a');
     link.className = 'book-link';
-    link.textContent = 'View original source ↗';
+    link.textContent = t('source') + ' ↗';
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     const approved = safeSourceURL(book.source_url);
     if (approved) link.href = approved;
     else { link.removeAttribute('href'); link.textContent = 'Source not available'; }
     body.append(link);
+    const actions = document.createElement('div'); actions.className='book-quick-actions';
+    const save = document.createElement('button');save.type='button';save.className='bookmark-button';
+    save.textContent=bookmarkedIds.has(book.id)?'♥ '+t('saved'):'♡ '+t('save');
+    if (bookmarkedIds.has(book.id)) save.classList.add('saved');
+    save.addEventListener('click',async()=>{
+      const had=bookmarkedIds.has(book.id);
+      save.disabled=true;
+      try {await fetchJSON(`/api/bookmarks/${book.id}`,{method:had?'DELETE':'POST',body:had?undefined:'{}'});
+        if(had)bookmarkedIds.delete(book.id);else bookmarkedIds.add(book.id);
+        save.classList.toggle('saved',!had);save.textContent=!had?'♥ '+t('saved'):'♡ '+t('save');
+      }catch(error){toast(error.message,'error');}finally{save.disabled=false;}
+    });
+    const detail=document.createElement('button');detail.type='button';detail.className='detail-button';detail.textContent=t('details')+' →';
+    detail.addEventListener('click',()=>showBookDetail(book.id));
+    actions.append(save,detail);body.append(actions);
     card.append(cover, body);
     return card;
   }
@@ -77,22 +89,23 @@
     $('books-loading').hidden = true;
     $('book-grid').hidden = items.length === 0;
     $('books-empty').hidden = items.length !== 0;
-    $('result-count').textContent = `${data.total} records`;
+    bookmarkedIds = new Set(data.bookmarked_ids || []);
+    $('result-count').textContent = `${data.total} ${t('records')}`;
     const from = data.total ? (data.page - 1) * data.page_size + 1 : 0;
     const to = Math.min(data.total, data.page * data.page_size);
-    $('results-summary').textContent = `Showing ${from}–${to} of ${data.total} book${data.total === 1 ? '' : 's'}`;
+    $('results-summary').textContent = locale==='vi'?`Đang xem ${from}–${to} / ${data.total} sách`:`Showing ${from}–${to} of ${data.total} books`;
     const grid = $('book-grid');
     grid.replaceChildren();
     for (const book of items) grid.append(createBookCard(book));
     if (!items.length) {
       const isFiltered = Boolean(currentFilters.q || currentFilters.min_price || currentFilters.max_price);
       $('books-empty-description').textContent = isFiltered
-        ? 'No titles match your current filters. Try a broader search or reset filters.'
+        ? t('emptyBooks')
         : data.total ? 'This page is empty. Go to the previous page.'
-          : 'Your collection is empty. Start a crawl to import real book data.';
+          : t('emptyCollection');
     }
     $('pagination').hidden = data.total_pages <= 1;
-    $('page-label').textContent = `Page ${data.page} of ${data.total_pages}`;
+    $('page-label').textContent = locale==='vi'?`Trang ${data.page}/${data.total_pages}`:`Page ${data.page} of ${data.total_pages}`;
     $('prev-page').disabled = data.page <= 1;
     $('next-page').disabled = data.page >= data.total_pages;
   }
@@ -104,7 +117,7 @@
     const banner = $('books-error');
     banner.textContent = `${error.message}. Use Apply filters to retry.`;
     banner.hidden = false;
-    toast('Could not load book results.', 'error');
+    toast(t('error'), 'error');
   }
 
   async function loadBooks() {
@@ -139,11 +152,11 @@
     const min = $('min-price').value.trim();
     const max = $('max-price').value.trim();
     if (!validatePrice(min) || !validatePrice(max)) {
-      toast('Enter GBP prices from 0 to 9999.99 (up to 2 decimal places).', 'error');
+      toast(t('invalidPrice'), 'error');
       return;
     }
     if (min && max && Number(min) > Number(max)) {
-      toast('Minimum price cannot exceed maximum price.', 'error');
+      toast(t('invalidRange'), 'error');
       return;
     }
     currentFilters = { q: $('search-query').value.trim(), min_price: min, max_price: max };
@@ -170,5 +183,48 @@
   $('search-query').value = currentFilters.q;
   $('min-price').value = currentFilters.min_price;
   $('max-price').value = currentFilters.max_price;
+  const detailDialog=$('book-detail-dialog');
+  async function showBookDetail(bookId){
+    detailDialog.showModal();const content=$('book-detail-content');content.replaceChildren();
+    content.append(textElement('p','',t('loading')));
+    try{
+      const data=await fetchJSON(`/api/books/${bookId}`);content.replaceChildren();
+      const b=data.book;
+      content.append(textElement('span','book-category',b.category),textElement('h2','',b.title));
+      content.append(textElement('p','',`${pounds(b.price_pence)} · ${b.rating} ★ · ${b.availability}`));
+      content.append(textElement('p','',`UPC: ${b.upc || '—'}`));
+      if(data.price_history.length) {
+        content.append(textElement('h3','',locale==='vi'?'Lịch sử giá':'Price history'));
+        data.price_history.forEach(p=>content.append(textElement('p','',`${pounds(p.old_price_pence)} → ${pounds(p.new_price_pence)} · ${p.changed_at}`)));
+      }
+      const src=safeSourceURL(b.source_url);if(src){const link=document.createElement('a');link.className='outlined-action';link.href=src;link.target='_blank';link.rel='noopener noreferrer';link.textContent=t('source')+' ↗';content.append(link);}
+    }catch(e){content.replaceChildren(textElement('p','',e.message));}
+  }
+  document.querySelectorAll('[data-close-dialog]').forEach(button=>button.addEventListener('click',()=>document.getElementById(button.dataset.closeDialog)?.close()));
+  const filterDialog=$('save-filter-dialog');
+  $('save-filter')?.addEventListener('click',()=>{filterDialog.showModal();$('saved-filter-name').focus();});
+  $('save-filter-form')?.addEventListener('submit',async e=>{
+    e.preventDefault();const name=$('saved-filter-name').value.trim();if(!name)return;
+    try {await fetchJSON('/api/saved-searches',{method:'POST',body:JSON.stringify({name,...currentFilters})});
+      filterDialog.close();$('save-filter-form').reset();toast(t('filterSaved'),'success');loadSavedSearches();
+    }catch(error){toast(error.message,'error');}
+  });
+  async function loadSavedSearches(){
+    const bar=$('saved-search-bar'),list=$('saved-search-list');if(!bar || !list)return;
+    try {const data=await fetchJSON('/api/saved-searches');bar.hidden=data.items.length===0;list.replaceChildren();
+      data.items.forEach(item=>{
+        const wrapper=document.createElement('span');wrapper.className='saved-search-pill';
+        const apply=document.createElement('button');apply.textContent=item.name;apply.addEventListener('click',()=>{
+          currentFilters={q:item.query,min_price:item.min_price,max_price:item.max_price};
+          $('search-query').value=currentFilters.q;$('min-price').value=currentFilters.min_price;$('max-price').value=currentFilters.max_price;currentPage=1;loadBooks();
+        });
+        const del=document.createElement('button');del.textContent='×';del.className='delete-chip';del.title=t('remove');
+        del.addEventListener('click',async()=>{try{await fetchJSON(`/api/saved-searches/${item.id}`,{method:'DELETE'});loadSavedSearches();}catch(e){toast(e.message,'error');}});
+        wrapper.append(apply,del);list.append(wrapper);
+      });
+    }catch(error){toast(error.message,'error');}
+  }
+  fetchJSON('/api/auth/me').then(data=>{if(data.preferences.book_layout==='list')$('book-grid').classList.add('list-view');}).catch(()=>{});
+  loadSavedSearches();
   loadBooks();
 })();

@@ -1,160 +1,128 @@
-# CrawlInsight — Book Crawling & Analytics
+# CrawlInsight — LTW-TH
 
-> **Web Programming & Applications (503073) · Midterm Topic 7 — Web Crawling**  
-> **Status:** Source baseline implemented; live crawling has not yet been verified on this authoring machine because external network and Flask/Scrapy packages are unavailable here. Team must run the live acceptance test on its Windows machine.
+**Web Programming & Applications (503073) · Midterm Topic 7: Web Crawling**  
+**Source release:** V4.0 · Vietnamese-first bilingual web platform · Flask + Scrapy + SQLite
 
-CrawlInsight là ứng dụng demo học thuật thu thập **dữ liệu sách thật từ [Books to Scrape](https://books.toscrape.com/)**, lưu vào SQLite rồi cho phép người dùng theo dõi job, tìm kiếm sách, lọc theo giá và xem biểu đồ đánh giá. Không có user account; chỉ dành cho **localhost**.
+CrawlInsight is a multi-user web application that collects **real book data** from [Books to Scrape](https://books.toscrape.com/), explores it through filters and analytics, and offers private saved collections and preferences per user. Its crawler respects the allowed site and does **not** accept arbitrary external URLs. The real database has **no fake books** by default.
 
-## 1. Đúng phạm vi SRS 2.0
+> This is runnable source code, **not** a hosted product. Local Flask/API and live scraping must be tested on a Windows computer after dependency installation. During source creation, 50 offline tests passed and 4 dependency-dependent tests were skipped because Flask/Scrapy could not be installed in the build environment. Before deploying publicly, perform security testing and use a production deployment setup.
 
-- **Hai trang:** `/` Overview + Crawl Monitor và `/books` Book Explorer.
-- **Nguồn cố định:** `https://books.toscrape.com/`; **1–3 trang danh sách** mỗi lần crawl, mặc định 1.
-- **Crawler:** Python Scrapy theo link Next và trang chi tiết, tuân thủ robots.txt, giới hạn 1 request concurrent và 1 giây delay.
-- **Dữ liệu:** tên, giá GBP (lưu pence), mức sao, danh mục, tình trạng tồn kho, ảnh/UPC nếu có.
-- **Database:** đúng 2 bảng `books` và `crawl_jobs`; chỉ có 1 job đang hoạt động; upsert chống trùng.
-- **Không có:** login, crawling website tùy ý, CSV export, WebSockets, worker daemon, admin dashboard nhiều nguồn.
+## 1. What you can use
 
-**Chưa nên tuyên bố đã đạt 100%** khi chưa chạy live smoke test. Chi tiết kiểm chứng: `docs/IMPLEMENTATION_STATUS.md`.
+| URL | Audience | Role |
+|---|---|---|
+| `/` | Public | `index.html` landing page, feature introduction, how-to |
+| `/register`, `/login` | Public | Account registration and authentication |
+| `/forgot-password`, `/reset-password/<token>` | Public | Password recovery by SMTP, single-use 20-minute tokens |
+| `/workspace` | Logged in | Dashboard, initiate crawl, live job monitor, rating charts |
+| `/books` | Logged in | Source catalogue search, price filters, pagination, bookmarks, saved searches, details, CSV |
+| `/saved` | Logged in | Personal saved books |
+| `/history` | Logged in | Personal crawl history and job details |
+| `/analytics` | Logged in | Real rating/category/price analytics |
+| `/sources` | Logged in | Allowed source and responsible-crawling policy |
+| `/settings` | Logged in | Name, password, language, theme, book layout |
+| `/help` | Logged in | End-user help and onboarding |
 
-Chi tiết toàn bộ folder/file có trong [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md).
+The app UI has **Vietnamese (default) and English**, user-specific preferences and light/dark/system themes. Source-book titles/categories stay in their original language, and prices stay in **GBP** (not silently converted to Vietnamese đồng). Guests can explore the landing page without creating an account.
 
-## 2. Cây thư mục
+Security foundations: scrypt-salted password hashes, signed HttpOnly session cookies, CSRF tokens on mutations, login/recovery rate throttles, password recovery tokens stored as SHA-256 hashes, revocation of old sessions on password change/reset, scoped job history and bookmarks, cautious response headers, parameterized SQL, and server-side validation. Multi-user catalogue rows are shared; bookmarks, searches, job history and preferences are user-specific.
 
-```text
-CrawlInsight/
-├── START_HERE.bat                 # Windows quick start (safe)
-├── app.py                         # Flask routes & subprocess launcher
-├── requirements.txt, .env.example, .gitignore
-├── SRS_CrawlInsight_10Days.md      # Đặc tả khóa phạm vi
-├── database/schema.sql             # SQLite, 2 tables
-├── src/db.py                       # SQLite transactions / analytics / filters
-├── crawler/
-│   ├── parser.py                   # HTML extractors / pure parser helpers
-│   ├── settings.py                 # robots.txt, delay, concurrency
-│   ├── pipelines.py                # transactional item upsert
-│   ├── run_job.py                  # child-process job runner
-│   └── spiders/books_spider.py     # catalogue -> Next -> detail
-├── templates/                      # Jinja HTML pages, icons
-├── static/css/style.css            # responsive visual design
-├── static/js/                     # API clients, polling, search
-├── static/img/                    # local brand assets (not book data)
-├── data/                           # DB/log files generated locally (gitignored)
-├── scripts/                        # Windows setup, start, tests
-├── tests/                          # offline fixtures & pytest
-└── docs/                           # API, architecture, coding rules, handoff notes
-```
+## 2. Install and launch on Windows
 
-## 3. Cài trên Windows 10 / 11
+Requires **Python 3.11 or 3.12**, Internet for pip and crawling, Windows 10/11, and modern Chrome/Edge. XAMPP, PHP and MySQL are **not** required.
 
-**Yêu cầu:** Python **3.11 hoặc 3.12** có `venv` và `pip`; Internet để cài packages và crawl; Chrome/Edge. Không cần XAMPP, PHP hay MySQL. Port mặc định `5000`. Không cần domain và không cần cấu hình mail.
+1. Unzip `LTW-TH_Source_V4.zip` so the root folder is exactly `LTW-TH` (you can place it in `C:\xampp\htdocs\LTW-TH`). If you already have a database from V3, **back it up before replacing source files**, and do not copy or overwrite the existing `data/` or private database.
+2. Open `LTW-TH` and double-click **`START_HERE.bat`**. This runs `scripts/setup_windows.ps1` and starts the app.
+3. Open **http://127.0.0.1:5000/**. You will see the new public landing page.
+4. Choose **Đăng ký**, create your own account (no pre-seeded account is included), sign in, then open `/workspace` and start a crawl of **1 catalogue page**.
+5. After a crawl completes, visit `/books`, `/analytics`, `/history`, and save some books to `/saved`.
 
-### Cách A: Dùng file BAT
-
-Giải nén ZIP, mở thư mục `CrawlInsight` rồi chạy **`START_HERE.bat`**. Script chỉ tạo `.venv` **bên trong thư mục này**, cài packages, **tạo DB nếu chưa có** rồi chạy Flask. Nó không xóa bất cứ thư mục/DB nào và không động đến `htdocs`.
-
-> Nếu Windows có cảnh báo thực thi, đọc và xem script trước khi chạy. Không chạy file nguồn tải từ nơi không tin cậy.
-
-### Cách B: PowerShell thủ công (ưu tiên khi debug)
+**PowerShell alternative:**
 
 ```powershell
-cd CrawlInsight
+cd C:\xampp\htdocs\LTW-TH
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -c "from src.db import init_db; init_db()"
 .\.venv\Scripts\python.exe app.py
 ```
 
-Nếu không có Python 3.12, dùng `py -3.11`. Không bắt buộc `Activate.ps1`; dùng interpreter trực tiếp tránh lỗi Execution Policy. Truy cập **http://127.0.0.1:5000/**.
+Use `py -3.11` if Python 3.12 is unavailable. To change the Flask port create a `.env` file with `FLASK_PORT=5055`. The `.env` values are now read automatically by `app.py`. When copying from `.env.example`, do not commit the secret-bearing `.env` file.
 
-Nếu port 5000 bị chiếm:
+**IMPORTANT:** `C:\xampp\htdocs\LTW-TH` is just a folder location for this Flask project. Do **not** open `http://localhost/LTW-TH` or assume that PHP/Apache will run it. Use `127.0.0.1:5000` (or the configured Flask port). `.htaccess` denies Apache requests where supported; it does not make exposing your whole source publicly safe.
 
-```powershell
-$env:FLASK_PORT = '5055'
-.\.venv\Scripts\python.exe app.py
+## 3. Database V4 and migrations
+
+- **15 persisted tables**: original 9 (`sources`, `categories`, `books`, `crawl_jobs`, `crawl_pages`, `crawl_job_books`, `book_price_history`, `crawl_events`, `schema_migrations`) plus 6 (`users`, `user_preferences`, `bookmarks`, `saved_searches`, `password_reset_tokens`, `auth_attempts`).
+- **3 read-only views**: `v_books_detail`, `v_category_summary`, `v_job_overview`.
+- **Migrations**: `database/migrations/001_core.sql`, `002_indexes.sql`, `003_views.sql`, `004_identity_and_workspace.sql`; SQLite reference snapshot `database/schema.sql` is V4, for **fresh** installations.
+- `src/database/accounts.py` handles identity and preferences; existing `books.py`, `jobs.py` and `analytics.py` remain in place, with `src/db.py` preserving the crawler's existing imports.
+- `init_db()` is idempotent. V2→V3 and V3→V4 upgrades preserve records and create a SQLite backup **before** changing an existing DB. Jobs created before V4 retain `user_id=NULL` and are not assigned to a newly registered account.
+
+When project is inside XAMPP `htdocs`, runtime data is stored **outside htdocs**:
+
+```text
+C:\xampp\ltw-th-private-data\crawlinsight.db
+C:\xampp\ltw-th-private-data\flask-session.key
+C:\xampp\ltw-th-private-data\logs\crawl-job-<id>.log
 ```
 
-Sau đó mở `http://127.0.0.1:5055/`. Web chỉ bind `127.0.0.1`, không mở ra Internet/LAN.
+Otherwise runtime SQLite defaults to `LTW-TH/data/crawlinsight.db`. Never commit those files or share session keys. To inspect real data:
 
-## 4. Test ngay sau khi setup
+```powershell
+.\.venv\Scripts\python.exe -m database.tools.db_cli tables
+.\.venv\Scripts\python.exe -m database.tools.db_cli rows users --limit 10
+.\.venv\Scripts\python.exe -m database.tools.db_cli rows v_books_detail --limit 20
+.\.venv\Scripts\python.exe -m database.tools.db_cli rows crawl_jobs --limit 20
+.\.venv\Scripts\python.exe -m database.tools.db_cli check
+```
+
+**Privacy:** `users`, `password_reset_tokens` and other user tables contain personal or security-related material; only inspect locally and do **not** publish exported HTML/CSV snapshots. `database/examples/Database_Explorer_DEMO.html` and `CrawlInsight_DEMO.sqlite3` use synthetic DEMO-labelled book data and have no pre-seeded users. They are for studying the schema only.
+
+## 4. Enable real forgot-password email
+
+No default email credentials are bundled. Copy `.env.example` to `.env`, then configure SMTP. Example (Gmail App Password, TLS 587):
+
+```dotenv
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-address@gmail.com
+SMTP_FROM=your-address@gmail.com
+SMTP_PASSWORD=your-app-password
+ALLOW_LOCAL_RESET_LINKS=0
+```
+
+With valid SMTP configuration, the recovery form emails an HTTPS/localhost-link derived from the current trusted application host. The reset token is valid for **20 minutes** and only **once**. When SMTP is not configured, the UI **reports that email is unavailable**—it will not falsely claim that an email was sent.
+
+**Local-only fallback for teammates without SMTP:** Set `ALLOW_LOCAL_RESET_LINKS=1` in `.env` and access Flask directly using `127.0.0.1`. After submitting an existing account email, a reset link appears **in the browser** solely for testing. Never use this setting on a public machine or server; set it back to `0` before deployment. With neither SMTP nor local fallback configured, password reset will return `503 MAIL_NOT_CONFIGURED`.
+
+## 5. Run and verify tests
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
 ```
 
-**Đừng dùng test fixture HTML để tạo dữ liệu sách trên web.** Database production bắt đầu trống. Fixture trong `tests/fixtures` chỉ dùng cho kiểm thử selector và parsing.
+The suite includes migration regression (V2 and V3 to V4), book/job integrity, password hashing, session-version invalidation, expired/one-time reset tokens, duplicate email handling, bookmarks and saved searches isolated by user, template rendering in VI/EN and Flask API auth/CSRF smoke tests.
 
-### Chạy acceptance test bằng dữ liệu nguồn thật
+**Manual acceptance checklist (Windows with Flask/Scrapy installed):**
 
-1. Mở `/`, xác nhận **Total books = 0** sau khi setup trên DB mới.
-2. Chọn **1 page** → `Start crawling`; theo dõi chuyển `PENDING → RUNNING → COMPLETED` (hoặc xem lỗi). Crawl chậm vì giới hạn request.
-3. Đợi hoàn tất, mở `/books`; kiểm tra card sách lấy từ SQLite, search và filter giá `min_price=10`, `max_price=40`.
-4. Quay về Dashboard, kiểm tra biểu đồ đánh giá có số liệu, và lịch sử job mới nhất.
-5. Chạy lại **1 page**; kiểm tra `total_books` không tăng do trùng URL và `existing_books` > 0.
-6. Chạy **2 pages**, chứng minh spider đi theo link Next, không chỉ lấy catalogue trang đầu. Khi nguồn ổn định và có dữ liệu, số `catalogue_pages_done` mong đợi là 2.
-7. Mở một lần crawl, thử nhấn Start trong lúc chạy hoặc gọi POST lần 2: **HTTP 409** và không tạo worker thứ hai.
-8. Dùng Chrome DevTools → Network xem `/api/summary`, `/api/jobs/<id>`, `/api/books`, và kiểm tra không có dữ liệu mock.
+1. New visitor sees `/` without an account. Clicking CTA navigates to registration.
+2. Register with a valid email + 10-character mixed password; log out, then log in again.
+3. Confirm `/workspace`, `/books`, `/saved`, `/history`, `/analytics`, `/sources`, `/settings`, `/help` all load without console/network errors at desktop and mobile widths.
+4. Select **1 page**, start a real crawl, observe state `PENDING → RUNNING → COMPLETED` and inspect records in SQLite. Repeat crawl and verify no duplicate book URL.
+5. Filter books by title and original GBP price; bookmark a book and verify `/saved`.
+6. Create a second account; the shared catalogue should still exist, but no personal bookmarks, saved searches or jobs from the first account should appear.
+7. Change language and theme under `/settings`, refresh and sign in again; selections persist. Test book `list` view.
+8. Export CSV and open in Excel; verify Vietnamese text encoded correctly and original GBP amounts.
+9. Enable SMTP or explicit **local-only** password reset, use the token once, and verify reuse is rejected. Confirm previous login sessions are invalidated.
+10. Run `python -m pytest -q`, validate in Chrome/Edge, and record errors with screenshot, traceback and reproduction steps.
 
-Nếu nguồn không truy cập được, UI phải hiển thị FAILED/last_error. **Đừng chuyển sang dữ liệu giả rồi quay video như dữ liệu live.** Tests parser dùng fixture offline để chứng minh extraction logic.
+## 6. Known constraints — no pretending these are already complete
 
-## 5. Các JSON endpoint
+- **Live Flask HTTP and Scrapy integration** require testing after installing dependencies; the build environment could not install them. `pytest.importorskip()` skipped the dependency-dependent cases, but Python/Jinja/JS source and database tests passed offline.
+- SMTP email delivery depends on valid credentials, provider policy and network access; no account verification or transactional email service is bundled.
+- Current source is deliberately restricted to **one permitted training website**, max **3 catalogue pages per crawl**, one active job globally. It is not a generic multi-domain crawler.
+- Book metadata, ratings and GBP price are retained as source observations; there is no translation of scraped content and no currency-conversion API.
+- This is a **local-first development configuration**. Public production hosting needs HTTPS, trusted host/proxy review, hardened session and secret management, backup/retention, application security audit and monitoring.
 
-| Route | Method | Chức năng |
-|---|---|---|
-| `/api/summary` | GET | Tổng sách, rating 1–5, last job và 5 lần chạy gần đây |
-| `/api/jobs` | POST | Tạo job với JSON `{"max_pages": 1}` (202 hoặc 400/409/503) |
-| `/api/jobs/<id>` | GET | Trạng thái job cùng counters |
-| `/api/books` | GET | Danh sách + `q`, `min_price`, `max_price`, `page`; 12 item/trang |
-
-Chi tiết body và quy tắc lỗi xem `docs/API.md` hoặc mục 8 của SRS.
-
-## 6. Cách dữ liệu di chuyển
-
-```text
-Browser → POST /api/jobs → Flask creates PENDING job in SQLite
-                         ↳ subprocess: python -m crawler.run_job --job-id N
-                               ↓
-                          RUNNING / Scrapy
-                               ↓
-       HTTPS catalogue → next page + book detail (robots, limit, retry)
-                               ↓
-        parser.py → SQLiteBookPipeline → atomic upsert + counters
-                               ↓
-            COMPLETED / FAILED in crawl_jobs
-                               ↓
-Browser polls GET /api/jobs/N every 2s, refreshes API summary/books
-```
-
-**Không có real-time WebSocket.** Giới hạn 1–3 pages áp dụng cho catalogue, **không** phải tổng số HTTP requests. Mỗi trang có thể dẫn tới nhiều request chi tiết.
-
-## 7. Debug và khôi phục an toàn
-
-- **`ModuleNotFoundError: flask/scrapy`:** dùng đúng `.venv\Scripts\python.exe`; cài lại requirements trong .venv, đừng cài tùy tiện vào Python toàn máy.
-- **`Address already in use`:** đổi `FLASK_PORT`, không kill service khác.
-- **Source không phản hồi / 403/robots policy:** kiểm tra Internet và file `data/logs/crawl-job-N.log`. Không tăng tốc, không bypass robots/chặn.
-- **Job có error_count > 0 nhưng vẫn COMPLETED:** có item lưu được, song vẫn có lỗi nhỏ; UI ghi “Completed with warnings”.
-- **Job stuck RUNNING khi máy hoặc process bị kill:** đây là giới hạn MVP. Chỉ khi **đã xác nhận** không còn process `crawler.run_job` chạy thì backup `data/crawlinsight.db`, chạy công cụ sửa trạng thái thủ công:
-
-```powershell
-.\.venv\Scripts\python.exe -m src.recover_job --job-id 1 --confirm
-```
-
-Lệnh chỉ đánh FAILED cho **job đang PENDING/RUNNING** theo ID được chọn, **không xóa sách**. Tuyệt đối không chạy trên job vẫn đang xử lý.
-- **Muốn tạo DB trống để demo:** đổi tên DB cũ và file WAL/SHM khi đã dừng toàn bộ process (không xóa vĩnh viễn); sau đó chạy `init_db()`. Tránh thao tác khi process còn hoạt động.
-
-## 8. Team coding baseline
-
-- Code identifiers viết tiếng Anh, tuân thủ PEP 8 cho Python; JS camelCase; CSS class kebab-case; DB và API fields đúng **snake_case trong SRS 2.0**.
-- Không commit `.venv`, `.env`, `data/*.db`, `data/logs/`.
-- PR nhỏ, một chủ đề, review trước merge `main`. Không force-push `main` dùng chung.
-- Không thay contract SRS mà không chỉnh tests + code consumers cùng lúc.
-- **Mỗi thành viên sẽ được phân công chính thức sau**; xem `docs/IMPLEMENTATION_STATUS.md` để biết điểm cần xác minh/bổ sung.
-
-## 9. Các điều kiện hạn chế và sử dụng có trách nhiệm
-
-- Chỉ crawler trên sandbox công khai được thiết kế cho scraping. Link bên ngoài host đều bị từ chối trong spider.
-- `ROBOTSTXT_OBEY=True`; 1 concurrent request; download delay >= 1s; tối đa 1 retry; không cố vượt chặn.
-- SQLite chỉ phù hợp single-machine teaching demo; **không deploy public** vì không có authentication.
-- Mức giá và rating trên Books to Scrape là **dữ liệu giả lập của nguồn**, không phục vụ thương mại.
-- Khi báo cáo/video, phân biệt rõ “đã code”, “đã test offline” và “đã xác minh live”.
-
-**Nguồn:** `SRS_CrawlInsight_10Days.md`, tài liệu môn `503073-Midterm-V1.docx`, [Scrapy](https://docs.scrapy.org/en/latest/), [Flask](https://flask.palletsprojects.com/), [SQLite](https://www.sqlite.org/).
+More details: `PROJECT_STRUCTURE.md`, `docs/IMPLEMENTATION_STATUS_V4.md`, `docs/API_V4.md`, `database/DATA_DICTIONARY.md`. The earlier **SRS 2.0** remains the baseline for crawling logic; it has **not yet been fully revised** to reflect the expanded account/workspace scope.
