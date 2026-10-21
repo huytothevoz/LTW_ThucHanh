@@ -1,0 +1,60 @@
+{% from '_icons.html' import icon %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#0c172b" />
+  <meta name="description" content="CrawlInsight — educational book crawling and analytics, powered by Scrapy." />
+  <title>{% block title %}CrawlInsight{% endblock %} · CrawlInsight</title>
+  <link rel="icon" href="{{ url_for('static', filename='img/favicon.svg') }}" type="image/svg+xml" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <div class="mobile-overlay" id="mobile-overlay" hidden></div>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <a class="brand" href="/" aria-label="CrawlInsight home">
+        <span class="brand-mark">
+          <svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true"><rect x="3" y="4" width="26" height="24" rx="8" fill="#697BFF"/><path d="M10 11h13M10 16h9M10 21h6" stroke="white" stroke-width="2.8" stroke-linecap="round"/><circle cx="24" cy="23" r="5" fill="#77E8D1" stroke="#101D38" stroke-width="2"/></svg>
+        </span>
+        <span class="brand-copy"><strong>Crawl<span>Insight</span></strong><small>DATA EXPLORATION LAB</small></span>
+      </a>
+      <div class="sidebar-section-label">WORKSPACE</div>
+      <nav class="side-nav" aria-label="Primary">
+        <a class="side-link {% if active_page == 'dashboard' %}active{% endif %}" href="/" {% if active_page == 'dashboard' %}aria-current="page"{% endif %}>{{ icon('grid',19) }}<span>Overview</span>{% if active_page == 'dashboard' %}<i class="active-dot"></i>{% endif %}</a>
+        <a class="side-link {% if active_page == 'books' %}active{% endif %}" href="/books" {% if active_page == 'books' %}aria-current="page"{% endif %}>{{ icon('books',19) }}<span>Book explorer</span>{% if active_page == 'books' %}<i class="active-dot"></i>{% endif %}</a>
+      </nav>
+      <div class="sidebar-section-label tools-label">SOURCE & TOOLS</div>
+      <div class="source-tile">
+        <span class="source-symbol">{{ icon('globe',20) }}</span>
+        <div><strong>Books to Scrape</strong><span>Approved test source</span></div>
+        <span class="source-tile-dot" title="Configured source (not live site status)"></span>
+      </div>
+      <div class="sidebar-bottom">
+        <div class="compliance-card">
+          <div class="compliance-icon">{{ icon('shield',20) }}</div>
+          <strong>Respect the web.</strong>
+          <p>One approved domain. robots.txt, 1-second delay, bounded requests.</p>
+        </div>
+        <div class="sidebar-footer"><span class="version-dot"></span> STUDENT DEMO <span class="v-number">V 1.0</span></div>
+      </div>
+    </aside>
+    <div class="content-column">
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="mobile-menu icon-button" id="mobile-menu" aria-label="Open menu" aria-expanded="false">{{ icon('menu',22) }}</button>
+          <span class="breadcrumb-root">Workspace</span>{{ icon('chevron-right',15) }}<span class="breadcrumb-current">{% block breadcrumb %}Overview{% endblock %}</span>
+        </div>
+        <div class="topbar-right"><span class="topbar-local"><span class="local-pulse"></span> Local environment</span><span class="topbar-divider"></span><a class="source-link" href="https://books.toscrape.com/" target="_blank" rel="noopener noreferrer">View source {{ icon('external',15) }}</a></div>
+      </header>
+      <main class="page-content" id="main-content">{% block content %}{% endblock %}</main>
+      <footer class="main-footer"><span>© 2026 CrawlInsight · Web Programming & Applications</span><span>Educational sandbox · Not commercial data</span></footer>
+    </div>
+  </div>
+  <div class="toast-region" id="toast-region" role="status" aria-live="polite"></div>
+  <script src="{{ url_for('static', filename='js/common.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

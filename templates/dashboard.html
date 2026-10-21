@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon %}
+{% block title %}Overview{% endblock %}
+{% block breadcrumb %}Overview{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div><div class="eyebrow">DATA INTELLIGENCE WORKSPACE <span class="eyebrow-line"></span> TOPIC 07</div><h1>Overview<span class="heading-period">.</span></h1><p>Your command center for structured web data.</p></div>
+    <span class="page-date" id="today-label">{{ icon('clock',17) }} Local session</span>
+  </div>
+
+  <section class="hero" aria-label="Crawl overview">
+    <div class="hero-noise"></div>
+    <div class="hero-text">
+      <div class="hero-kicker"><span class="hero-kicker-dot"></span> YOUR CRAWLING STUDIO <span class="hero-kicker-arrow">↗</span></div>
+      <h2>From web pages<br />to <em>clear insights.</em></h2>
+      <p>Collect real book data, explore the results, and understand every step of the journey.</p>
+      <a class="hero-link" href="#crawl-control">Launch a crawl <span>↗</span></a>
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <svg viewBox="0 0 425 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="216" cy="132" rx="171" ry="91" stroke="white" stroke-opacity=".17" stroke-dasharray="3 9"/>
+        <ellipse cx="216" cy="132" rx="126" ry="126" stroke="white" stroke-opacity=".12" stroke-dasharray="3 8"/>
+        <path d="M111 120h75M239 120h76" stroke="#87DCCC" stroke-width="2" stroke-dasharray="5 6"/>
+        <g><rect x="150" y="58" width="134" height="145" rx="18" fill="#273B8B" stroke="white" stroke-opacity=".18"/><rect x="166" y="77" width="101" height="16" rx="5" fill="#8192EC" fill-opacity=".65"/><rect x="166" y="104" width="44" height="44" rx="9" fill="#96F1DC"/><path d="M178 126l7 7 14-16" stroke="#244369" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/><rect x="218" y="106" width="49" height="7" rx="3.5" fill="white" fill-opacity=".86"/><rect x="218" y="121" width="35" height="6" rx="3" fill="white" fill-opacity=".38"/><rect x="166" y="161" width="101" height="6" rx="3" fill="white" fill-opacity=".33"/><rect x="166" y="174" width="72" height="6" rx="3" fill="white" fill-opacity=".18"/></g>
+        <g><rect x="33" y="93" width="105" height="57" rx="11" fill="#344BA0" stroke="#BFD6FF" stroke-opacity=".3"/><rect x="47" y="108" width="23" height="26" rx="5" fill="#80CFEE" fill-opacity=".8"/><path d="M80 114h40M80 124h28" stroke="#CDD9FF" stroke-opacity=".8" stroke-width="5" stroke-linecap="round"/></g>
+        <g><rect x="302" y="91" width="100" height="60" rx="11" fill="#4D63B8" stroke="#DDE8FF" stroke-opacity=".35"/><rect x="319" y="116" width="12" height="21" rx="3" fill="#A3F8D8"/><rect x="337" y="107" width="12" height="30" rx="3" fill="#A3F8D8" fill-opacity=".72"/><rect x="355" y="98" width="12" height="39" rx="3" fill="#A3F8D8" fill-opacity=".55"/><path d="M314 141h62" stroke="#FFF" stroke-opacity=".3"/></g>
+        <circle cx="105" cy="35" r="5" fill="#A3F8D8"/><circle cx="344" cy="44" r="5" fill="#9AB4FF"/><circle cx="337" cy="205" r="3" fill="#A3F8D8"/>
+        <defs><filter id="shadow" x="127" y="42" width="182" height="194" filterUnits="userSpaceOnUse"><feGaussianBlur stdDeviation="8"/></filter></defs>
+      </svg>
+    </div>
+  </section>
+
+  <section class="stats-grid" aria-label="Collection statistics">
+    <article class="metric-card"><div class="metric-top"><span class="metric-icon blue">{{ icon('books',21) }}</span><span class="metric-overline">COLLECTION</span></div><div class="metric-value" id="total-books"><span class="skeleton skeleton-number"></span></div><div class="metric-label">Total books collected</div><div class="metric-foot"><span class="foot-marker blue-marker"></span> Live database records</div></article>
+    <article class="metric-card"><div class="metric-top"><span class="metric-icon mint">{{ icon('check-circle',21) }}</span><span class="metric-overline">SUCCESSFUL RUNS</span></div><div class="metric-value" id="completed-jobs"><span class="skeleton skeleton-number"></span></div><div class="metric-label">Completed crawl jobs</div><div class="metric-foot"><span class="foot-marker mint-marker"></span> Finished with saved data</div></article>
+    <article class="metric-card"><div class="metric-top"><span class="metric-icon peach">{{ icon('activity',21) }}</span><span class="metric-overline">LATEST ACTIVITY</span></div><div class="metric-value metric-last" id="last-status"><span class="skeleton skeleton-medium"></span></div><div class="metric-label">Most recent crawl</div><div class="metric-foot"><span class="foot-marker peach-marker"></span> <span id="last-job-meta">Waiting for data...</span></div></article>
+  </section>
+
+  <div class="workspace-grid">
+    <section class="panel crawl-panel" id="crawl-control" aria-labelledby="crawl-heading">
+      <div class="panel-head"><div><div class="panel-eyebrow">01 / ACTION CENTER</div><h3 id="crawl-heading">Start a new crawl</h3><p>Turn the web into structured, searchable data.</p></div><span class="panel-head-icon">{{ icon('bolt',20) }}</span></div>
+      <form id="crawl-form" class="crawl-form">
+        <div class="field-heading"><span>Target website</span><span class="locked-label">{{ icon('shield',14) }} Verified source</span></div>
+        <div class="source-input"><span class="source-input-globe">{{ icon('globe',20) }}</span><div><strong>books.toscrape.com</strong><span>HTTPS · Educational sandbox</span></div><span class="source-lock">{{ icon('check-circle',17) }}</span></div>
+        <div class="form-group"><div class="field-heading"><label for="max-pages">Catalogue pages</label><span class="field-helper">Maximum 3 per crawl</span></div><div class="page-picker" role="group" aria-label="Number of catalogue pages"><label><input type="radio" name="max-pages" value="1" checked /><span>1 page<small>Quick run</small></span></label><label><input type="radio" name="max-pages" value="2" /><span>2 pages<small>Explore more</small></span></label><label><input type="radio" name="max-pages" value="3" /><span>3 pages<small>Full demo</small></span></label></div></div>
+        <button class="primary-button" id="start-button" type="submit"><span class="button-content">{{ icon('play',17) }} Start crawling</span><span class="button-end">{{ icon('arrow-right',18) }}</span></button>
+      </form>
+      <div class="crawl-explainer">{{ icon('shield',16) }} robots.txt respected · 1 request at a time · 1s download delay</div>
+    </section>
+    <section class="panel monitor-panel" aria-labelledby="monitor-heading">
+      <div class="panel-head"><div><div class="panel-eyebrow">02 / LIVE MONITOR</div><h3 id="monitor-heading">Crawl monitor</h3><p>Watch each stage as it happens.</p></div><span class="panel-head-icon monitor-icon">{{ icon('activity',20) }}</span></div>
+      <div id="monitor-empty" class="monitor-empty"><div class="monitor-illustration"><span class="empty-orbit outer"></span><span class="empty-orbit inner"></span>{{ icon('activity',33) }}</div><h4>Ready when you are</h4><p>Start a crawl to track activity, discovered books and saved records here.</p></div>
+      <div id="monitor-active" class="monitor-content" hidden>
+        <div class="monitor-job-top"><div><div class="monitor-job-label">CURRENT / LATEST JOB</div><strong id="job-title">Crawl #—</strong></div><span id="job-status-badge" class="status-badge status-pending">Queued</span></div>
+        <div class="monitor-status-line"><span class="status-dot" id="monitor-status-dot"></span><span id="job-description">Waiting for worker...</span></div>
+        <div class="monitor-counters"><div><strong id="job-pages">0</strong><small>Pages parsed</small></div><div><strong id="job-found">0</strong><small>Books found</small></div><div><strong id="job-saved">0</strong><small>Saved</small></div></div>
+        <div class="monitor-extra"><span>New <strong id="job-new">0</strong></span><span>Existing <strong id="job-existing">0</strong></span><span>Errors <strong id="job-errors">0</strong></span></div>
+        <p id="job-error-text" class="monitor-error" hidden></p>
+        <p class="monitor-updated" id="monitor-updated">Updates every 2 seconds while running</p>
+      </div>
+    </section>
+  </div>
+
+  <div class="insights-grid">
+    <section class="panel chart-panel" aria-labelledby="chart-title">
+      <div class="panel-head"><div><div class="panel-eyebrow">03 / DATA BREAKDOWN</div><h3 id="chart-title">Rating distribution</h3><p>What readers' star ratings look like in your collection.</p></div><span class="mini-pill">1–5 stars</span></div>
+      <div id="rating-empty" class="chart-empty">{{ icon('layers',30) }}<strong>No insights to display yet</strong><span>Rating statistics will appear after your first successful crawl.</span></div>
+      <div id="rating-chart" class="rating-chart" hidden aria-label="Books count per rating"></div>
+    </section>
+    <section class="panel activity-panel" aria-labelledby="activity-title">
+      <div class="panel-head"><div><div class="panel-eyebrow">04 / CRAWL HISTORY</div><h3 id="activity-title">Recent activity</h3><p>Your five latest crawl sessions.</p></div><span class="mini-pill">Last 5 runs</span></div>
+      <div id="history-loading" class="history-loading"><span class="skeleton long"></span><span class="skeleton long"></span><span class="skeleton long"></span></div>
+      <div id="history-empty" class="history-empty" hidden>{{ icon('clock',25) }}<strong>Nothing here yet</strong><span>Your crawl history will show up here.</span></div>
+      <div id="history-list" class="history-list" hidden></div>
+    </section>
+  </div>
+  <div class="bottom-callout"><div class="bottom-callout-icon">{{ icon('books',23) }}</div><div><strong>Looking for your collected books?</strong><p>Explore every stored record with search, price filters, and pagination.</p></div><a class="callout-link" href="/books">Open book explorer {{ icon('arrow-up-right',17) }}</a></div>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/dashboard.js') }}" defer></script>{% endblock %}

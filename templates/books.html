@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon %}
+{% block title %}Book explorer{% endblock %}
+{% block breadcrumb %}Book explorer{% endblock %}
+{% block content %}
+<div class="page-heading books-heading"><div><div class="eyebrow">EXPLORE YOUR DATASET <span class="eyebrow-line"></span> BOOK CATALOGUE</div><h1>Book explorer<span class="heading-period">.</span></h1><p>Browse the knowledge you've collected from the web.</p></div><a href="/" class="outlined-action">{{ icon('arrow-left',17) }} Back to dashboard</a></div>
+<section class="books-intro"><div class="books-intro-content"><span class="books-intro-tag">YOUR PERSONAL DATA LIBRARY</span><h2>Every book. One place.</h2><p>Search by title, compare prices and discover the details your crawler extracted.</p></div><div class="books-intro-decoration" aria-hidden="true"><span class="book-spine a"></span><span class="book-spine b"></span><span class="book-spine c"></span><span class="book-spine d"></span><span class="book-spine e"></span></div></section>
+<section class="explorer-panel" aria-labelledby="explorer-title">
+  <div class="explorer-top"><div><div class="panel-eyebrow">THE COLLECTION</div><h3 id="explorer-title">Explore books <span class="result-count" id="result-count">— records</span></h3></div><span class="verified-label">{{ icon('database',17) }} Saved in SQLite</span></div>
+  <form id="filter-form" class="filter-form">
+    <div class="search-field"><label for="search-query">Search books</label><div class="input-with-icon">{{ icon('search',19) }}<input id="search-query" name="q" type="search" autocomplete="off" maxlength="100" placeholder="Search by book title..." /></div></div>
+    <div class="price-field"><label for="min-price">Min price (£)</label><div class="input-with-prefix"><span>£</span><input id="min-price" name="min_price" type="text" inputmode="decimal" placeholder="0.00" /></div></div>
+    <div class="price-field"><label for="max-price">Max price (£)</label><div class="input-with-prefix"><span>£</span><input id="max-price" name="max_price" type="text" inputmode="decimal" placeholder="99.99" /></div></div>
+    <button type="submit" class="filter-button">{{ icon('filter',17) }} Apply filters</button><button type="button" id="reset-filters" class="reset-button">Reset</button>
+  </form>
+  <div class="results-meta"><span id="results-summary">Loading books...</span><span class="results-sort">{{ icon('sort',15) }} Recently collected first</span></div>
+  <div id="books-error" class="inline-error" hidden></div>
+  <div id="books-loading" class="book-grid" aria-busy="true"><div class="book-skeleton"></div><div class="book-skeleton"></div><div class="book-skeleton"></div><div class="book-skeleton"></div></div>
+  <div id="books-empty" class="books-empty" hidden><span class="books-empty-icon">{{ icon('books',31) }}</span><h3>No books found</h3><p id="books-empty-description">Your collection is empty. Start a crawl to import real book data.</p><a class="empty-action" href="/">Go to dashboard {{ icon('arrow-right',16) }}</a></div>
+  <div id="book-grid" class="book-grid" hidden></div>
+  <div id="pagination" class="pagination" hidden><button id="prev-page" type="button">{{ icon('arrow-left',17) }} Previous</button><span id="page-label">Page 1 of 1</span><button id="next-page" type="button">Next {{ icon('arrow-right',17) }}</button></div>
+</section>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='js/books.js') }}" defer></script>{% endblock %}
