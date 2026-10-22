@@ -1,81 +1,77 @@
-# KẾ HOẠCH VÀ TỔNG HỢP NHIỆM VỤ (TASK SUMMARY)
+# PHÂN CÔNG CÔNG VIỆC CÒN LẠI — CRAWLINSIGHT
 
-**Thành viên:** Phạm Ngọc Duy  
-**Chuyên ngành:** Mạng máy tính & Truyền thông dữ liệu  
-**Trọng tâm phụ trách:** Backend Laravel/PHP, API Endpoints, Database SQLite & An toàn bảo mật
-**Dự án:** CrawlInsight (Web Crawling & Book Data Analytics Platform) — Đề tài 07 (503073)  
+## Mục tiêu chung
 
----
+- Hoàn thiện CrawlInsight với **Laravel/PHP là backend chính**, **Python/Scrapy là crawler**, và hai phần dùng chung SQLite.
+- Ưu tiên xử lý các hạng mục chưa được chạy kiểm thử thực tế trước khi bổ sung tính năng mới.
+- Mỗi thành viên cập nhật trạng thái và lưu minh chứng kiểm thử sau khi hoàn thành công việc.
 
-## 1. Ranh giới trách nhiệm & Module sở hữu (Code Ownership)
+## 1. Võ Trịnh Quốc Huy — Giao diện và trải nghiệm người dùng
 
-| Khu vực | Files / Thư mục sở hữu | Trách nhiệm chính |
-|---|---|---|
-| **Laravel Core & App** | `bootstrap/`, `routes/web.php`, `app/Http/` | Cấu hình request/session, CSRF, error handling và khởi chạy crawler worker. |
-| **Bảo mật & Session** | `app/Http/Middleware/`, `app/Services/AccountService.php` | CSRF guard (`X-CSRF-Token`), rate limiting, hash mật khẩu (`scrypt`), session versioning để revoke phiên cũ. |
-| **Email & Khôi phục** | `app/Http/Controllers/ApiController.php`, `config/mail.php` | SMTP gửi mail khôi phục, token TTL/one-time use, lỗi gửi mail trả rõ ràng. |
-| **Workspace API** | `app/Http/Controllers/ApiController.php`, `app/Services/BookService.php` | Các API bảo vệ, ownership, tìm kiếm, thống kê và xuất CSV UTF-8 BOM. |
-| **Database & Migrations**| `src/database/*.py`, `database/migrations/*` | 15 bảng, 3 views, SQLite WAL mode, foreign keys, additive migration 001–004, script sao lưu & phục hồi dữ liệu. |
-| **Môi trường & Cách ly** | `START_HERE.bat`, `scripts/*`, `.htaccess` | Cài PHP/Composer + Python crawler, cách ly SQLite khỏi Apache `htdocs`, tránh lộ `.env` và file `.sqlite3`. |
+- Kiểm tra các trang chính: trang chủ, đăng ký/đăng nhập, workspace, danh sách sách, sách đã lưu, lịch sử crawl, phân tích, nguồn dữ liệu và cài đặt.
+- Chạy ứng dụng trên trình duyệt sau khi môi trường backend được cài đặt; sửa các lỗi giao diện hoặc thao tác phát sinh.
+- Kiểm tra luồng giao diện gọi API: trạng thái tải, thông báo thành công/thất bại, dữ liệu rỗng và lỗi khi phiên đăng nhập hết hạn.
+- Kiểm tra giao diện tiếng Việt/tiếng Anh, chế độ sáng/tối và khả năng hiển thị trên màn hình điện thoại.
+- Kiểm tra các luồng người dùng:
+  - Đăng ký, đăng nhập và đăng xuất.
+  - Khởi chạy crawl, theo dõi trạng thái và xem lịch sử.
+  - Tìm kiếm/lọc sách, lưu và bỏ lưu sách hoặc bộ lọc.
+  - Cập nhật hồ sơ và tùy chọn cá nhân.
+- Ghi lại ảnh chụp màn hình và các bước tái hiện cho lỗi giao diện; cập nhật tài liệu hướng dẫn sử dụng khi giao diện thay đổi.
+- Phát triển thêm sau khi các luồng hiện tại ổn định:
+  - Cải thiện khả năng tiếp cận: nhãn biểu mẫu, điều hướng bằng bàn phím, độ tương phản và thông báo dễ hiểu.
+  - Bổ sung trạng thái tiến trình crawl rõ ràng, thao tác thử lại khi phù hợp và hướng dẫn xử lý lỗi cho người dùng.
 
----
+## 2. Phạm Ngọc Duy — Backend Laravel/PHP, API và bảo mật
 
-## 2. Bảng phân công công việc chi tiết (10-Day Plan)
+- Cài đặt PHP 8.2+ và Composer trên máy phát triển; chạy `composer install`, kiểm tra PHP syntax và khởi động Laravel.
+- Chạy PHPUnit; bổ sung/sửa test cho API và các luồng nghiệp vụ trước khi xác nhận backend hoạt động.
+- Kiểm thử API bằng HTTP thực tế:
+  - Đăng ký, đăng nhập, đăng xuất và xác thực phiên.
+  - CSRF cho các thao tác thay đổi dữ liệu; quyền truy cập của khách và người dùng đã đăng nhập.
+  - Cập nhật hồ sơ, mật khẩu, tùy chọn, bookmarks và saved searches.
+  - Sở hữu dữ liệu theo tài khoản; người dùng không được đọc hoặc sửa dữ liệu của tài khoản khác.
+  - Tạo crawl job, kiểm tra xung đột khi có job đang chạy, trạng thái và lịch sử.
+  - Xuất CSV với dữ liệu tiếng Việt và ô bắt đầu bằng ký tự có thể gây CSV formula injection.
+- Xác minh tài khoản cũ có thể đăng nhập bằng mật khẩu scrypt đã tạo từ backend Python; nếu không tương thích, sửa theo hướng giữ khả năng đăng nhập và có kế hoạch nâng cấp hash an toàn.
+- Kiểm tra luồng quên/đặt lại mật khẩu, thời hạn và khả năng dùng một lần của token, cấu hình SMTP và cách xử lý lỗi gửi thư.
+- Rà soát lỗi API, validation, rate limit, session/cookie và security headers; không đưa secret hoặc thông tin nhạy cảm vào phản hồi/log.
+- Phát triển thêm sau khi kiểm thử nền tảng đạt:
+  - Bổ sung API tests cho các trường hợp biên và lỗi.
+  - Chuẩn hóa thông báo lỗi và tài liệu hợp đồng API khi có thay đổi.
+  - Đánh giá hiệu năng các truy vấn tìm kiếm, dashboard và analytics trước khi tối ưu.
 
-*Dữ liệu trích xuất trực tiếp từ bảng phân công nhiệm vụ đề tài (`docs/LTW-TH_PhanCong.xlsx`).*
+## 3. Nguyễn Trọng Quý — Crawler, SQLite và tích hợp/chạy thử
 
-### Giai đoạn 1: Thiết lập môi trường & Nền tảng dữ liệu (Day 1 - Day 3)
-| Mã Task | Ưu tiên | Yêu cầu (FR/NFR) | Nội dung công việc | Minh chứng nghiệm thu cần đạt | Trạng thái |
-|---|---|---|---|---|---|
-| **TK-004** | P0 | FR-PLT-04 | Setup môi trường Windows sạch: cài PHP/Composer, Python venv, dependencies và chạy Laravel local | Log cài đặt thành công, server lắng nghe tại `127.0.0.1:8000` | Chưa bắt đầu |
-| **TK-005** | P0 | FR-PLT-03 | Kiểm tra database runtime V4: đọc 15 bảng, 3 views, `user_version=4`, `PRAGMA integrity_check` | Output SQL kiểm tra toàn vẹn, FK check = 0 | Chưa bắt đầu |
-| **TK-006** | P0 | FR-PLT-02 | Kiểm tra dự án dưới Apache XAMPP: xác nhận SQLite và file `.env` không bị truy cập trực tiếp | Log HTTP 403 / denied khi truy vấn file nhạy cảm từ Apache | Chưa bắt đầu |
-| **TK-013** | P0 | FR-AUT-01, FR-AUT-02 | E2E đăng ký, validation dữ liệu, kiểm tra trùng lặp email, đăng nhập/đăng xuất với cookie | Bằng chứng HTTP 201/400/401/200, user tạo mới đúng trong DB | Chưa bắt đầu |
-| **TK-014** | P0 | FR-AUT-09, FR-PLT-01 | Kiểm tra bảo vệ CSRF trên mutation APIs (POST/PATCH/DELETE) và các route cần login | Request thiếu token trả 403, guest truy cập trả 401 | Chưa bắt đầu |
-| **TK-015** | P0 | FR-USR-05 | Viết smoke test kiểm tra cô lập đa người dùng (Multi-user Isolation) giữa tài khoản A và B | Test PASS: User B không xem/sửa được bookmarks, filters, jobs của A | Chưa bắt đầu |
-| **TK-022** | P0 | FR-CRW-01, FR-CRW-03 | E2E crawl job API: tạo job gắn `user_id`, chặn job thứ 2 trả về 409 Conflict | Job thuộc đúng user, hệ thống đảm bảo duy nhất 1 job active | Chưa bắt đầu |
-| **TK-023** | P0 | FR-CRW-09 | Kiểm tra tiến trình job và bảng nhật ký sự kiện (`crawl_events`) trong quá trình spider chạy | Counters cập nhật nhất quán, terminal state ghi nhận chính xác | Chưa bắt đầu |
-| **TK-024** | P0 | FR-PLT-03 | Kiểm tra migration nâng cấp dữ liệu từ V3 lên V4 trên bản sao DB | Dữ liệu cũ giữ nguyên, file backup tự động tạo, FK check OK | Chưa bắt đầu |
+- Kiểm tra cấu hình để Laravel và Python worker cùng phân giải chính xác một `CRAWLINSIGHT_DB_PATH`.
+- Chạy kiểm tra SQLite: phiên bản schema, `PRAGMA integrity_check`, `PRAGMA foreign_key_check` và migration trên bản sao dữ liệu.
+- Chạy crawler thật với giới hạn nhỏ trên nguồn sandbox được phép; xác minh job được tạo, worker khởi chạy, log được ghi, sự kiện/trạng thái cập nhật và dữ liệu sách được lưu.
+- Kiểm tra xử lý lỗi và khôi phục job khi worker dừng bất thường; xác minh không để lại job hoạt động bị treo hoặc tạo hai job trái quy định.
+- Kiểm thử `START_HERE.bat`, `scripts/setup_windows.ps1`, `scripts/start_windows.ps1` và `scripts/run_tests_windows.ps1` trên Windows có PHP, Composer và Python phù hợp.
+- Kiểm tra cài đặt sạch từ hướng dẫn/ZIP, cấu hình database khi dự án nằm trong hoặc ngoài thư mục XAMPP `htdocs`, và bảo đảm file database/`.env` không bị phục vụ công khai.
+- Thực hiện diễn tập sao lưu và phục hồi database trên bản sao; ghi lại lệnh, kết quả và các bước xử lý lỗi thường gặp.
+- Phát triển thêm sau khi tích hợp hiện tại ổn định:
+  - Cải thiện khả năng quan sát job: log dễ đọc, thông tin lỗi hữu ích và tiến độ nhất quán.
+  - Bổ sung kiểm tra dữ liệu crawler trước khi lưu và kiểm thử hồi quy cho parser.
+  - Đánh giá chính sách crawl có trách nhiệm: giới hạn tốc độ, phạm vi domain và tuân thủ `robots.txt`.
 
-### Giai đoạn 2: Nghiệp vụ Workspace & Bảo mật nâng cao (Day 4 - Day 6)
-| Mã Task | Ưu tiên | Yêu cầu (FR/NFR) | Nội dung công việc | Minh chứng nghiệm thu cần đạt | Trạng thái |
-|---|---|---|---|---|---|
-| **TK-031** | P0 | FR-BOO-05 | Kiểm thử API Bookmarks cross-user: thêm/xóa bookmark, thử book ID không tồn tại | Phân quyền triệt để giữa các user, mã lỗi 404/200 chính xác | Chưa bắt đầu |
-| **TK-032** | P1 | FR-BOO-07 | Kiểm thử validation lưu bộ lọc tìm kiếm: trùng tên, range giá không hợp lệ, xóa đúng chủ sở hữu | HTTP 400 khi dữ liệu sai; User B không xóa được filter của User A | Chưa bắt đầu |
-| **TK-033** | P1 | FR-BOO-08 | Rà soát xuất file CSV: mã hóa UTF-8 BOM, kiểm tra và ngăn chặn CSV Formula Injection (`=`, `+`, `-`, `@`) | File CSV mở bằng Excel hiển thị tiếng Việt chuẩn, không thực thi mã độc | Chưa bắt đầu |
-| **TK-040** | P0 | FR-AUT-04 | Kiểm thử chu trình reset mật khẩu: token TTL (20 phút), token chỉ dùng 1 lần, hủy phiên cũ | Token hết hạn / dùng lại bị từ chối; session cũ lập tức bị revoke | Chưa bắt đầu |
-| **TK-041** | P1 | FR-AUT-05 | Tích hợp gửi email SMTP thực tế (Google App Password) & xử lý khi SMTP mất kết nối | Gửi nhận email thành công; khi lỗi trả về thông báo an toàn, không leak secret | Chưa bắt đầu |
-| **TK-042** | P0 | FR-PLT-02 | Rà soát toàn diện HTTP Security Headers (CSP, HttpOnly, SameSite=Lax, X-Frame-Options) | Đầy đủ headers bảo mật trên mọi response; không rò rỉ session key | Chưa bắt đầu |
-| **TK-049** | P0 | FR-AUT-08, FR-PLT-01 | Cổng kiểm thử an ninh tổng hợp (Security Integration Gate): Brute-force rate limit, CSRF, auth guard | Chặn brute-force sau số lần thử nhất định; phiên bảo mật an toàn | Chưa bắt đầu |
-| **TK-050** | P0 | FR-WSP-02 | Kiểm tra hiển thị lịch sử crawl: phân tách giữa 2 user và xử lý dữ liệu legacy (`user_id IS NULL`) | User chỉ thấy job của chính mình; chi tiết job người khác trả 404 | Chưa bắt đầu |
-| **TK-051** | P0 | FR-PLT-04 | Đóng băng hợp đồng API & Database: bảo đảm schema V4 ổn định, chuẩn bị migration 005 nếu phát sinh | Hợp đồng API không bị thay đổi bất ngờ làm vỡ giao diện Frontend | Chưa bắt đầu |
+## 4. Công việc chung của cả nhóm
 
-### Giai đoạn 3: Tối ưu hóa, Báo cáo & Nghiệm thu (Day 7 - Day 10)
-| Mã Task | Ưu tiên | Yêu cầu (FR/NFR) | Nội dung công việc | Minh chứng nghiệm thu cần đạt | Trạng thái |
-|---|---|---|---|---|---|
-| **TK-058** | P0 | FR-PLT-03 | Diễn tập sao lưu và phục hồi cơ sở dữ liệu (Backup/Restore drill) | Khôi phục bản sao DB thành công, dữ liệu toàn vẹn | Chưa bắt đầu |
-| **TK-059** | P0 | FR-PLT-04 | Soạn thảo tài liệu hướng dẫn thiết lập và xử lý sự cố cho lập trình viên / người chấm điểm | Hướng dẫn rõ ràng, cài đặt từ môi trường sạch không phát sinh lỗi | Chưa bắt đầu |
-| **TK-060** | P1 | NFR-07 | Đo đạc hiệu năng API tại môi trường local (thử nghiệm với tập dữ liệu 100 và 1000 bản ghi) | Bảng số liệu thời gian phản hồi thực tế (response time) | Chưa bắt đầu |
-| **TK-067** | P0 | NFR-05 | Soạn thảo báo cáo kỹ thuật phần Backend, Bảo mật & Cơ sở dữ liệu V4 | Sơ đồ kiến trúc xác thực, sơ đồ ERD 15 bảng, danh mục API | Chưa bắt đầu |
-| **TK-068** | P1 | NFR-17 | Chuẩn bị bằng chứng kiểm tra DB (Database Explorer Demo) với dữ liệu phi định danh | Bằng chứng kiểm tra cơ sở dữ liệu hợp lệ | Chưa bắt đầu |
-| **TK-069** | P1 | FR-AUT-05 | Hoàn thiện tài liệu hướng dẫn cấu hình SMTP và lưu ý an toàn môi trường phát triển | File hướng dẫn cấu hình chi tiết, không lưu mật khẩu cứng | Chưa bắt đầu |
-| **TK-076** | P0 | NFR-05 | Rà soát cấu hình an ninh trước khi đóng gói bản release (tắt debug, tắt local reset link) | Mã nguồn sạch, không hardcode credentials / secret keys | Chưa bắt đầu |
-| **TK-077** | P0 | NFR-02 | Kiểm tra tính nhất quán dữ liệu trước release (`PRAGMA foreign_key_check`, `integrity_check`) | DB không có lỗi vỡ khóa ngoại hay phân mảnh dữ liệu | Chưa bắt đầu |
-| **TK-078** | P0 | NFR-06 | Kiểm thử cài đặt dự án từ file ZIP sạch trên môi trường Windows mới hoàn toàn | Chạy thành công chỉ với `START_HERE.bat` | Chưa bắt đầu |
-| **TK-085** | P0 | NFR-05 | Cổng nghiệm thu bảo mật (Security Release Gate) | Toàn bộ kiểm thử auth/security đạt trạng thái PASS | Chưa bắt đầu |
-| **TK-086** | P0 | NFR-02 | Cổng nghiệm thu Database & Migration | Toàn bộ migration và ràng buộc DB kiểm tra đạt chuẩn | Chưa bắt đầu |
-| **TK-087** | P0 | NFR-06 | Chuẩn bị kịch bản và dữ liệu dự phòng phục vụ demo trực tiếp | Hệ thống vận hành ổn định, sẵn sàng trình diễn đồ án | Chưa bắt đầu |
+- Cùng thiết lập môi trường PHP/Composer/Python và xử lý các lỗi cài đặt; lưu lại phiên bản công cụ đã dùng.
+- Không đánh dấu chức năng là hoàn tất chỉ dựa trên việc có mã nguồn: phải chạy và lưu kết quả kiểm thử tương ứng.
+- Trước khi gộp thay đổi:
+  - Chạy `scripts/run_tests_windows.ps1` và xử lý các lỗi liên quan.
+  - Kiểm tra thay đổi không làm sai hợp đồng API, schema SQLite hoặc luồng giao diện.
+  - Không commit `.env`, mật khẩu SMTP, khóa ứng dụng, database thật hoặc dữ liệu cá nhân.
+- Trước buổi nghiệm thu:
+  - Chạy thử toàn bộ luồng từ tạo tài khoản đến crawl và xem dữ liệu.
+  - Chuẩn bị dữ liệu demo phi định danh, ảnh chụp màn hình và kịch bản dự phòng.
+  - Đồng bộ README, tài liệu cài đặt, kiến trúc, API và trạng thái kiểm thử theo kết quả thực tế.
 
----
+## 5. Hạng mục phát triển thêm sau khi hoàn tất kiểm thử nền tảng
 
-## 3. Danh mục Test Cases chịu trách nhiệm chính
-
-Phạm Ngọc Duy chịu trách nhiệm trực tiếp về mặt kỹ thuật và cung cấp bằng chứng cho **17 Test Cases**:
-
-- **Môi trường & Nền tảng:** `TC-01` (Setup Windows), `TC-35` (Security Headers / Cookies / Chặn Apache), `TC-36` (Database Upgrade V3→V4).
-- **Xác thực & Danh tính:** `TC-03` (Đăng ký thành công), `TC-04` (Validation lỗi đăng ký), `TC-05` (Rate limit brute-force), `TC-06` (Chặn Guest & Logout), `TC-07` (Reset password token), `TC-08` (Gửi mail qua SMTP), `TC-09` (Đổi mật khẩu trong Settings).
-- **Bảo mật & Cô lập dữ liệu:** `TC-13` (Multi-user Isolation cho Bookmarks & Search), `TC-30` (Cô lập Lịch sử Crawl Jobs), `TC-34` (Bảo vệ CSRF).
-- **Điều phối Crawler:** `TC-14` (Validation `max_pages`), `TC-15` (Chặn chạy 2 jobs đồng thời - 409 Conflict), `TC-21` (Xử lý và khôi phục job bị treo/ngắt đột ngột).
-- **Dữ liệu & Xuất file:** `TC-28` (Xuất file CSV chuẩn UTF-8 BOM, an toàn injection).
-
----
+- Cải thiện tìm kiếm và bộ lọc sách; đánh giá hiệu năng trên dữ liệu có kích thước tăng dần.
+- Bổ sung biểu đồ hoặc bộ lọc thời gian cho analytics khi dữ liệu hiện có hỗ trợ.
+- Hoàn thiện lịch sử biến động giá và thông tin nguồn/thời điểm thu thập để người dùng hiểu ngữ cảnh dữ liệu.
+- Cải thiện khả năng tiếp cận và trải nghiệm trên thiết bị di động.
+- Chỉ cân nhắc triển khai các tính năng mới sau khi nhóm đã thống nhất phạm vi, tiêu chí nghiệm thu và ảnh hưởng tới API/database.

@@ -16,8 +16,16 @@ class StaticAssetController
             abort(404);
         }
 
+        $contentType = match (strtolower(pathinfo($file, PATHINFO_EXTENSION))) {
+            'css' => 'text/css; charset=UTF-8',
+            'js' => 'text/javascript; charset=UTF-8',
+            'svg' => 'image/svg+xml',
+            default => 'application/octet-stream',
+        };
+
         return response()->file($file, [
             'Cache-Control' => 'public, max-age=3600',
+            'Content-Type' => $contentType,
             'X-Content-Type-Options' => 'nosniff',
         ]);
     }

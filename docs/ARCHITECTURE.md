@@ -66,7 +66,8 @@ The global catalogue and source data are shared. Account preferences, bookmarks,
 | HTTP routes, JSON contracts, sessions, CSRF, security headers | `routes/`, `app/Http/`, Laravel middleware |
 | Accounts, saved objects, book query/API operations, reset mail | `app/Services/`, `app/Http/Controllers/` |
 | Server-rendered pages | `templates/` with Twig and `app/Support/TwigRenderer.php` |
-| Frontend behavior and presentation | `static/js/`, `static/css/` |
+| Frontend behavior | `static/js/` (shared, auth, dashboard, books, workspace pages) |
+| Frontend styles | `static/css/style.css` (base), `explorer.css` (book explorer), `responsive.css` (base breakpoints), `platform.css` (theme and product UI), `platform-responsive.css` (product breakpoints) |
 | Crawl requests, parsing and worker lifecycle | `crawler/` |
 | Python SQLite connection and crawler persistence | `src/db.py`, `src/database/` |
 | Schema and migrations | `database/schema.sql`, `database/migrations/` |

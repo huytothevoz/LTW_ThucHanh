@@ -4,22 +4,48 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $Root
 
 $Php = Get-Command php -ErrorAction SilentlyContinue
+if (-not $Php) {
+    $PhpCandidates = @(
+        (Join-Path $env:SystemDrive 'xampp\php\php.exe'),
+        (Join-Path $env:SystemDrive 'laragon\bin\php\php.exe')
+    )
+    foreach ($Candidate in $PhpCandidates) {
+        if (Test-Path $Candidate) {
+            $Php = Get-Item $Candidate
+            $env:PATH = "$(Split-Path $Candidate -Parent);$env:PATH"
+            break
+        }
+    }
+}
 $Composer = Get-Command composer -ErrorAction SilentlyContinue
-if (-not $Php) { throw 'PHP 8.2+ is required. Install PHP and add php.exe to PATH.' }
-if (-not $Composer) { throw 'Composer is required. Install Composer and add composer.bat to PATH.' }
-& php -r 'exit(PHP_VERSION_ID >= 80200 ? 0 : 1);'
+if (-not $Composer) {
+    $LocalComposer = Join-Path $env:LOCALAPPDATA 'Programs\Composer\composer.bat'
+    if (Test-Path $LocalComposer) {
+        $Composer = Get-Item $LocalComposer
+        $env:PATH = "$(Split-Path $LocalComposer -Parent);$env:PATH"
+    }
+}
+if (-not $Php) { throw 'PHP 8.2+ was not found. Install PHP or add its folder to PATH (for XAMPP, usually C:\xampp\php).' }
+if (-not $Composer) { throw 'Composer was not found. Install Composer from https://getcomposer.org/download/ and reopen this window.' }
+$PhpExe = $Php.Source
+if (-not $PhpExe) { $PhpExe = $Php.FullName }
+if (-not $PhpExe) { $PhpExe = $Php.Path }
+& $PhpExe -r 'exit(PHP_VERSION_ID >= 80200 ? 0 : 1);'
 if ($LASTEXITCODE -ne 0) { throw 'PHP 8.2 or newer is required.' }
 
 if (-not (Test-Path '.env')) {
     Copy-Item '.env.example' '.env'
 }
 Write-Host 'Installing Laravel dependencies ...' -ForegroundColor Cyan
-& composer install --no-interaction --prefer-dist
+$ComposerCommand = $Composer.Source
+if (-not $ComposerCommand) { $ComposerCommand = $Composer.Path }
+if (-not $ComposerCommand) { $ComposerCommand = $Composer.FullName }
+& $ComposerCommand install --no-interaction --prefer-dist
 if ($LASTEXITCODE -ne 0) { throw 'Composer dependency installation failed.' }
 
 $AppKeyLine = Get-Content '.env' | Where-Object { $_ -match '^APP_KEY=' } | Select-Object -First 1
 if (-not $AppKeyLine -or $AppKeyLine -eq 'APP_KEY=') {
-    & php artisan key:generate --no-interaction
+    & $PhpExe artisan key:generate --no-interaction
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate the Laravel application key.' }
 }
 

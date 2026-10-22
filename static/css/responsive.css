@@ -1,0 +1,408 @@
+/* Responsive rules for the base workspace and book explorer. */ @media(max-width:1290px) {
+  .sidebar {
+    width:230px
+  }
+  .page-content {
+    padding:35px 34px 48px
+  }
+  .topbar {
+    padding:0 34px
+  }
+  .main-footer {
+    padding-left:34px;
+    padding-right:34px
+  }
+  .filter-form {
+    grid-template-columns:minmax(160px,1fr) 110px 110px auto auto;
+    gap:9px
+  }
+  .book-grid {
+    grid-template-columns:repeat(3,minmax(0,1fr))
+  }
+
+}
+@media(max-width:1060px) {
+  .sidebar {
+    width:215px
+  }
+  .page-content {
+    padding:30px 25px
+  }
+  .topbar {
+    padding:0 25px
+  }
+  .hero-art {
+    right:0;
+    width:42%
+  }
+  .stats-grid {
+    gap:12px
+  }
+  .metric-card {
+    padding:18px
+  }
+  .workspace-grid,.insights-grid {
+    grid-template-columns:1fr
+  }
+  .monitor-empty {
+    min-height:240px
+  }
+  .filter-form {
+    grid-template-columns:minmax(140px,1fr) 105px 105px;
+
+  }
+  .filter-button,.reset-button {
+    width:max-content
+  }
+  .book-grid {
+    grid-template-columns:repeat(3,minmax(0,1fr))
+  }
+
+}
+@media(max-width:760px) {
+  .sidebar {
+    position:fixed;
+    height:100vh;
+    width:264px;
+    transform:translateX(-110%);
+    transition:transform .22s;
+    box-shadow:0 20px 60px rgba(0,0,0,.25)
+  }
+  .sidebar.open {
+    transform:translateX(0)
+  }
+  .mobile-overlay {
+    position:fixed;
+    inset:0;
+    background:rgba(12,22,45,.55);
+    z-index:19
+  }
+  .mobile-overlay:not([hidden]) {
+    display:block
+  }
+  .mobile-menu {
+    display:grid;
+    place-items:center;
+    border:0;
+    background:transparent;
+    color:#4d5b78;
+    padding:6px
+  }
+  .topbar {
+    height:65px;
+    padding:0 20px
+  }
+  .page-content {
+    padding:29px 20px 40px
+  }
+  .main-footer {
+    padding:0 20px 20px;
+    flex-wrap:wrap
+  }
+  .page-heading h1 {
+    font-size:32px
+  }
+  .page-date {
+    display:none
+  }
+  .topbar-right {
+    gap:12px
+  }
+  .topbar-local {
+    display:none
+  }
+  .topbar-divider {
+    display:none
+  }
+  .hero {
+    min-height:245px
+  }
+  .hero-text {
+    max-width:75%;
+    padding:30px
+  }
+  .hero h2 {
+    font-size:29px
+  }
+  .hero-art {
+    opacity:.5;
+    right:-16%;
+    width:57%
+  }
+  .stats-grid {
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:10px
+  }
+  .metric-card {
+    padding:15px
+  }
+  .metric-value {
+    font-size:25px
+  }
+  .metric-value.metric-last {
+    font-size:17px
+  }
+  .metric-label {
+    font-size:10px
+  }
+  .metric-foot {
+    font-size:9px
+  }
+  .metric-overline {
+    font-size:8px
+  }
+  .book-grid {
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+  .books-intro-content {
+    max-width:78%;
+    padding:30px
+  }
+  .books-intro-decoration {
+    right:-3%;
+    opacity:.6
+  }
+
+}
+@media(max-width:540px) {
+  .page-content {
+    padding:25px 15px 35px
+  }
+  .topbar {
+    padding:0 15px
+  }
+  .main-footer {
+    padding:0 15px 20px
+  }
+  .page-heading {
+    margin-bottom:22px
+  }
+  .eyebrow {
+    font-size:8px
+  }
+  .page-heading h1 {
+    font-size:31px
+  }
+  .page-heading p {
+    font-size:11px
+  }
+  .source-link {
+    font-size:10px
+  }
+  .hero {
+    min-height:259px
+  }
+  .hero-text {
+    max-width:100%;
+    padding:30px 25px
+  }
+  .hero-art {
+    width:62%;
+    right:-34%;
+    opacity:.28
+  }
+  .hero h2 {
+    font-size:29px
+  }
+  .hero-text>p {
+    max-width:265px;
+    font-size:11px
+  }
+  .stats-grid {
+    grid-template-columns:1fr;
+    margin-top:15px;
+    gap:10px
+  }
+  .metric-card {
+    display:grid;
+    grid-template-columns:auto 1fr;
+    align-items:center;
+    gap:0 16px;
+    padding:14px 17px
+  }
+  .metric-top {
+    grid-row:1/4;
+    grid-column:1;
+    align-items:start
+  }
+  .metric-overline {
+    display:none
+  }
+  .metric-value {
+    grid-row:1;
+    grid-column:2;
+    margin:0;
+    font-size:25px;
+    min-height:auto;
+    line-height:31px
+  }
+  .metric-value.metric-last {
+    font-size:21px
+  }
+  .metric-label {
+    grid-row:2;
+    grid-column:2;
+    margin:0
+  }
+  .metric-foot {
+    grid-row:3;
+    grid-column:2;
+    border:0;
+    padding:5px 0 0;
+    min-height:0
+  }
+  .panel {
+    padding:20px
+  }
+  .panel-head h3 {
+    font-size:17px
+  }
+  .workspace-grid,.insights-grid {
+    gap:15px;
+    margin-bottom:15px
+  }
+  .monitor-empty {
+    min-height:230px
+  }
+  .bottom-callout {
+    padding:15px;
+    gap:12px;
+    align-items:start
+  }
+  .bottom-callout p {
+    font-size:9px
+  }
+  .bottom-callout-icon {
+    width:34px;
+    height:34px
+  }
+  .callout-link {
+    margin-left:0;
+    align-self:flex-end;
+    font-size:0;
+    gap:0
+  }
+  .callout-link svg {
+    width:21px;
+    height:21px
+  }
+  .books-intro {
+    min-height:187px
+  }
+  .books-intro-content {
+    max-width:93%;
+    padding:24px
+  }
+  .books-intro h2 {
+    font-size:24px
+  }
+  .books-intro p {
+    max-width:245px
+  }
+  .books-intro-decoration {
+    opacity:.2;
+    right:-25%
+  }
+  .explorer-panel {
+    padding:22px 16px
+  }
+  .explorer-top {
+    align-items:start
+  }
+  .explorer-top h3 {
+    font-size:17px
+  }
+  .verified-label {
+    font-size:0
+  }
+  .verified-label svg {
+    width:21px;
+    height:21px
+  }
+  .filter-form {
+    grid-template-columns:1fr 1fr;
+    gap:11px
+  }
+  .search-field {
+    grid-column:1/-1
+  }
+  .filter-button {
+    grid-column:1/2;
+    justify-content:center;
+    width:100%
+  }
+  .reset-button {
+    grid-column:2/3;
+    width:100%
+  }
+  .book-grid {
+    gap:10px
+  }
+  .book-cover {
+    height:145px
+  }
+  .book-body {
+    padding:11px
+  }
+  .book-title {
+    font-size:11px;
+    min-height:47px
+  }
+  .book-price {
+    font-size:16px
+  }
+  .book-rating {
+    font-size:11px
+  }
+  .book-availability {
+    font-size:8px;
+    padding:4px 6px;
+    left:6px;
+    top:6px
+  }
+  .book-category {
+    font-size:8px
+  }
+  .book-price-row {
+    flex-wrap:wrap;
+    gap:3px
+  }
+  .page-picker {
+    gap:6px
+  }
+  .page-picker label span {
+    font-size:11px
+  }
+  .page-picker label small {
+    font-size:8px
+  }
+  .results-meta {
+    flex-wrap:wrap;
+    gap:10px
+  }
+  .results-sort {
+    font-size:9px
+  }
+  .pagination {
+    gap:9px
+  }
+  .rating-chart {
+    padding-left:0;
+    padding-right:0;
+    gap:6px
+  }
+  .main-footer {
+    font-size:9px
+  }
+
+}
+@media(prefers-reduced-motion:reduce) {
+  html {
+    scroll-behavior:auto
+  }
+  *,*:before,*:after {
+    animation-duration:.01ms!important;
+    transition-duration:.01ms!important
+  }
+
+}

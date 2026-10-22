@@ -9,7 +9,10 @@
   <title>{% block title %}CrawlInsight{% endblock %} | CrawlInsight</title>
   <link rel="icon" href="{{ asset('static/img/favicon.svg') }}" type="image/svg+xml">
   <link rel="stylesheet" href="{{ asset('static/css/style.css') }}">
+  <link rel="stylesheet" href="{{ asset('static/css/explorer.css') }}">
+  <link rel="stylesheet" href="{{ asset('static/css/responsive.css') }}">
   <link rel="stylesheet" href="{{ asset('static/css/platform.css') }}">
+  <link rel="stylesheet" href="{{ asset('static/css/platform-responsive.css') }}">
   {% block head %}{% endblock %}
 </head>
 <body class="{% if user and active_page %}is-workspace{% else %}is-marketing{% endif %}">

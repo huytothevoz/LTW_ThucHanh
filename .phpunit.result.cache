@@ -1,0 +1,1 @@
+{"version":2,"defects":[],"times":{"Tests\\ApiHealthTest::test_health_endpoint_preserves_the_public_contract":0.406,"Tests\\ApiHealthTest::test_unknown_api_routes_return_json_not_found":0.069}}

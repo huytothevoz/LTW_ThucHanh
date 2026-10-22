@@ -1,0 +1,253 @@
+/* Responsive overrides for the modern platform UI. */ @media(max-width:1150px) {
+  .stats-four {
+    grid-template-columns:repeat(2,1fr)
+  }
+  .landing-grid {
+    gap:40px
+  }
+  .landing-preview {
+    height:355px
+  }
+  .preview-body {
+    height:305px
+  }
+  .public-links {
+    margin-left:20px
+  }
+  .welcome-orbit {
+    margin-right:10px
+  }
+  .saved-grid {
+    grid-template-columns:1fr
+  }
+
+}
+@media(max-width:900px) {
+  .public-links {
+    display:none
+  }
+  .landing-grid {
+    grid-template-columns:1fr;
+    padding-top:75px
+  }
+  .landing-preview {
+    max-width:570px;
+    width:calc(100% - 30px);
+    margin:0 auto 28px;
+    transform:rotate(0)
+  }
+  .auth-decor {
+    display:none
+  }
+  .auth-section {
+    grid-template-columns:1fr;
+    min-height:calc(100vh - 150px)
+  }
+  .public-header-inner {
+    padding:0 18px
+  }
+  .workspace-welcome {
+    padding:27px
+  }
+  .welcome-orbit {
+    display:none
+  }
+  .feature-grid {
+    gap:12px
+  }
+  .feature-card {
+    padding:22px
+  }
+  .cta-inner {
+    flex-direction:column;
+    align-items:flex-start
+  }
+  .settings-grid {
+    grid-template-columns:1fr
+  }
+  .settings-security {
+    grid-column:auto
+  }
+
+}
+@media(max-width:700px) {
+  .public-header {
+    height:67px
+  }
+  .public-signin {
+    display:none
+  }
+  .public-actions {
+    gap:7px
+  }
+  .public-header .header-action {
+    padding:10px 11px;
+    font-size:11px
+  }
+  .public-brand {
+    font-size:17px
+  }
+  .public-brand-icon {
+    height:34px;
+    width:34px
+  }
+  .landing-container {
+    padding:0 20px
+  }
+  .landing-grid {
+    min-height:0;
+    padding-top:54px;
+    padding-bottom:60px
+  }
+  .landing-copy h1 {
+    font-size:37px;
+    letter-spacing:-1.3px
+  }
+  .landing-copy>p {
+    font-size:13px
+  }
+  .landing-preview {
+    height:310px;
+    width:100%
+  }
+  .preview-body {
+    height:260px
+  }
+  .preview-side {
+    width:72px
+  }
+  .preview-canvas {
+    padding:24px 15px
+  }
+  .floating-tag {
+    left:8px;
+    bottom:-20px
+  }
+  .landing-section {
+    padding:65px 0
+  }
+  .feature-grid,.workflow-grid {
+    grid-template-columns:1fr
+  }
+  .section-center h2,.cta-inner h2 {
+    font-size:29px
+  }
+  .section-center {
+    margin-bottom:29px
+  }
+  .workflow-grid {
+    gap:0
+  }
+  .public-footer {
+    flex-wrap:wrap;
+    padding:24px 18px
+  }
+  .stats-four {
+    grid-template-columns:repeat(2,minmax(0,1fr))
+  }
+  .stats-four .metric-card {
+    display:block;
+    padding:15px;
+    min-height:126px
+  }
+  .stats-four .metric-value {
+    font-size:24px
+  }
+  .stats-four .metric-label {
+    font-size:10px
+  }
+  .workspace-welcome h2 {
+    font-size:23px
+  }
+  .workspace-welcome {
+    min-height:195px
+  }
+  .topbar-right .topbar-local {
+    display:none
+  }
+  .saved-card {
+    min-height:155px
+  }
+  .saved-cover {
+    width:98px
+  }
+  .saved-info {
+    padding:12px
+  }
+  .spacious-panel {
+    padding:19px
+  }
+  .source-feature {
+    padding:23px;
+    align-items:flex-start
+  }
+  .source-feature-icon {
+    width:57px;
+    height:57px;
+    flex:none
+  }
+  .source-feature h2 {
+    font-size:23px
+  }
+  .settings-security {
+    grid-column:auto
+  }
+  .topbar {
+    gap:8px
+  }
+  .topbar-right {
+    gap:6px
+  }
+  .topbar-divider {
+    display:none
+  }
+  .faq-step {
+    gap:13px;
+    padding:21px
+  }
+  .faq-step>span {
+    font-size:18px
+  }
+  .catalog-tools .currency-note {
+    flex-basis:100%
+  }
+
+}
+@media(max-width:430px) {
+  .public-actions .lang-quick,.public-actions .mini-icon-btn {
+    min-width:30px;
+    width:30px;
+    height:31px
+  }
+  .public-brand {
+    font-size:15px
+  }
+  .landing-copy h1 {
+    font-size:32px
+  }
+  .hero-trust {
+    gap:9px
+  }
+  .auth-card h1 {
+    font-size:25px
+  }
+  .stats-four .metric-card {
+    padding:12px
+  }
+  .stats-four .metric-value {
+    font-size:23px
+  }
+  .saved-actions {
+    flex-direction:column;
+    align-items:flex-start
+  }
+
+}
+@media(prefers-reduced-motion:reduce) {
+  *,*::before,*::after {
+    scroll-behavior:auto!important;
+    transition-duration:.01ms!important;
+    animation-duration:.01ms!important
+  }
+
+}
