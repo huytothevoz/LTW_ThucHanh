@@ -1,6 +1,8 @@
 # Python and virtualenv
 .venv/
 venv/
+vendor/
+.phpunit.cache/
 __pycache__/
 *.py[cod]
 .pytest_cache/

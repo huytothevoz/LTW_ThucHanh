@@ -1,6 +1,6 @@
 # SQL RECIPES — kiểm tra CrawlInsight V3 bằng câu lệnh thật
 
-Mọi truy vấn dưới đây đều dành cho **SQLite 3**, không phải MySQL. Có thể chạy trong DB Browser for SQLite → **Execute SQL**. Các câu `SELECT` không thay đổi dữ liệu. Không ghi SQL trực tiếp vào Flask view; các API hiện tại dùng repository `src/database` và parameterized queries.
+Mọi truy vấn dưới đây đều dành cho **SQLite 3**, không phải MySQL. Có thể chạy trong DB Browser for SQLite → **Execute SQL**. Các câu `SELECT` không thay đổi dữ liệu. Không ghi SQL trực tiếp trong UI; Laravel API dùng service/query có parameter binding, còn crawler dùng `src/database` và parameterized queries.
 
 ## 1. Kiểm tra bảng, migration, dữ liệu
 

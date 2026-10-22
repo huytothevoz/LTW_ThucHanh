@@ -1,20 +1,20 @@
 {% extends 'base.html' %}
 {% from '_icons.html' import icon %}
-{% block title %}{{ t('signin') if mode=='login' else t('signup') if mode=='register' else t('reset_password') }}{% endblock %}
+{% block title %}{{ mode == 'login' ? t('signin') : (mode == 'register' ? t('signup') : t('reset_password')) }}{% endblock %}
 {% block auth_content %}
 <section class="auth-section"><div class="auth-decor"><div class="auth-decor-eyebrow">CRAWLINSIGHT / {{ t('workspace')|upper }}</div><h2>{{ t('hero_title') }}</h2><p>{{ t('feature_three_desc') }}</p><div class="auth-abstract"><span class="auth-dot one"></span><span class="auth-dot two"></span><span class="auth-dot three"></span><div class="auth-sheet a"></div><div class="auth-sheet b"></div><div class="auth-sheet c"></div></div></div>
-<div class="auth-side"><div class="auth-card"><div class="auth-symbol">{{ icon('lock',25) if mode in ('login','reset') else icon('user',25) }}</div>
+<div class="auth-side"><div class="auth-card"><div class="auth-symbol">{{ mode in ['login','reset'] ? icon('lock',25) : icon('user',25) }}</div>
 <h1>{% if mode=='login' %}{{ t('auth_welcome') }}{% elif mode=='register' %}{{ t('auth_create') }}{% elif mode=='forgot' %}{{ t('auth_forgot_title') }}{% else %}{{ t('auth_reset_title') }}{% endif %}</h1>
 <p class="auth-intro">{% if mode=='login' %}{{ t('auth_welcome_sub') }}{% elif mode=='register' %}{{ t('auth_create_sub') }}{% elif mode=='forgot' %}{{ t('auth_forgot_desc') }}{% else %}{{ t('auth_reset_desc') }}{% endif %}</p>
 <form id="auth-form" data-mode="{{ mode }}" {% if mode=='reset' %}data-reset-token="{{ reset_token }}"{% endif %} novalidate>
 {% if mode=='register' %}<label for="full-name">{{ t('full_name') }}</label><div class="form-control">{{ icon('user',18) }}<input id="full-name" type="text" name="full_name" autocomplete="name" maxlength="100" required placeholder="Nguyễn Văn A"></div>{% endif %}
 {% if mode!='reset' %}<label for="auth-email">{{ t('email') }}</label><div class="form-control">{{ icon('mail',18) }}<input id="auth-email" type="email" name="email" autocomplete="email" maxlength="254" required placeholder="ban@example.com"></div>{% endif %}
-{% if mode in ('login','register','reset') %}<label for="auth-password">{{ t('new_password') if mode=='reset' else t('password') }}</label><div class="form-control">{{ icon('lock',18) }}<input id="auth-password" type="password" name="password" autocomplete="{{ 'new-password' if mode!='login' else 'current-password' }}" required minlength="{{ 10 if mode!='login' else 1 }}" maxlength="128" placeholder="••••••••••"><button type="button" class="reveal" data-reveal="auth-password" aria-label="Show password">{{ icon('search',17) }}</button></div>{% endif %}
-{% if mode in ('register','reset') %}<label for="confirm-password">{{ t('confirm_password') }}</label><div class="form-control">{{ icon('lock',18) }}<input id="confirm-password" type="password" name="confirm" autocomplete="new-password" required maxlength="128" placeholder="••••••••••"></div><p class="form-hint">{{ t('auth_reset_desc') }}</p>{% endif %}
+{% if mode in ['login','register','reset'] %}<label for="auth-password">{{ mode == 'reset' ? t('new_password') : t('password') }}</label><div class="form-control">{{ icon('lock',18) }}<input id="auth-password" type="password" name="password" autocomplete="{{ mode != 'login' ? 'new-password' : 'current-password' }}" required minlength="{{ mode != 'login' ? 10 : 1 }}" maxlength="128" placeholder="••••••••••"><button type="button" class="reveal" data-reveal="auth-password" aria-label="Show password">{{ icon('search',17) }}</button></div>{% endif %}
+{% if mode in ['register','reset'] %}<label for="confirm-password">{{ t('confirm_password') }}</label><div class="form-control">{{ icon('lock',18) }}<input id="confirm-password" type="password" name="confirm" autocomplete="new-password" required maxlength="128" placeholder="••••••••••"></div><p class="form-hint">{{ t('auth_reset_desc') }}</p>{% endif %}
 {% if mode=='login' %}<div class="auth-links"><a href="/forgot-password">{{ t('forgot') }}</a></div>{% endif %}
 <div class="form-alert" id="auth-error" role="alert" hidden></div><div class="form-success" id="auth-success" role="status" hidden></div>
 <button type="submit" class="btn-hero auth-submit" id="auth-submit">{% if mode=='login' %}{{ t('signin') }}{% elif mode=='register' %}{{ t('signup') }}{% elif mode=='forgot' %}{{ t('auth_send') }}{% else %}{{ t('reset_password') }}{% endif %} {{ icon('arrow-right',18) }}</button>
 </form>
 <div class="auth-bottom">{% if mode=='login' %}{{ t('auth_new_account') }} <a href="/register">{{ t('signup') }}</a>{% elif mode=='register' %}{{ t('auth_have_account') }} <a href="/login">{{ t('signin') }}</a>{% else %}<a href="/login">← {{ t('auth_back') }}</a>{% endif %}</div><div class="auth-trust">{{ icon('shield',16) }} {{ t('auth_terms') }}</div></div></div></section>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static',filename='js/auth.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ asset('static/js/auth.js') }}" defer></script>{% endblock %}

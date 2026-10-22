@@ -1,5 +1,9 @@
 # CrawlInsight API Contract — v2
 
+# Historical API baseline — superseded by the Laravel contract
+
+This document records the earlier Flask/Python API design and is retained for project history only. The current Laravel/PHP backend contract, runtime URL, and endpoint implementation are maintained in [`API_CrawlInsight_Consolidated.md`](../02_elaboration/API_CrawlInsight_Consolidated.md). Do not use the old port or stack description below for current setup.
+
 Base URL: `http://127.0.0.1:5000`. All JSON APIs begin with `/api`. Field names are `snake_case` exactly as in SRS §8. JSON examples below are **contract illustrations**, never production fixture data.
 
 ## 1. GET `/api/summary`

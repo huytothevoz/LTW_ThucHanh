@@ -2,7 +2,7 @@
 
 > **Trạng thái:** Database layer có thể khởi tạo, ghi nhận crawler, xem/kiểm tra và xuất dữ liệu. Đã chạy kiểm thử SQLite offline. **Chưa phải bằng chứng đã crawl dữ liệu live.**
 >
-> Stack hiện tại: Python 3.11/3.12 · Flask · Scrapy · **SQLite**. Dự án nằm trong `C:\xampp\htdocs\LTW-TH` **không có nghĩa backend đã chuyển sang PHP/MySQL**. Trang được chạy qua `http://127.0.0.1:5000`, không phải `http://localhost/LTW-TH`.
+> Stack hiện tại: Laravel/PHP 8.2+ · Python 3.11/3.12 + Scrapy worker · **SQLite**. PHP backend và Python crawler dùng chung file SQLite. Khi project nằm trong `htdocs`, database mặc định ở ngoài document root. Laravel chạy local tại `http://127.0.0.1:8000`, không truy cập qua `http://localhost/LTW-TH`.
 
 ## 1. Mục tiêu và nguyên tắc
 
@@ -40,7 +40,7 @@ database/
 Code chịu trách nhiệm đọc/ghi là các file:
 
 ```text
-src/db.py                       # API tương thích Flask và Scrapy, facade
+src/db.py                       # Python crawler/database facade
 src/database/connection.py      # Path, kết nối, timezone, foreign_keys
 src/database/migrations.py      # Bootstrap và nâng cấp v2 -> v3 + sao lưu
 src/database/books.py           # Validation, upsert, phân loại thay đổi, tìm kiếm
@@ -125,7 +125,7 @@ Lệnh `rows`, `tables`, `describe`, `check`, `export` **chỉ mở cơ sở d�
 
 ## 7. Nâng cấp từ phiên bản 2 bảng trước đây
 
-`python -m database.tools.db_cli init` tự phát hiện schema v2 cũ (`books`, `crawl_jobs`) và tạo bản sao lưu `*.before-v3-<UTC>.sqlite3` **trước khi chuyển đổi**. Để an toàn cần **dừng Flask và crawler** trước khi upgrade. Bản ghi sách và job cũ được copy sang bảng mới, tạo `categories` phù hợp; không xóa trắng dữ liệu. Sau đó chạy `check` và so sánh row counts.
+`python -m database.tools.db_cli init` tự phát hiện schema v2 cũ (`books`, `crawl_jobs`) và tạo bản sao lưu `*.before-v3-<UTC>.sqlite3` **trước khi chuyển đổi**. Để an toàn cần **dừng Laravel và crawler** trước khi upgrade. Bản ghi sách và job cũ được copy sang bảng mới, tạo `categories` phù hợp; không xóa trắng dữ liệu. Sau đó chạy `check` và so sánh row counts.
 
 Trước khi thao tác trên database quan trọng nên tự backup chủ động:
 
@@ -141,7 +141,7 @@ Không dùng `schema.sql` để ghi đè DB hiện có! File đó dùng đọc h
 - `UNIQUE`: một `source_url` tối đa một sách; một job chỉ một observation cho một sách; tối đa một job ở trạng thái PENDING/RUNNING nhờ partial unique index.
 - `CHECK`: giá không âm, rating 1–5, max_pages 1–3, số trang đã xử lý không vượt giới hạn, counters không âm, `items_saved = new_books + existing_books`.
 - **Transactions (`BEGIN IMMEDIATE`)**: thêm/cập nhật sách, tạo category, ghi audit và tăng job counter hoàn tất cùng nhau hoặc cùng rollback.
-- **WAL + busy timeout**: hỗ trợ API Flask đọc cùng lúc crawler ghi, phù hợp một máy học tập.
+- **WAL + busy timeout**: hỗ trợ Laravel đọc cùng lúc crawler ghi, phù hợp một máy học tập.
 - **Parameterized SQL**: bộ lọc/tìm kiếm không chèn raw input vào câu SQL.
 - **Idempotent job item**: một sách nếu lỡ nhận hai lần trong cùng job không đếm lần thứ hai.
 
@@ -150,7 +150,7 @@ Không dùng `schema.sql` để ghi đè DB hiện có! File đó dùng đọc h
 - Chưa triển khai MySQL/phpMyAdmin — cần một phiên bản backend MySQL riêng nếu nhóm quyết định đổi stack.
 - Đây là local single-machine; chưa có tài khoản, phân quyền hay dữ liệu người dùng.
 - Chưa kiểm chứng crawling live từ nguồn web ở môi trường soạn file; kiểm thử offline database/fixture không thay cho live acceptance.
-- Không sửa bảng SQLite bằng cách xóa `.db` khi Flask/crawler đang chạy.
+- Không sửa bảng SQLite bằng cách xóa `.db` khi Laravel/crawler đang chạy.
 
 Đọc tiếp: [`DATA_DICTIONARY.md`](DATA_DICTIONARY.md), [`SQL_RECIPES.md`](SQL_RECIPES.md), [`../docs/SRS_ADDENDUM_DATABASE_V3.md`](../docs/SRS_ADDENDUM_DATABASE_V3.md).
 

@@ -5,16 +5,16 @@
 **Pha RUP:** `02_elaboration` · **Trạng thái:** Baseline hợp đồng API theo source V4, chờ nhóm review & xác minh E2E.  
 **Tài liệu liên quan:** `SRS_CrawlInsight_Consolidated.md` (SRS 4.2), `../03_construction/IMPLEMENTATION_STATUS_Consolidated.md`.
 
-> **Nguồn hợp nhất:** `docs/API.md` (hợp đồng V2), `docs/API_V4.md` (V4), mã thực tế trong `app.py`, `src/web/auth.py`, `src/web/workspace.py`, `src/web/security.py`, `src/database/`. Tài liệu này **thay thế cả API V2 lẫn API_V4**, không nối hai danh sách endpoint mâu thuẫn nhau. Đường dẫn và trạng thái bên dưới mô tả **code hiện có**, không chứng minh đã nghiệm thu HTTP thực tế trên Windows.
+> **Nguồn hợp nhất:** `docs/API.md` (hợp đồng V2), `docs/API_V4.md` (V4), và backend hiện tại trong `routes/web.php`, `app/Http/Controllers/`, `app/Services/`, Laravel middleware cùng crawler/database Python. Tài liệu này **thay thế cả API V2 lẫn API_V4**, không nối hai danh sách endpoint mâu thuẫn nhau. Đường dẫn và trạng thái bên dưới mô tả **code hiện có**, không chứng minh đã nghiệm thu HTTP thực tế trên Windows.
 
 ## 1. Mục đích và phạm vi
 
-API cung cấp dữ liệu giữa frontend Flask/Jinja + JavaScript và server Flask, gồm: xác thực, hồ sơ, cài đặt cá nhân, tạo/giám sát crawl job, duyệt sách, lưu sách, lịch sử, thống kê và xuất CSV. Python/Scrapy ghi SQLite thông qua `src.db` và các module `src/database/`; **không có một crawler REST service riêng**.
+API cung cấp dữ liệu giữa frontend Twig + JavaScript và Laravel/PHP, gồm: xác thực, hồ sơ, cài đặt cá nhân, tạo/giám sát crawl job, duyệt sách, lưu sách, lịch sử, thống kê và xuất CSV. Python/Scrapy chỉ chạy worker crawler và ghi SQLite qua `src.db` cùng `src/database/`; **không có một crawler REST service riêng**.
 
-- **Base URL local:** `http://127.0.0.1:5000` (đổi port qua `.env` nếu cần); tất cả JSON API có tiền tố `/api`.
+- **Base URL local:** `http://127.0.0.1:8000`; tất cả JSON API có tiền tố `/api`.
 - **Phiên bản URL:** baseline **không dùng** `/api/v1` hay `/api/crawl-jobs`; không tự ý đổi endpoint nếu chưa cập nhật frontend, test và SRS.
 - **Website crawl:** chỉ `https://books.toscrape.com/`, 1–3 trang catalogue/job, mỗi thời điểm tối đa một job toàn hệ thống.
-- **Phạm vi ứng dụng:** chạy local Flask + SQLite. Lưu project trong `htdocs/LTW-TH` **không biến ứng dụng thành PHP** và không được serve nguồn/DB trực tiếp bằng Apache.
+- **Phạm vi ứng dụng:** Laravel/PHP chạy local cùng SQLite; Python chỉ phục vụ crawler. Không serve source hoặc SQLite trực tiếp bằng Apache.
 - **Mục tiêu tài liệu:** để người làm frontend, backend, crawler hiểu giống nhau về tên field, quyền truy cập, lỗi và ví dụ payload.
 
 ## 2. Quy ước giao tiếp và bảo mật
@@ -279,7 +279,7 @@ Response minh họa lược bớt trường: đối tượng `job` thực tế l
 - **200**, `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="crawlinsight-books.csv"`.
 - Có BOM UTF-8 để mở Excel; tiêu đề `id,title,price_gbp,rating,category,availability,source_url`.
 - Kết quả là **kho sách dùng chung**, không phải chỉ sách đã lưu; stream theo record, giá chuyển pence/100 thành GBP 2 chữ số.
-- **Điểm cần kiểm thử:** nội dung xuất từ HTML chưa được chứng minh chống CSV formula injection; phải thêm test/escape trước khi chốt TC-28.
+- Text cells beginning with formula-significant characters are prefixed to reduce CSV formula injection risk; validate this behavior with Excel/LibreOffice before closing TC-28.
 
 ## 8. Mã lỗi và nguyên tắc frontend
 
@@ -300,19 +300,19 @@ Frontend luôn kiểm tra `response.ok`, không chỉ parse JSON. Không hiển 
 
 | Nhóm FR trong SRS 4.2 | API/route tương ứng | Source owner | TC cần nghiệm thu |
 |---|---|---|---|
-| FR-PUB-01..04 | `/`, `/login`, `/register` | `app.py`, `templates/index.html` | TC-02 |
-| FR-AUT-01..10 | `/api/auth/*`, `/api/me/*` | `src/web/auth.py`, `src/database/accounts.py` | TC-03..09 |
-| FR-USR-01..05 | `/api/me/preferences`, `/settings`, `/books` | `accounts.py`, `common.js`, UI templates | TC-10..13 |
-| FR-CRW-01..12 | `/api/jobs`, `/api/jobs/{id}`, `/api/summary` | `app.py`, `crawler/*`, `src/database/jobs.py` | TC-14..22 |
-| FR-BOO-01..08 | `/api/books*`, `/api/bookmarks*`, `/api/saved-searches*`, CSV | `src/web/workspace.py`, `src/database/books.py` | TC-23..28 |
-| FR-WSP-01..06 | `/api/summary`, `/api/history`, `/api/analytics`, `/api/sources` | `workspace.py`, `templates/*` | TC-29..33 |
-| FR-PLT-01..05 | CSRF middleware, health, migrations, setup | `app.py`, `security.py`, `database/*`, `scripts/*` | TC-01, TC-34..37 |
+| FR-PUB-01..04 | `/`, `/login`, `/register` | `routes/web.php`, `PageController`, `templates/` | TC-02 |
+| FR-AUT-01..10 | `/api/auth/*`, `/api/me/*` | `ApiController`, `AccountService`, identity middleware | TC-03..09 |
+| FR-USR-01..05 | `/api/me/preferences`, `/settings`, `/books` | `AccountService`, `common.js`, Twig templates | TC-10..13 |
+| FR-CRW-01..12 | `/api/jobs`, `/api/jobs/{id}`, `/api/summary` | `ApiController`, `CrawlJobService`, `crawler/*` | TC-14..22 |
+| FR-BOO-01..08 | `/api/books*`, `/api/bookmarks*`, `/api/saved-searches*`, CSV | `ApiController`, `BookService`, `AccountService` | TC-23..28 |
+| FR-WSP-01..06 | `/api/summary`, `/api/history`, `/api/analytics`, `/api/sources` | `ApiController`, `templates/*` | TC-29..33 |
+| FR-PLT-01..05 | CSRF middleware, health, migrations, setup | Laravel middleware, `database/*`, `scripts/*` | TC-01, TC-34..37 |
 
 **Hợp đồng đóng băng tại V4.2:** nếu đổi field/status/route, hãy (1) tạo issue/change request, (2) sửa API Markdown này, (3) bổ sung unit/integration test, (4) cập nhật frontend, (5) cập nhật FR/TC trong SRS và Excel, (6) review trước merge. Không đổi API âm thầm bằng AI Agent.
 
 ## 10. Kiểm chứng còn thiếu trước khi gọi là ổn định
 
-1. Cài đủ dependencies Flask/Scrapy trên Windows, chạy các test từng bị skip và lưu báo cáo.
+1. Cài PHP/Composer và Python/Scrapy trên Windows, chạy PHPUnit và crawler tests.
 2. HTTP integration cho login→create job→detail→books→bookmark→logout, dùng cùng cookie jar và CSRF.
 3. Test redirect/session khi đổi mật khẩu và khi reset password từ hai trình duyệt khác nhau.
 4. Crawl thật 1–2 trang Books to Scrape, xem logs, DB, giá pence và trạng thái terminal.

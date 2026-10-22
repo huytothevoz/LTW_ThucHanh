@@ -1,72 +1,81 @@
-> **Database V3 note:** Cấu trúc hai bảng được thay bằng 9 bảng chuẩn hóa và 3 SQL views theo [`SRS_ADDENDUM_DATABASE_V3.md`](SRS_ADDENDUM_DATABASE_V3.md) và [`../database/DATA_DICTIONARY.md`](../database/DATA_DICTIONARY.md). API và UI contract không thay đổi.
-
 # CrawlInsight — Technical Architecture
 
-**SRS version:** 2.0 (10-day baseline) · **Scope:** 1 educational source / 2 screens / 2 SQLite tables.
+**Current stack:** Laravel 12 / PHP 8.2+ for the web backend, Scrapy / Python 3.11–3.12 for the crawler worker, and shared SQLite V4 storage.
 
-## 1. Sơ đồ kiến trúc
+## 1. System overview
 
 ```mermaid
 flowchart TD
-  UI[Browser: Overview + Book Explorer] <-->|HTTP /api/*| WEB[Flask app.py]
-  WEB <--> DB[(SQLite: books + crawl_jobs)]
-  WEB -->|subprocess.Popen Python| RUN[crawler.run_job]
+  UI[Browser: public and workspace pages] <-->|HTTP /api/*| WEB[Laravel PHP application]
+  WEB <--> DB[(Shared SQLite V4)]
+  WEB -->|spawn Python worker| RUN[crawler.run_job]
   RUN --> SCRAPY[Scrapy BooksSpider]
   SCRAPY <-->|HTTPS + robots.txt + delay| SITE[books.toscrape.com]
   SCRAPY --> PARSER[crawler.parser]
   PARSER --> PIPE[SQLiteBookPipeline]
-  PIPE -->|BEGIN IMMEDIATE + atomic write| DB
+  PIPE -->|transactional upsert| DB
   UI -.->|GET /api/jobs/N every 2 seconds| WEB
 ```
 
-Crawl bắt đầu trong child process; Flask xử lý HTTP không chờ spider chạy xong. Thống kê/count chỉ lấy từ SQLite, không sử dụng fixture trên frontend.
+Laravel owns HTTP routing, session/CSRF security, templates, account and workspace services, and crawl-job creation. It starts the bounded Python worker asynchronously and serves the job state from SQLite without waiting for the crawl to finish. The crawler owns source requests, parsing, and writes of crawl results and job progress through `src.db`.
 
-## 2. Luồng tạo job
+## 2. Crawl-job lifecycle
 
 ```mermaid
 sequenceDiagram
   participant U as Browser
-  participant W as Flask
+  participant W as Laravel
   participant D as SQLite
-  participant R as Child process
-  participant S as Scrapy Spider
+  participant R as Python worker
+  participant S as Scrapy spider
   U->>W: POST /api/jobs {max_pages:1}
-  W->>D: BEGIN IMMEDIATE; check active; INSERT PENDING; COMMIT
+  W->>D: BEGIN IMMEDIATE; verify no active job; INSERT PENDING
   W->>R: python -m crawler.run_job --job-id N
   W-->>U: 202 job id / PENDING
   R->>D: PENDING -> RUNNING
   R->>S: Start spider
-  S->>S: Validate URLs / follow Next, detail links
-  S->>D: Atomic upsert book + increment counters
+  S->>D: Validate, parse, upsert books and counters
   loop During run
-    U->>W: GET /api/jobs/N (every 2s)
-    W->>D: Read counters
+    U->>W: GET /api/jobs/N
+    W->>D: Read owner-scoped state and events
     W-->>U: Current state
   end
   R->>D: RUNNING -> COMPLETED/FAILED
-  U->>W: GET /api/summary
-  W-->>U: Actual stats, 5 recent jobs
 ```
+
+PHP and Python must resolve `CRAWLINSIGHT_DB_PATH` to the exact same SQLite file. Laravel passes the resolved database path to the child process explicitly. If the project is under `htdocs`, the default database location is outside the served directory.
 
 ## 3. Database invariants
 
-`books.source_url` UNIQUE. `first_seen_at` giữ nguyên khi update; `last_seen_at` ghi lại thời điểm upsert. `items_saved = new_books + existing_books` enforced bởi CHECK và transaction dùng `BEGIN IMMEDIATE`. `books_found` là **URL chi tiết được lên lịch**, không phải HTTP requests. `catalogue_pages_done` là **catalogue đã phân tích thành công**. Không có bảng join job-book trong phiên bản này.
+`books.source_url` is unique. `first_seen_at` is retained when a book is updated; `last_seen_at` records the latest upsert. `items_saved = new_books + existing_books` is enforced by a check constraint and atomic transaction. `books_found` counts detail URLs scheduled, not HTTP requests; `catalogue_pages_done` counts successfully parsed catalogue pages.
 
-## 4. Crawler steps
+The global catalogue and source data are shared. Account preferences, bookmarks, saved searches, and jobs are user-scoped. Existing V4 SQL schema and migrations remain the database source of truth; the PHP app does not create a parallel schema.
 
-- Scrapy bắt đầu tại `/`, lấy `article.product_pod h3 a` (URL detail).
-- Chỉ chấp nhận HTTPS host `books.toscrape.com`, đường dẫn detail bắt đầu `/catalogue/` và kết thúc `/index.html`.
-- Dùng set chống lặp URL trong cùng job. Duyệt `li.next a` tối đa `max_pages` catalogue; detail dùng `div.product_main h1`, `p.price_color`, `p.star-rating`, breadcrumb category, availability, image/UPC.
-- Scrapy `ROBOTSTXT_OBEY`, concurrency=1, delay=1s, retry=1; không nới hạn khi nguồn chậm.
-- Nếu response/HTML lỗi, ghi error_count, loại item lỗi, không tạo sản phẩm giả. Nếu vẫn lưu được sách và spider kết thúc bình thường, job completed with warnings.
+## 4. Crawler boundaries
 
-## 5. API ownership
+- Scrapy starts at the Books to Scrape catalogue and follows only validated HTTPS URLs on `books.toscrape.com`.
+- Only the configured source and bounded catalogue pages are supported; there is no arbitrary URL crawling or CAPTCHA bypass.
+- `ROBOTSTXT_OBEY`, one concurrent request, a one-second delay, and bounded retries remain enabled.
+- Invalid responses/items update job error evidence and do not create fake books.
+- The PHP service creates the job and event; the Python worker owns transitions after launch and records crawler progress/results.
 
-`app.py` phụ trách HTTP validation, template route, spawn process; `src/db.py` phụ trách database. Không có SQL trong templates/JS. `crawler/parser.py` xử lý HTML thành item; `crawler/pipelines.py` chỉ dùng DB abstraction. Không có mã JS đọc file SQLite hoặc điều khiển Python trực tiếp.
+## 5. Component ownership
+
+| Concern | Owner |
+|---|---|
+| HTTP routes, JSON contracts, sessions, CSRF, security headers | `routes/`, `app/Http/`, Laravel middleware |
+| Accounts, saved objects, book query/API operations, reset mail | `app/Services/`, `app/Http/Controllers/` |
+| Server-rendered pages | `templates/` with Twig and `app/Support/TwigRenderer.php` |
+| Frontend behavior and presentation | `static/js/`, `static/css/` |
+| Crawl requests, parsing and worker lifecycle | `crawler/` |
+| Python SQLite connection and crawler persistence | `src/db.py`, `src/database/` |
+| Schema and migrations | `database/schema.sql`, `database/migrations/` |
+
+The former Flask routes and Python account implementation have been removed. `app.py` is only a compatibility launcher for `php artisan serve`; it does not implement HTTP routes.
 
 ## 6. Limitations
 
-- Crawler không chạy recovery daemon; job có thể treo RUNNING sau OS/process kill, người vận hành phải xác minh và chạy `src.recover_job` thủ công.
-- Source hiện có thể thay HTML; selector/unit fixtures và live acceptance test cần kiểm tra trên máy có Internet.
-- Không có auth, không triển khai public, không thiết kế hiệu năng lớn/HA.
-- Giá GBP và ratings là dữ liệu giả lập của sandbox; không phục vụ thực tế kinh doanh.
+- No recovery daemon is included; an operating-system/process kill can leave a job marked RUNNING and requires operator inspection.
+- Live source selectors, SMTP delivery, browser behavior, and Windows process launching require runtime acceptance testing.
+- The application is for local academic development, not a production high-availability service.
+- Books to Scrape values are educational sandbox data, not commercial data.

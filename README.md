@@ -10,8 +10,9 @@
 
 *Web Crawling & Book Data Analytics Platform*
 
-![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=flat-square&logo=python&logoColor=white)
-![Flask](https://img.shields.io/badge/Flask-3.1-303030?style=flat-square&logo=flask&logoColor=white)
+![PHP](https://img.shields.io/badge/PHP-8.2%2B-777BB4?style=flat-square&logo=php&logoColor=white)
+![Laravel](https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square&logo=laravel&logoColor=white)
+![Python](https://img.shields.io/badge/Python%20crawler-3.11%20%7C%203.12-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Scrapy](https://img.shields.io/badge/Scrapy-2.13-60A839?style=flat-square)
 ![SQLite](https://img.shields.io/badge/SQLite-3-0B78A3?style=flat-square&logo=sqlite&logoColor=white)
 ![Languages](https://img.shields.io/badge/Interface-Vietnamese%20%7C%20English-3454D1?style=flat-square)
@@ -69,7 +70,7 @@ Sản phẩm hiện tập trung vào dữ liệu sách từ [Books to Scrape](ht
 
 ```mermaid
 flowchart LR
-    A[Người dùng] -->|Thao tác trên giao diện| B[Flask Web App]
+    A[Người dùng] -->|Thao tác trên giao diện| B[Laravel PHP Backend]
     B -->|Tạo job / đọc dữ liệu| C[(SQLite)]
     B -->|Khởi chạy tiến trình| D[Scrapy Crawler]
     D -->|Đọc HTML trong phạm vi cho phép| E[Books to Scrape]
@@ -95,12 +96,12 @@ Crawler chỉ làm việc với `https://books.toscrape.com/`, kiểm tra giới
 
 | Thành phần | Công nghệ | Công dụng |
 |---|---|---|
-| **Frontend** | HTML, CSS, JavaScript, Jinja2 | Giao diện, responsive, đa ngôn ngữ, tương tác với API |
-| **Web Backend** | Python, Flask | Routes, session, API JSON, xử lý nghiệp vụ |
-| **Crawler** | Python, Scrapy | Duyệt URL hợp lệ, request HTML, parsing, crawling pipeline |
+| **Frontend** | HTML, CSS, JavaScript, Twig | Giao diện, responsive, đa ngôn ngữ, tương tác với API |
+| **Web Backend** | PHP 8.2+, Laravel 12 | Routes, session, API JSON, xử lý nghiệp vụ |
+| **Crawler** | Python 3.11/3.12, Scrapy | Duyệt URL hợp lệ, request HTML, parsing, crawling pipeline |
 | **Database** | SQLite | Sách, nguồn, job, lịch sử, tài khoản và tùy chọn cá nhân |
 | **Testing** | pytest | Kiểm thử database, parser, bảo mật và API ở mức phù hợp |
-| **Môi trường phát triển** | Windows, Python venv, Git/GitHub | Chạy local và phối hợp nhóm |
+| **Môi trường phát triển** | Windows, PHP/Composer, Python venv, Git/GitHub | Chạy local và phối hợp nhóm |
 
 Database V4 gồm **15 bảng, 3 SQL views** và các migration theo phiên bản. Dữ liệu sách và nguồn dùng chung; bookmark, bộ lọc lưu và lịch sử lượt crawl được phân tách theo người dùng. Tài liệu mô tả cột/khóa/truy vấn: [`database/DATA_DICTIONARY.md`](database/DATA_DICTIONARY.md) và [`database/SQL_RECIPES.md`](database/SQL_RECIPES.md).
 
@@ -108,12 +109,14 @@ Database V4 gồm **15 bảng, 3 SQL views** và các migration theo phiên bả
 
 ```text
 LTW-TH/
-├── app.py                     # Flask application / route chính
+├── app.py                     # Compatibility launcher forwarding to Laravel
+├── artisan                    # Laravel CLI
+├── composer.json              # PHP dependencies and scripts
 ├── START_HERE.bat             # Thiết lập và chạy trên Windows
 ├── requirements.txt           # Python dependencies
 ├── .env.example               # Mẫu cấu hình, không chứa credentials
 │
-├── templates/                 # Trang HTML/Jinja: landing, auth, workspace...
+├── templates/                 # Twig-rendered HTML pages
 ├── static/
 │   ├── css/                   # Thiết kế giao diện và dark mode
 │   ├── js/                    # Tương tác UI, fetch API, i18n
@@ -132,15 +135,15 @@ LTW-TH/
 └── docs/                      # SRS, API, implementation status, report
 ```
 
-Xem chi tiết trách nhiệm từng module: [`PROJECT_STRUCTURE.md`](PROJECT_STRUCTURE.md).
+Xem chi tiết trách nhiệm từng module: [`PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md).
 
 ## 🚀 Chạy dự án trên máy cá nhân
 
 ### Yêu cầu
 
-- **Windows 10/11**, Python **3.11 hoặc 3.12**, Internet để cài thư viện và crawl nguồn thử nghiệm.
+- **Windows 10/11**, PHP **8.2+**, Composer, Python **3.11 hoặc 3.12**, Internet để cài thư viện và crawl nguồn thử nghiệm.
 - Trình duyệt hiện đại như Chrome hoặc Edge.
-- **Không bắt buộc cài XAMPP, Apache, PHP hay MySQL**: dự án chạy bằng Flask và SQLite.
+- SQLite được tích hợp sẵn trong PHP; không cần XAMPP, Apache hay MySQL để chạy local.
 
 ### Cách 1: Khởi chạy nhanh trên Windows
 
@@ -150,34 +153,32 @@ Clone hoặc tải repository, mở thư mục dự án rồi chạy:
 START_HERE.bat
 ```
 
-Script sẽ thiết lập môi trường Python riêng và khởi chạy ứng dụng. Sau đó truy cập:
+Script cài đặt Composer/Python dependencies, khởi tạo SQLite nếu cần và khởi chạy Laravel. Sau đó truy cập:
 
-**http://127.0.0.1:5000/**
+**http://127.0.0.1:8000/**
 
 ### Cách 2: Chạy bằng PowerShell
 
 ```powershell
-# Chạy trong thư mục gốc LTW-TH
-py -3.12 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -c "from src.db import init_db; init_db()"
-.\.venv\Scripts\python.exe app.py
+# Chạy một lần sau khi clone hoặc khi cần cài/cập nhật dependencies
+.\scripts\setup_windows.ps1
+
+# Chạy ứng dụng
+.\scripts\start_windows.ps1
 ```
 
-Nếu máy chỉ có Python 3.11, thay `py -3.12` bằng `py -3.11`.
-
-Ứng dụng mặc định **không có tài khoản mẫu** và cơ sở dữ liệu chạy thật **không chứa sẵn sách giả**. Hãy tự đăng ký tài khoản, đăng nhập và chạy thử một lượt crawl 1 trang để lấy dữ liệu từ nguồn được phép.
+Ứng dụng mặc định **không có tài khoản mẫu** và cơ sở dữ liệu chạy thật **không chứa sẵn sách giả**. Hãy tự đăng ký tài khoản, đăng nhập và chạy thử một lượt crawl 1 trang để lấy dữ liệu từ nguồn được phép. Cấu hình `CRAWLINSIGHT_DB_PATH` trong `.env` để PHP và worker Python cùng dùng một file SQLite.
 
 > [!IMPORTANT]
-> Nếu lưu project ở `C:\xampp\htdocs\LTW-TH`, đó chỉ là **vị trí thư mục**. Không truy cập bằng `http://localhost/LTW-TH`; hãy dùng URL Flask ở trên. Không công khai thư mục source qua Apache. Trước khi cập nhật phiên bản mới, cần sao lưu database đang sử dụng.
+> Nếu lưu project ở `C:\xampp\htdocs\LTW-TH`, không truy cập qua Apache; hãy dùng `http://127.0.0.1:8000/`. Database mặc định sẽ nằm ngoài `htdocs`. Trước khi cập nhật phiên bản mới, cần sao lưu database đang sử dụng.
 
 ### Kiểm thử
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -q
+.\scripts\run_tests_windows.ps1
 ```
 
-Ở lần kiểm tra source gần nhất ngày **21/10/2026**, bộ kiểm thử offline được báo cáo **50 passed, 4 skipped** do môi trường build chưa có Flask/Scrapy. Kết quả này **không thay thế** việc kiểm tra browser, HTTP, SMTP và crawling thật trên máy của nhóm. Tình trạng nghiệm thu: [`IMPLEMENTATION_STATUS_Consolidated.md`](docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md).
+PHP và Composer chưa có trong môi trường nơi migration được viết nên PHP/Laravel build, PHPUnit, HTTP, SMTP và crawler end-to-end chưa được chạy. Chạy script kiểm thử trên máy có PHP/Composer và Python; cập nhật kết quả tại [`Implementation Status`](docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md).
 
 ### Quên mật khẩu và cấu hình email
 
@@ -205,7 +206,7 @@ Xem hướng dẫn chi tiết: [`docs/README_TECHNICAL.md`](docs/README_TECHNICA
 | [API Specification V4.2](docs/02_elaboration/API_CrawlInsight_Consolidated.md) | Hợp đồng Frontend–Backend |
 | [Implementation Status V4.2](docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md) | Những gì đã code, đã test và còn cần làm |
 | [Database Dictionary](database/DATA_DICTIONARY.md) | Giải thích cấu trúc 15 bảng và dữ liệu |
-| [Project Structure](PROJECT_STRUCTURE.md) | Sơ đồ module, chức năng và file trong source |
+| [Project Structure](docs/PROJECT_STRUCTURE.md) | Sơ đồ module, chức năng và file trong source |
 | [Technical README](docs/README_TECHNICAL.md) | Cài đặt, cấu hình bảo mật và kiểm thử chi tiết |
 
 ## 👥 Nhóm phát triển
@@ -215,7 +216,7 @@ Dự án giữa kỳ học phần **Lập trình Web & Ứng dụng (503073)** �
 | Thành viên | Chuyên ngành | Trọng tâm phối hợp |
 |---|---|---|
 | **Võ Trịnh Quốc Huy** | Mạng máy tính & Truyền thông dữ liệu | Điều phối, Frontend/UI/UX, tích hợp và kiểm thử |
-| **Phạm Ngọc Duy** | Mạng máy tính & Truyền thông dữ liệu | Backend Flask, API, database và bảo mật |
+| **Phạm Ngọc Duy** | Mạng máy tính & Truyền thông dữ liệu | Backend Laravel/PHP, API, database và bảo mật |
 | **Nguyễn Trọng Quý** | Khoa học máy tính | Scrapy crawler, HTML parsing và xử lý dữ liệu |
 
 *Phân công trên là định hướng phối hợp hiện tại; đóng góp thực tế được ghi nhận qua issue, pull request và lịch sử commit.*
@@ -229,7 +230,7 @@ Dự án giữa kỳ học phần **Lập trình Web & Ứng dụng (503073)** �
 
 ## 🌍 English summary
 
-**CrawlInsight** is a Vietnamese-first, bilingual web crawling and book analytics project developed for the *Web Programming & Applications* course at Ton Duc Thang University. It uses **Scrapy** to collect structured book data from the educational **Books to Scrape** sandbox, **Flask** to provide a personalized multi-user web experience, and **SQLite** for durable storage. Key implemented modules include account management, crawl jobs, book exploration, saved books, analytics, language/theme preferences and CSV export.
+**CrawlInsight** is a Vietnamese-first, bilingual web crawling and book analytics project developed for the *Web Programming & Applications* course at Ton Duc Thang University. **Laravel/PHP** provides the web backend and **Scrapy/Python** remains the isolated crawler worker; both share **SQLite**. Key modules include account management, crawl jobs, book exploration, saved books, analytics, language/theme preferences and CSV export.
 
 **Current status:** Source implementation and offline database tests are available, while live crawling, browser-based end-to-end flows and SMTP delivery still require verification. The application is intended for local academic development, not production deployment.
 

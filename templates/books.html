@@ -25,4 +25,4 @@
 <dialog class="ci-dialog" id="save-filter-dialog" aria-labelledby="filter-dialog-title"><form id="save-filter-form"><h3 id="filter-dialog-title">{{ t('save_filter') }}</h3><label for="saved-filter-name">{{ t('saved_filters') }}</label><input type="text" id="saved-filter-name" maxlength="60" required placeholder="{{ t('save_filter') }}"><div class="dialog-actions"><button type="button" class="dialog-dismiss" data-close-dialog="save-filter-dialog">{{ t('back') }}</button><button type="submit" class="primary-button">{{ t('save_changes') }}</button></div></form></dialog>
 <dialog class="ci-dialog book-detail-dialog" id="book-detail-dialog" aria-labelledby="book-detail-title"><div class="dialog-actions"><button type="button" class="dialog-dismiss" data-close-dialog="book-detail-dialog" aria-label="Close">✕</button></div><div id="book-detail-content"></div></dialog>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='js/books.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ asset('static/js/books.js') }}" defer></script>{% endblock %}

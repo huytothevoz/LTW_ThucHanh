@@ -2,7 +2,7 @@
 
 **Thành viên:** Phạm Ngọc Duy  
 **Chuyên ngành:** Mạng máy tính & Truyền thông dữ liệu  
-**Trọng tâm phụ trách:** Backend Flask, API Endpoints, Database SQLite & An toàn bảo mật  
+**Trọng tâm phụ trách:** Backend Laravel/PHP, API Endpoints, Database SQLite & An toàn bảo mật
 **Dự án:** CrawlInsight (Web Crawling & Book Data Analytics Platform) — Đề tài 07 (503073)  
 
 ---
@@ -11,12 +11,12 @@
 
 | Khu vực | Files / Thư mục sở hữu | Trách nhiệm chính |
 |---|---|---|
-| **Flask Core & App** | `app.py` | Quản lý cấu hình `.env`, session lifetime, context processor, error handlers, khởi chạy process crawler. |
-| **Bảo mật & Session** | `src/web/security.py`, `src/web/auth.py` | CSRF guard (`X-CSRF-Token`), rate-limiting chống brute-force, hash mật khẩu (`scrypt`), session versioning để revoke phiên cũ. |
-| **Email & Khôi phục** | `src/web/mail.py` | Kết nối SMTP gửi mail khôi phục mật khẩu, token TTL/one-time use, chế độ fallback an toàn khi lỗi SMTP. |
-| **Workspace API** | `src/web/workspace.py` | Các API bảo vệ: `/api/summary`, `/api/books`, `/api/bookmarks`, `/api/saved-searches`, `/api/history`, xuất CSV UTF-8 BOM an toàn. |
+| **Laravel Core & App** | `bootstrap/`, `routes/web.php`, `app/Http/` | Cấu hình request/session, CSRF, error handling và khởi chạy crawler worker. |
+| **Bảo mật & Session** | `app/Http/Middleware/`, `app/Services/AccountService.php` | CSRF guard (`X-CSRF-Token`), rate limiting, hash mật khẩu (`scrypt`), session versioning để revoke phiên cũ. |
+| **Email & Khôi phục** | `app/Http/Controllers/ApiController.php`, `config/mail.php` | SMTP gửi mail khôi phục, token TTL/one-time use, lỗi gửi mail trả rõ ràng. |
+| **Workspace API** | `app/Http/Controllers/ApiController.php`, `app/Services/BookService.php` | Các API bảo vệ, ownership, tìm kiếm, thống kê và xuất CSV UTF-8 BOM. |
 | **Database & Migrations**| `src/database/*.py`, `database/migrations/*` | 15 bảng, 3 views, SQLite WAL mode, foreign keys, additive migration 001–004, script sao lưu & phục hồi dữ liệu. |
-| **Môi trường & Cách ly** | `START_HERE.bat`, `scripts/*`, `.htaccess` | Cách ly dữ liệu ngoài XAMPP Apache `htdocs`, ngăn ngừa rò rỉ `.env` và file `.sqlite3`. |
+| **Môi trường & Cách ly** | `START_HERE.bat`, `scripts/*`, `.htaccess` | Cài PHP/Composer + Python crawler, cách ly SQLite khỏi Apache `htdocs`, tránh lộ `.env` và file `.sqlite3`. |
 
 ---
 
@@ -27,7 +27,7 @@
 ### Giai đoạn 1: Thiết lập môi trường & Nền tảng dữ liệu (Day 1 - Day 3)
 | Mã Task | Ưu tiên | Yêu cầu (FR/NFR) | Nội dung công việc | Minh chứng nghiệm thu cần đạt | Trạng thái |
 |---|---|---|---|---|---|
-| **TK-004** | P0 | FR-PLT-04 | Setup môi trường Windows sạch: cài Python venv, pip install, chạy thử Flask local | Log cài đặt thành công, server lắng nghe tại `127.0.0.1:5000` | Chưa bắt đầu |
+| **TK-004** | P0 | FR-PLT-04 | Setup môi trường Windows sạch: cài PHP/Composer, Python venv, dependencies và chạy Laravel local | Log cài đặt thành công, server lắng nghe tại `127.0.0.1:8000` | Chưa bắt đầu |
 | **TK-005** | P0 | FR-PLT-03 | Kiểm tra database runtime V4: đọc 15 bảng, 3 views, `user_version=4`, `PRAGMA integrity_check` | Output SQL kiểm tra toàn vẹn, FK check = 0 | Chưa bắt đầu |
 | **TK-006** | P0 | FR-PLT-02 | Kiểm tra dự án dưới Apache XAMPP: xác nhận SQLite và file `.env` không bị truy cập trực tiếp | Log HTTP 403 / denied khi truy vấn file nhạy cảm từ Apache | Chưa bắt đầu |
 | **TK-013** | P0 | FR-AUT-01, FR-AUT-02 | E2E đăng ký, validation dữ liệu, kiểm tra trùng lặp email, đăng nhập/đăng xuất với cookie | Bằng chứng HTTP 201/400/401/200, user tạo mới đúng trong DB | Chưa bắt đầu |
@@ -79,4 +79,3 @@ Phạm Ngọc Duy chịu trách nhiệm trực tiếp về mặt kỹ thuật v�
 - **Dữ liệu & Xuất file:** `TC-28` (Xuất file CSV chuẩn UTF-8 BOM, an toàn injection).
 
 ---
-

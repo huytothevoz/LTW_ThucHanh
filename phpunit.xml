@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="vendor/autoload.php"
+         colors="true">
+    <testsuites>
+        <testsuite name="CrawlInsight PHP">
+            <directory>tests/php</directory>
+        </testsuite>
+    </testsuites>
+    <php>
+        <env name="APP_ENV" value="testing" force="true"/>
+        <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/>
+        <env name="APP_DEBUG" value="false"/>
+        <env name="CRAWLINSIGHT_DB_PATH" value=":memory:"/>
+        <env name="SESSION_DRIVER" value="array" force="true"/>
+        <env name="MAIL_MAILER" value="log" force="true"/>
+        <env name="SMTP_HOST" value="" force="true"/>
+        <env name="SMTP_USER" value="" force="true"/>
+        <env name="SMTP_PASSWORD" value="" force="true"/>
+        <env name="SMTP_FROM" value="" force="true"/>
+    </php>
+</phpunit>

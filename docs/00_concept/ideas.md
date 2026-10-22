@@ -17,7 +17,7 @@ Thông tin sách trên web xuất hiện dưới dạng nhiều trang HTML liên
 
 1. Người vận hành mở Dashboard, thấy kho sách rỗng nếu chưa crawl.
 2. Chọn 1–3 trang catalogue từ nguồn cố định Books to Scrape và nhấn Start.
-3. Flask ghi job vào SQLite, chạy child process Scrapy, UI theo dõi bằng HTTP polling.
+3. Laravel ghi job vào SQLite, chạy child process Python/Scrapy, UI theo dõi bằng HTTP polling.
 4. Spider theo link detail/Next, tôn trọng robots và tốc độ, trích xuất 6 trường chính, upsert chống trùng.
 5. Người dùng xem tổng sách, rating chart, job stats và Book Explorer.
 6. Nếu chạy lại cùng phạm vi, kho sách không bị nhân đôi.
@@ -31,10 +31,10 @@ Thông tin sách trên web xuất hiện dưới dạng nhiều trang HTML liên
 
 ## 5. Thiết kế và công nghệ
 
-- **UI:** HTML/Jinja + CSS responsive + Vanilla JS, không CDN; Dashboard và Book Explorer.
-- **Backend:** Flask routes + JSON API; dữ liệu SQLite 2 bảng.
+- **UI:** Twig + HTML, CSS responsive + Vanilla JS, không CDN; Dashboard và Book Explorer.
+- **Backend:** Laravel/PHP routes + JSON API; dữ liệu SQLite V4.
 - **Crawler:** Python Scrapy ở child process độc lập.
-- **Nền tảng:** Windows 10/11 local; Python 3.11/3.12; không cần XAMPP.
+- **Nền tảng:** Windows 10/11 local; PHP 8.2+/Composer cho web backend và Python 3.11/3.12 cho crawler.
 - **Thẩm mỹ:** bố cục dễ dùng với navigation cố định, header rõ ràng, dark sidebar + clean content, empty/loading/error states, không dùng số ảo.
 
 ## 6. Mức độ thành công
