@@ -198,6 +198,13 @@
   .topbar-right {
     gap:6px
   }
+  .notification-panel {
+    position:fixed;
+    top:76px;
+    right:12px;
+    width:min(360px,calc(100vw - 24px));
+    max-height:calc(100vh - 90px)
+  }
   .topbar-divider {
     display:none
   }

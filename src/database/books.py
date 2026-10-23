@@ -78,6 +78,12 @@ def save_book_for_job(job_id: int, book: dict) -> str:
             )) else 'UNCHANGED'
             if existing['price_pence']!=data['price_pence']:
                 con.execute('INSERT INTO book_price_history(book_id,job_id,old_price_pence,new_price_pence,changed_at) VALUES(?,?,?,?,?)', (existing['id'],job_id,existing['price_pence'],data['price_pence'],when))
+                price_history_id = con.execute('SELECT last_insert_rowid()').fetchone()[0]
+                con.execute(
+                    'INSERT OR IGNORE INTO price_change_notifications(user_id,book_id,price_history_id,created_at) '
+                    'SELECT user_id,?,?,? FROM bookmarks WHERE book_id=?',
+                    (existing['id'], price_history_id, when, existing['id']),
+                )
             con.execute('UPDATE books SET category_id=?,title=?,price_pence=?,rating=?,availability=?,image_url=?,upc=?,last_seen_at=?,last_crawl_job_id=? WHERE id=?', (category['id'],data['title'],data['price_pence'],data['rating'],data['availability'],data['image_url'],data['upc'],when,job_id,existing['id']))
             book_id=existing['id']
             counter='existing_books'

@@ -147,6 +147,120 @@ body {
 .topbar-right {
   gap:11px
 }
+.notification-center {
+  position:relative
+}
+.notification-toggle {
+  position:relative
+}
+.notification-count {
+  position:absolute;
+  top:-5px;
+  right:-5px;
+  min-width:17px;
+  height:17px;
+  padding:0 4px;
+  border:2px solid var(--white);
+  border-radius:999px;
+  background:#e05b6f;
+  color:#fff;
+  font-size:9px;
+  font-weight:800;
+  line-height:13px;
+  text-align:center
+}
+.notification-panel {
+  position:absolute;
+  z-index:50;
+  top:calc(100% + 12px);
+  right:0;
+  width:360px;
+  max-height:min(540px,calc(100vh - 100px));
+  overflow:auto;
+  padding:15px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--white);
+  box-shadow:0 18px 55px rgba(27,39,83,.18);
+  color:var(--ink)
+}
+.notification-panel[hidden] {
+  display:none
+}
+.notification-panel-head,.notification-item-heading,.notification-item-actions {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px
+}
+.notification-panel-head {
+  padding:2px 2px 12px;
+  border-bottom:1px solid var(--line)
+}
+.notification-panel-head strong {
+  font-size:14px
+}
+.notification-read-all,.notification-item-actions button,.notification-item-actions a {
+  border:0;
+  padding:0;
+  background:none;
+  color:var(--brand-strong);
+  font-size:11px;
+  font-weight:700;
+  text-decoration:none;
+  cursor:pointer
+}
+.notification-read-all:disabled,.notification-item-actions button:disabled {
+  opacity:.6;
+  cursor:wait
+}
+.notification-list {
+  display:grid
+}
+.notification-empty {
+  margin:0;
+  padding:24px 8px;
+  color:var(--muted);
+  font-size:12px;
+  text-align:center
+}
+.notification-item {
+  padding:13px 3px;
+  border-bottom:1px solid var(--line)
+}
+.notification-item:last-child {
+  border-bottom:0
+}
+.notification-item.unread {
+  border-left:3px solid var(--brand);
+  padding-left:10px
+}
+.notification-item-heading strong {
+  overflow:hidden;
+  font-size:12px;
+  text-overflow:ellipsis
+}
+.notification-item>p {
+  margin:6px 0;
+  color:var(--ink-2);
+  font-size:12px
+}
+.notification-date {
+  display:block;
+  color:var(--muted);
+  font-size:10px
+}
+.notification-item-actions {
+  justify-content:flex-start;
+  margin-top:9px
+}
+.notification-item-actions a {
+  color:var(--ink-2)
+}
+.notification-item-actions a:hover,.notification-item-actions button:hover,.notification-read-all:hover {
+  color:var(--brand);
+  text-decoration:underline
+}
 .page-content {
   max-width:1630px;
   width:100%;

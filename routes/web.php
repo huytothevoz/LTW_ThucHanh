@@ -49,6 +49,9 @@ Route::middleware('authenticated')->group(function (): void {
     Route::post('/api/saved-searches', [ApiController::class, 'saveSearch']);
     Route::delete('/api/saved-searches/{searchId}', [ApiController::class, 'deleteSearch'])->whereNumber('searchId');
     Route::get('/api/history', [ApiController::class, 'history']);
+    Route::get('/api/notifications', [ApiController::class, 'notifications']);
+    Route::patch('/api/notifications/read', [ApiController::class, 'markAllNotificationsRead']);
+    Route::patch('/api/notifications/{notificationId}/read', [ApiController::class, 'markNotificationRead'])->whereNumber('notificationId');
     Route::get('/api/analytics', [ApiController::class, 'analytics']);
     Route::get('/api/sources', [ApiController::class, 'sources']);
     Route::get('/api/exports/books.csv', [ApiController::class, 'exportBooks']);

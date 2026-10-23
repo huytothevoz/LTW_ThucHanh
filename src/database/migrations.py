@@ -9,7 +9,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from .connection import MIGRATIONS_DIR, connect, database_path, now_utc
 
-FILES = ('001_core.sql', '002_indexes.sql', '003_views.sql', '004_identity_and_workspace.sql')
+FILES = (
+    '001_core.sql',
+    '002_indexes.sql',
+    '003_views.sql',
+    '004_identity_and_workspace.sql',
+    '005_price_change_notifications.sql',
+)
 SOURCE_NAME = 'Books to Scrape'
 SOURCE_URL = 'https://books.toscrape.com/'
 SOURCE_HOST = 'books.toscrape.com'
@@ -41,11 +47,12 @@ def init_db() -> None:
             raise RuntimeError('Unrecognized source database version; refusing unsafe upgrade')
         if not is_legacy and 'sources' in tables:
             versions = {int(r[0]) for r in con.execute('SELECT version FROM schema_migrations')}
-            if versions not in ({1, 2, 3}, {1, 2, 3, 4}):
+            if versions not in ({1, 2, 3}, {1, 2, 3, 4}, {1, 2, 3, 4, 5}):
                 raise RuntimeError(f'Incomplete/unrecognized migration history: {versions}')
             if versions == {1, 2, 3}:
                 _backup_v3(con)
                 _apply_identity_upgrade(con)
+            _apply_notifications_upgrade(con)
             issues=con.execute('PRAGMA foreign_key_check').fetchall()
             if issues: raise RuntimeError(f'Foreign key check failed: {issues}')
             return
@@ -100,6 +107,7 @@ def init_db() -> None:
                 con.rollback()
             raise
         _apply_identity_upgrade(con)
+        _apply_notifications_upgrade(con)
         bad_fks = con.execute('PRAGMA foreign_key_check').fetchall()
         if bad_fks:
             raise RuntimeError(f'Schema created but foreign key check failed: {bad_fks}')
@@ -118,6 +126,21 @@ def _apply_identity_upgrade(con: sqlite3.Connection) -> None:
     con.executescript('BEGIN IMMEDIATE;\n' + script + '\n' +
         "INSERT INTO schema_migrations(version,filename,applied_at) VALUES(4,'004_identity_and_workspace.sql','" + when + "');\n" +
         'PRAGMA user_version=4;\nCOMMIT;')
+
+
+def _apply_notifications_upgrade(con: sqlite3.Connection) -> None:
+    """Add per-user price change notifications to v4 databases."""
+    existing = con.execute('SELECT 1 FROM schema_migrations WHERE version=5').fetchone()
+    if existing:
+        return
+    script = (MIGRATIONS_DIR / FILES[4]).read_text(encoding='utf-8')
+    when = now_utc()
+    con.executescript(
+        'BEGIN IMMEDIATE;\n' + script + '\n'
+        "INSERT INTO schema_migrations(version,filename,applied_at) "
+        "VALUES(5,'005_price_change_notifications.sql','" + when + "');\n"
+        'PRAGMA user_version=5;\nCOMMIT;'
+    )
 
 
 def _backup_v3(connection: sqlite3.Connection) -> Path:

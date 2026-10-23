@@ -1,6 +1,6 @@
--- CrawlInsight v4 | Reference SQL for a FRESH EMPTY install.
+-- CrawlInsight v5 | Reference SQL for a FRESH EMPTY install.
 
--- Runtime migrations 001..004 remain authoritative for existing users.
+-- Runtime migrations 001..005 remain authoritative for existing users.
 
 -- Includes one trusted source; NO books and NO user accounts.
 
@@ -24,6 +24,15 @@ CREATE TABLE book_price_history (
     changed_at TEXT NOT NULL,
     CHECK(old_price_pence != new_price_pence),
     UNIQUE(book_id,job_id)
+);
+
+CREATE TABLE price_change_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    book_id INTEGER NOT NULL REFERENCES books(id) ON DELETE CASCADE,
+    price_history_id INTEGER NOT NULL UNIQUE REFERENCES book_price_history(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL,
+    read_at TEXT
 );
 
 CREATE TABLE bookmarks (
@@ -191,6 +200,9 @@ CREATE INDEX idx_pages_job ON crawl_pages(job_id,page_number);
 
 CREATE INDEX idx_price_changes_book ON book_price_history(book_id,changed_at DESC);
 
+CREATE INDEX idx_price_notifications_user_unread
+    ON price_change_notifications(user_id,read_at,id DESC);
+
 CREATE INDEX idx_reset_user_expiry ON password_reset_tokens(user_id,expires_at);
 
 CREATE INDEX idx_saved_searches_user ON saved_searches(user_id,id DESC);
@@ -232,6 +244,8 @@ INSERT INTO schema_migrations(version,filename,applied_at) VALUES(3,'003_views.s
 
 INSERT INTO schema_migrations(version,filename,applied_at) VALUES(4,'004_identity_and_workspace.sql','2026-10-21T00:00:00Z');
 
+INSERT INTO schema_migrations(version,filename,applied_at) VALUES(5,'005_price_change_notifications.sql','2026-10-23T00:00:00Z');
+
 COMMIT;
 
-PRAGMA user_version=4;
+PRAGMA user_version=5;

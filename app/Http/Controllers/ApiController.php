@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Services\AccountService;
 use App\Services\BookService;
 use App\Services\CrawlJobService;
+use App\Services\PriceNotificationService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -370,6 +371,27 @@ class ApiController
         );
 
         return response()->json(['items' => array_map(static fn (object $row): array => (array) $row, $items)]);
+    }
+
+    public function notifications(Request $request): JsonResponse
+    {
+        return response()->json(PriceNotificationService::listForUser($this->user($request)['id']));
+    }
+
+    public function markNotificationRead(Request $request, int $notificationId): JsonResponse
+    {
+        if (!PriceNotificationService::markRead($this->user($request)['id'], $notificationId)) {
+            return $this->error('NOTIFICATION_NOT_FOUND', 'Không tìm thấy thông báo.', 404);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+    public function markAllNotificationsRead(Request $request): JsonResponse
+    {
+        PriceNotificationService::markAllRead($this->user($request)['id']);
+
+        return response()->json(['ok' => true]);
     }
 
     public function analytics(): JsonResponse

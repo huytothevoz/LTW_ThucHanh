@@ -176,5 +176,12 @@ The previous nine crawler tables remain unchanged except `crawl_jobs.user_id` (n
 | `saved_searches` | `id`, `user_id`, `name`, `query`, `min_price`, `max_price`, `created_at` | Personal search presets; max 20 per account, enforced in service logic. |
 | `password_reset_tokens` | `id`, `user_id`, `token_hash`, `expires_at`, `used_at`, `created_at` | One-time 20-minute reset proof; stores SHA-256 of random token, **not** raw token. |
 | `auth_attempts` | `id`, `subject_hash`, `attempted_at`, `success` | Login/reset request rate limiter; subject is hashed, not stored as raw IP/email. |
+| `price_change_notifications` | `id`, `user_id`, `book_id`, `price_history_id`, `created_at`, `read_at` | One notification per bookmarked user and observed price-history row; unique `price_history_id` prevents duplicate alerts. |
 
-**Important:** The runtime SQLite database is *not* a user database dump or demonstration data source. `database/schema.sql` is a V4 **fresh-install reference snapshot**; existing databases use `database/migrations/004_identity_and_workspace.sql` automatically via `init_db()`. Never publish the generated HTML report on live user tables: it could reveal email addresses and password hashes (which are still sensitive).
+## V5 addendum — per-user price change notifications
+
+Migration `005_price_change_notifications.sql` adds in-app notifications when a crawler observes a price change for a book a user has bookmarked. The notification, price-history row and book update are committed in the same SQLite transaction. Unchanged prices and books without bookmarks produce no notification. Notifications remain visible if the user later removes the bookmark; deleting the associated book or price-history row removes them.
+
+The authenticated API returns the latest 20 notifications and the unread count. Users can mark one notification or all of their notifications as read; every query and update is scoped to the current account.
+
+**Important:** The runtime SQLite database is *not* a user database dump or demonstration data source. `database/schema.sql` is a V5 **fresh-install reference snapshot**; existing databases use `database/migrations/005_price_change_notifications.sql` automatically via `init_db()`. Never publish the generated HTML report on live user tables: it could reveal email addresses and password hashes (which are still sensitive).

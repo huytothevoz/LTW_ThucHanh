@@ -88,6 +88,35 @@
           </div>
           <div class="topbar-right">
             <span class="topbar-local"><span class="local-pulse"></span>{{ t('workspace') }}</span>
+            <div class="notification-center" id="notification-center">
+              <button
+                class="mini-icon-btn notification-toggle"
+                id="notification-toggle"
+                type="button"
+                aria-label="{{ t('notifications') }}"
+                aria-controls="notification-panel"
+                aria-expanded="false"
+              >
+                {{ icon('bell',18) }}
+                <span class="notification-count" id="notification-count" hidden></span>
+              </button>
+              <section
+                class="notification-panel"
+                id="notification-panel"
+                aria-label="{{ t('notifications') }}"
+                hidden
+              >
+                <div class="notification-panel-head">
+                  <strong>{{ t('notifications') }}</strong>
+                  <button class="notification-read-all" id="notification-read-all" type="button" hidden>
+                    {{ t('mark_all_read') }}
+                  </button>
+                </div>
+                <div class="notification-list" id="notification-list" aria-live="polite">
+                  <p class="notification-empty">{{ t('loading') }}</p>
+                </div>
+              </section>
+            </div>
             <button class="mini-icon-btn" id="theme-quick" title="Dark mode" aria-label="Toggle theme">
               {{ icon('moon',18) }}
             </button>
