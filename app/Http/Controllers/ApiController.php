@@ -262,19 +262,25 @@ class ApiController
         return response()->json($result);
     }
 
+    public function categories(): JsonResponse
+    {
+        return response()->json(['items' => BookService::categories()]);
+    }
+
     public function books(Request $request): JsonResponse
     {
         $pageValue = $request->query('page', '1');
         $page = is_string($pageValue) && ctype_digit($pageValue) ? (int) $pageValue : 0;
         $query = $request->query('q', '');
+        $category = $request->query('category');
         $low = $request->query('min_price');
         $high = $request->query('max_price');
-        if (!is_string($query) || ($low !== null && !is_string($low)) || ($high !== null && !is_string($high))) {
+        if (!is_string($query) || ($category !== null && !is_string($category)) || ($low !== null && !is_string($low)) || ($high !== null && !is_string($high))) {
             return $this->error('INVALID_FILTER', 'Bộ lọc không hợp lệ.', 400);
         }
 
         try {
-            $result = BookService::search($query, $low, $high, $page);
+            $result = BookService::search($query, $low, $high, $page, $category);
         } catch (\DomainException $exception) {
             return $this->error('INVALID_FILTER', $exception->getMessage(), 400);
         }

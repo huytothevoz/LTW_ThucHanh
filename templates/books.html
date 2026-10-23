@@ -41,6 +41,14 @@
           <input id="search-query" name="q" type="search" autocomplete="off" maxlength="100" placeholder="{{ t('search_books') }}" />
         </div>
       </div>
+      <div class="category-field">
+        <label for="category-filter">{{ t('category') | default('Thể loại') }}</label>
+        <div class="input-with-prefix select-wrapper">
+          <select id="category-filter" name="category">
+            <option value="">{{ t('all_categories') | default('Tất cả thể loại') }}</option>
+          </select>
+        </div>
+      </div>
       <div class="price-field">
         <label for="min-price">{{ t('minimum_price') }}</label>
         <div class="input-with-prefix">
@@ -110,5 +118,5 @@
   </dialog>
 {% endblock %}
 {% block scripts %}
-  <script src="{{ asset('static/js/books.js') }}" defer></script>
+  <script src="{{ asset('static/js/books.js') }}?v=4.0.1" defer></script>
 {% endblock %}

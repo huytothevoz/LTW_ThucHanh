@@ -57,3 +57,66 @@ def test_html_missing_price_rejected():
     response = HtmlResponse(url=url, body=html.encode(), encoding="utf-8", request=Request(url))
     with pytest.raises(ParseError):
         parse_book(response)
+
+
+def test_html_missing_title_rejected():
+    scrapy = pytest.importorskip("scrapy")
+    from scrapy.http import HtmlResponse, Request
+    from crawler.parser import parse_book
+    url = "https://books.toscrape.com/catalogue/sample_book_9/index.html"
+    html = '<html><div class="product_main"><p class="price_color">£10.00</p><p class="star-rating One"></p>' \
+           '<p class="availability">In stock</p></div><ul class="breadcrumb"><li>Home</li>' \
+           '<li><a>Travel</a></li><li>Book</li></ul></html>'
+    response = HtmlResponse(url=url, body=html.encode(), encoding="utf-8", request=Request(url))
+    with pytest.raises(ParseError, match="Book title is missing"):
+        parse_book(response)
+
+
+def test_html_missing_category_rejected():
+    scrapy = pytest.importorskip("scrapy")
+    from scrapy.http import HtmlResponse, Request
+    from crawler.parser import parse_book
+    url = "https://books.toscrape.com/catalogue/sample_book_9/index.html"
+    html = '<html><div class="product_main"><h1>A Valid Title</h1><p class="price_color">£10.00</p>' \
+           '<p class="star-rating One"></p><p class="availability">In stock</p></div></html>'
+    response = HtmlResponse(url=url, body=html.encode(), encoding="utf-8", request=Request(url))
+    with pytest.raises(ParseError, match="Book category is missing"):
+        parse_book(response)
+
+
+def test_html_insecure_image_url_sanitized():
+    scrapy = pytest.importorskip("scrapy")
+    from scrapy.http import HtmlResponse, Request
+    from crawler.parser import parse_book
+    url = "https://books.toscrape.com/catalogue/sample_book_9/index.html"
+    html = '<html><div class="product_main"><h1>A Valid Title</h1><p class="price_color">£10.00</p>' \
+           '<p class="star-rating Three"></p><p class="availability">In stock</p></div>' \
+           '<ul class="breadcrumb"><li>Home</li><li><a>Travel</a></li><li>Book</li></ul>' \
+           '<div class="item active"><img src="http://books.toscrape.com/media/book.jpg"/></div></html>'
+    response = HtmlResponse(url=url, body=html.encode(), encoding="utf-8", request=Request(url))
+    item = parse_book(response)
+    assert item["image_url"] is None
+
+
+@pytest.mark.parametrize("invalid_price", ["", "12.34", "$12.34", "free", "£-10", "£abc", None])
+def test_price_invalid_inputs(invalid_price):
+    with pytest.raises(ParseError):
+        parse_price(invalid_price)
+
+
+@pytest.mark.parametrize("invalid_rating", [None, [], ["star-rating"], ["star-rating", "Zero"], ["Six"]])
+def test_rating_invalid_inputs(invalid_rating):
+    with pytest.raises(ParseError):
+        parse_rating(invalid_rating)
+
+
+@pytest.mark.parametrize("invalid_url", [
+    "https://books.toscrape.com:8080/catalogue/book/index.html",
+    "https://user:pass@books.toscrape.com/catalogue/book/index.html",
+    "https://books.toscrape.com/about/index.html",
+    "https://books.toscrape.com/catalogue/book/view.php",
+    "javascript:alert(1)",
+])
+def test_url_normalization_edge_cases(invalid_url):
+    assert normalise_url(invalid_url) is None
+

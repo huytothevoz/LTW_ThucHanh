@@ -140,7 +140,7 @@
 }
 .filter-form {
   display:grid;
-  grid-template-columns:minmax(230px,1fr) 122px 122px auto auto;
+  grid-template-columns:minmax(180px,1.2fr) minmax(140px,0.8fr) 110px 110px auto auto;
   align-items:end;
   gap:12px;
   margin-bottom:24px
@@ -151,6 +151,15 @@
   font-weight:770;
   color:#59677e;
   margin-bottom:9px
+}
+.category-field select {
+  border:0;
+  outline:none;
+  width:100%;
+  font-size:11px;
+  color:#3c4d6c;
+  background:transparent;
+  cursor:pointer
 }
 .input-with-icon,.input-with-prefix {
   height:44px;

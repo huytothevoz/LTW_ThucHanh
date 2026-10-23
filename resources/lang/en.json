@@ -62,6 +62,8 @@
     "catalog_title": "Explore the book collection",
     "catalog_sub": "Filter by title, original price and rating from the source.",
     "search_books": "Search by book title...",
+    "category": "Category",
+    "all_categories": "All Categories",
     "minimum_price": "Min price (£)",
     "maximum_price": "Max price (£)",
     "apply": "Apply",

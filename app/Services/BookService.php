@@ -30,10 +30,19 @@ class BookService
         ];
     }
 
-    public static function search(string $query, ?string $minPrice, ?string $maxPrice, int $page): array
+    public static function categories(): array
+    {
+        $rows = DB::select('SELECT id, name FROM categories ORDER BY name ASC');
+        return array_map(static fn (object $row): array => (array) $row, $rows);
+    }
+
+    public static function search(string $query, ?string $minPrice, ?string $maxPrice, int $page, ?string $category = null): array
     {
         if (mb_strlen($query) > 100) {
             throw new \DomainException('q must be <=100 characters');
+        }
+        if ($category !== null && mb_strlen($category) > 100) {
+            throw new \DomainException('category must be <=100 characters');
         }
         if ($page < 1 || $page > 100000) {
             throw new \DomainException('page must be between 1 and 100000');
@@ -51,6 +60,10 @@ class BookService
             $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($query));
             $conditions[] = "b.title LIKE ? ESCAPE '\\' COLLATE NOCASE";
             $bindings[] = '%'.$escaped.'%';
+        }
+        if ($category !== null && trim($category) !== '') {
+            $conditions[] = 'c.name = ? COLLATE NOCASE';
+            $bindings[] = trim($category);
         }
         if ($low !== null) {
             $conditions[] = 'b.price_pence>=?';

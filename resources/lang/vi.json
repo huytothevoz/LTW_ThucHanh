@@ -62,6 +62,8 @@
     "catalog_title": "Khám phá bộ sưu tập sách",
     "catalog_sub": "Lọc sách theo tiêu đề, giá gốc và đánh giá từ nguồn.",
     "search_books": "Tìm sách theo tên...",
+    "category": "Thể loại",
+    "all_categories": "Tất cả thể loại",
     "minimum_price": "Giá từ (£)",
     "maximum_price": "Giá đến (£)",
     "apply": "Áp dụng",

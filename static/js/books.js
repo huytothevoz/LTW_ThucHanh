@@ -4,7 +4,7 @@
   const { fetchJSON, toast, pounds, t, locale } = window.CrawlInsight;
   const $ = (id) => document.getElementById(id);
   let currentPage = 1;
-  let currentFilters = { q: '', min_price: '', max_price: '' };
+  let currentFilters = { q: '', category: '', min_price: '', max_price: '' };
   let lastRequestController = null;
   const pricePattern = /^(?:0|[1-9]\d{0,3})(?:\.\d{1,2})?$/;
   let bookmarkedIds = new Set();
@@ -65,21 +65,22 @@
     if (approved) link.href = approved;
     else { link.removeAttribute('href'); link.textContent = 'Source not available'; }
     body.append(link);
-    const actions = document.createElement('div'); actions.className='book-quick-actions';
-    const save = document.createElement('button');save.type='button';save.className='bookmark-button';
-    save.textContent=bookmarkedIds.has(book.id)?'♥ '+t('saved'):'♡ '+t('save');
+    const actions = document.createElement('div'); actions.className = 'book-quick-actions';
+    const save = document.createElement('button'); save.type = 'button'; save.className = 'bookmark-button';
+    save.textContent = bookmarkedIds.has(book.id) ? '♥ ' + t('saved') : '♡ ' + t('save');
     if (bookmarkedIds.has(book.id)) save.classList.add('saved');
-    save.addEventListener('click',async()=>{
-      const had=bookmarkedIds.has(book.id);
-      save.disabled=true;
-      try {await fetchJSON(`/api/bookmarks/${book.id}`,{method:had?'DELETE':'POST',body:had?undefined:'{}'});
-        if(had)bookmarkedIds.delete(book.id);else bookmarkedIds.add(book.id);
-        save.classList.toggle('saved',!had);save.textContent=!had?'♥ '+t('saved'):'♡ '+t('save');
-      }catch(error){toast(error.message,'error');}finally{save.disabled=false;}
+    save.addEventListener('click', async () => {
+      const had = bookmarkedIds.has(book.id);
+      save.disabled = true;
+      try {
+        await fetchJSON(`/api/bookmarks/${book.id}`, { method: had ? 'DELETE' : 'POST', body: had ? undefined : '{}' });
+        if (had) bookmarkedIds.delete(book.id); else bookmarkedIds.add(book.id);
+        save.classList.toggle('saved', !had); save.textContent = !had ? '♥ ' + t('saved') : '♡ ' + t('save');
+      } catch (error) { toast(error.message, 'error'); } finally { save.disabled = false; }
     });
-    const detail=document.createElement('button');detail.type='button';detail.className='detail-button';detail.textContent=t('details')+' →';
-    detail.addEventListener('click',()=>showBookDetail(book.id));
-    actions.append(save,detail);body.append(actions);
+    const detail = document.createElement('button'); detail.type = 'button'; detail.className = 'detail-button'; detail.textContent = t('details') + ' →';
+    detail.addEventListener('click', () => showBookDetail(book.id));
+    actions.append(save, detail); body.append(actions);
     card.append(cover, body);
     return card;
   }
@@ -93,19 +94,19 @@
     $('result-count').textContent = `${data.total} ${t('records')}`;
     const from = data.total ? (data.page - 1) * data.page_size + 1 : 0;
     const to = Math.min(data.total, data.page * data.page_size);
-    $('results-summary').textContent = locale==='vi'?`Đang xem ${from}–${to} / ${data.total} sách`:`Showing ${from}–${to} of ${data.total} books`;
+    $('results-summary').textContent = locale === 'vi' ? `Đang xem ${from}–${to} / ${data.total} sách` : `Showing ${from}–${to} of ${data.total} books`;
     const grid = $('book-grid');
     grid.replaceChildren();
     for (const book of items) grid.append(createBookCard(book));
     if (!items.length) {
-      const isFiltered = Boolean(currentFilters.q || currentFilters.min_price || currentFilters.max_price);
+      const isFiltered = Boolean(currentFilters.q || currentFilters.category || currentFilters.min_price || currentFilters.max_price);
       $('books-empty-description').textContent = isFiltered
         ? t('emptyBooks')
         : data.total ? 'This page is empty. Go to the previous page.'
           : t('emptyCollection');
     }
     $('pagination').hidden = data.total_pages <= 1;
-    $('page-label').textContent = locale==='vi'?`Trang ${data.page}/${data.total_pages}`:`Page ${data.page} of ${data.total_pages}`;
+    $('page-label').textContent = locale === 'vi' ? `Trang ${data.page}/${data.total_pages}` : `Page ${data.page} of ${data.total_pages}`;
     $('prev-page').disabled = data.page <= 1;
     $('next-page').disabled = data.page >= data.total_pages;
   }
@@ -151,6 +152,7 @@
   function submitFilters() {
     const min = $('min-price').value.trim();
     const max = $('max-price').value.trim();
+    const cat = $('category-filter') ? $('category-filter').value.trim() : '';
     if (!validatePrice(min) || !validatePrice(max)) {
       toast(t('invalidPrice'), 'error');
       return;
@@ -159,7 +161,7 @@
       toast(t('invalidRange'), 'error');
       return;
     }
-    currentFilters = { q: $('search-query').value.trim(), min_price: min, max_price: max };
+    currentFilters = { q: $('search-query').value.trim(), category: cat, min_price: min, max_price: max };
     currentPage = 1;
     loadBooks();
   }
@@ -167,7 +169,7 @@
   $('filter-form').addEventListener('submit', (event) => { event.preventDefault(); submitFilters(); });
   $('reset-filters').addEventListener('click', () => {
     $('filter-form').reset();
-    currentFilters = { q: '', min_price: '', max_price: '' };
+    currentFilters = { q: '', category: '', min_price: '', max_price: '' };
     currentPage = 1;
     loadBooks();
   });
@@ -181,50 +183,73 @@
     if (value && value.length <= 100) currentFilters[key] = value;
   }
   $('search-query').value = currentFilters.q;
+  if ($('category-filter')) $('category-filter').value = currentFilters.category;
   $('min-price').value = currentFilters.min_price;
   $('max-price').value = currentFilters.max_price;
-  const detailDialog=$('book-detail-dialog');
-  async function showBookDetail(bookId){
-    detailDialog.showModal();const content=$('book-detail-content');content.replaceChildren();
-    content.append(textElement('p','',t('loading')));
-    try{
-      const data=await fetchJSON(`/api/books/${bookId}`);content.replaceChildren();
-      const b=data.book;
-      content.append(textElement('span','book-category',b.category),textElement('h2','',b.title));
-      content.append(textElement('p','',`${pounds(b.price_pence)} · ${b.rating} ★ · ${b.availability}`));
-      content.append(textElement('p','',`UPC: ${b.upc || '—'}`));
-      if(data.price_history.length) {
-        content.append(textElement('h3','',locale==='vi'?'Lịch sử giá':'Price history'));
-        data.price_history.forEach(p=>content.append(textElement('p','',`${pounds(p.old_price_pence)} → ${pounds(p.new_price_pence)} · ${p.changed_at}`)));
+
+  async function loadCategories() {
+    const select = $('category-filter');
+    if (!select) return;
+    try {
+      const data = await fetchJSON('/api/categories');
+      const items = data.items || [];
+      for (const item of items) {
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        opt.textContent = item.name;
+        if (item.name.toLowerCase() === currentFilters.category.toLowerCase()) {
+          opt.selected = true;
+        }
+        select.append(opt);
       }
-      const src=safeSourceURL(b.source_url);if(src){const link=document.createElement('a');link.className='outlined-action';link.href=src;link.target='_blank';link.rel='noopener noreferrer';link.textContent=t('source')+' ↗';content.append(link);}
-    }catch(e){content.replaceChildren(textElement('p','',e.message));}
+    } catch (_) { }
   }
-  document.querySelectorAll('[data-close-dialog]').forEach(button=>button.addEventListener('click',()=>document.getElementById(button.dataset.closeDialog)?.close()));
-  const filterDialog=$('save-filter-dialog');
-  $('save-filter')?.addEventListener('click',()=>{filterDialog.showModal();$('saved-filter-name').focus();});
-  $('save-filter-form')?.addEventListener('submit',async e=>{
-    e.preventDefault();const name=$('saved-filter-name').value.trim();if(!name)return;
-    try {await fetchJSON('/api/saved-searches',{method:'POST',body:JSON.stringify({name,...currentFilters})});
-      filterDialog.close();$('save-filter-form').reset();toast(t('filterSaved'),'success');loadSavedSearches();
-    }catch(error){toast(error.message,'error');}
+  const detailDialog = $('book-detail-dialog');
+  async function showBookDetail(bookId) {
+    detailDialog.showModal(); const content = $('book-detail-content'); content.replaceChildren();
+    content.append(textElement('p', '', t('loading')));
+    try {
+      const data = await fetchJSON(`/api/books/${bookId}`); content.replaceChildren();
+      const b = data.book;
+      content.append(textElement('span', 'book-category', b.category), textElement('h2', '', b.title));
+      content.append(textElement('p', '', `${pounds(b.price_pence)} · ${b.rating} ★ · ${b.availability}`));
+      content.append(textElement('p', '', `UPC: ${b.upc || '—'}`));
+      if (data.price_history.length) {
+        content.append(textElement('h3', '', locale === 'vi' ? 'Lịch sử giá' : 'Price history'));
+        data.price_history.forEach(p => content.append(textElement('p', '', `${pounds(p.old_price_pence)} → ${pounds(p.new_price_pence)} · ${p.changed_at}`)));
+      }
+      const src = safeSourceURL(b.source_url); if (src) { const link = document.createElement('a'); link.className = 'outlined-action'; link.href = src; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = t('source') + ' ↗'; content.append(link); }
+    } catch (e) { content.replaceChildren(textElement('p', '', e.message)); }
+  }
+  document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.closeDialog)?.close()));
+  const filterDialog = $('save-filter-dialog');
+  $('save-filter')?.addEventListener('click', () => { filterDialog.showModal(); $('saved-filter-name').focus(); });
+  $('save-filter-form')?.addEventListener('submit', async e => {
+    e.preventDefault(); const name = $('saved-filter-name').value.trim(); if (!name) return;
+    try {
+      await fetchJSON('/api/saved-searches', { method: 'POST', body: JSON.stringify({ name, ...currentFilters }) });
+      filterDialog.close(); $('save-filter-form').reset(); toast(t('filterSaved'), 'success'); loadSavedSearches();
+    } catch (error) { toast(error.message, 'error'); }
   });
-  async function loadSavedSearches(){
-    const bar=$('saved-search-bar'),list=$('saved-search-list');if(!bar || !list)return;
-    try {const data=await fetchJSON('/api/saved-searches');bar.hidden=data.items.length===0;list.replaceChildren();
-      data.items.forEach(item=>{
-        const wrapper=document.createElement('span');wrapper.className='saved-search-pill';
-        const apply=document.createElement('button');apply.textContent=item.name;apply.addEventListener('click',()=>{
-          currentFilters={q:item.query,min_price:item.min_price,max_price:item.max_price};
-          $('search-query').value=currentFilters.q;$('min-price').value=currentFilters.min_price;$('max-price').value=currentFilters.max_price;currentPage=1;loadBooks();
+  async function loadSavedSearches() {
+    const bar = $('saved-search-bar'), list = $('saved-search-list'); if (!bar || !list) return;
+    try {
+      const data = await fetchJSON('/api/saved-searches'); bar.hidden = data.items.length === 0; list.replaceChildren();
+      data.items.forEach(item => {
+        const wrapper = document.createElement('span'); wrapper.className = 'saved-search-pill';
+        const apply = document.createElement('button'); apply.textContent = item.name; apply.addEventListener('click', () => {
+          currentFilters = { q: item.query, min_price: item.min_price, max_price: item.max_price };
+          $('search-query').value = currentFilters.q; $('min-price').value = currentFilters.min_price; $('max-price').value = currentFilters.max_price; currentPage = 1; loadBooks();
         });
-        const del=document.createElement('button');del.textContent='×';del.className='delete-chip';del.title=t('remove');
-        del.addEventListener('click',async()=>{try{await fetchJSON(`/api/saved-searches/${item.id}`,{method:'DELETE'});loadSavedSearches();}catch(e){toast(e.message,'error');}});
-        wrapper.append(apply,del);list.append(wrapper);
+        const del = document.createElement('button'); del.textContent = '×'; del.className = 'delete-chip'; del.title = t('remove');
+        del.addEventListener('click', async () => { try { await fetchJSON(`/api/saved-searches/${item.id}`, { method: 'DELETE' }); loadSavedSearches(); } catch (e) { toast(e.message, 'error'); } });
+        wrapper.append(apply, del); list.append(wrapper);
       });
-    }catch(error){toast(error.message,'error');}
+    } catch (error) { toast(error.message, 'error'); }
   }
-  fetchJSON('/api/auth/me').then(data=>{if(data.preferences.book_layout==='list')$('book-grid').classList.add('list-view');}).catch(()=>{});
+  fetchJSON('/api/auth/me').then(data => { if (data.preferences.book_layout === 'list') $('book-grid').classList.add('list-view'); }).catch(() => { });
+  loadCategories();
   loadSavedSearches();
   loadBooks();
+  $('category-filter')?.addEventListener('change', () => submitFilters());
 })();

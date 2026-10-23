@@ -41,6 +41,7 @@ Route::middleware('authenticated')->group(function (): void {
     Route::get('/api/summary', [ApiController::class, 'summary']);
     Route::post('/api/jobs', [ApiController::class, 'createJob']);
     Route::get('/api/jobs/{jobId}', [ApiController::class, 'getJob'])->whereNumber('jobId');
+    Route::get('/api/categories', [ApiController::class, 'categories']);
     Route::get('/api/books', [ApiController::class, 'books']);
     Route::get('/api/books/{bookId}', [ApiController::class, 'bookDetail'])->whereNumber('bookId');
     Route::match(['post', 'delete'], '/api/bookmarks/{bookId}', [ApiController::class, 'bookmark'])->whereNumber('bookId');
