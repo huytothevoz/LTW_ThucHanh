@@ -7,6 +7,8 @@ use function Vinsaj9\Crypto\Scrypt\scrypt;
 
 class AccountService
 {
+    private const SCRYPT_N = 16384;
+
     public static function now(): string
     {
         return gmdate('Y-m-d\TH:i:s\Z');
@@ -75,7 +77,15 @@ class AccountService
             return null;
         }
 
-        DB::update('UPDATE users SET last_login_at=? WHERE id=?', [self::now(), $row->id]);
+        $now = self::now();
+        if (str_starts_with($row->password_hash, 'scrypt:')) {
+            DB::update(
+                'UPDATE users SET password_hash=?,updated_at=?,last_login_at=? WHERE id=?',
+                [self::hashPassword($password), $now, $now, $row->id],
+            );
+        } else {
+            DB::update('UPDATE users SET last_login_at=? WHERE id=?', [$now, $row->id]);
+        }
 
         return self::publicUser($row);
     }
@@ -374,10 +384,19 @@ class AccountService
 
     private static function hashPassword(string $password): string
     {
-        $salt = random_bytes(16);
-        $derived = scrypt($password, $salt, 14, 8, 1, 64);
+        if (defined('PASSWORD_ARGON2ID')) {
+            $hash = password_hash($password, PASSWORD_ARGON2ID);
+            if ($hash === false) {
+                throw new \RuntimeException('Could not hash password.');
+            }
 
-        return 'scrypt:16384:8:1$'.bin2hex($salt).'$'.bin2hex($derived);
+            return $hash;
+        }
+
+        $salt = random_bytes(16);
+        $derived = scrypt($password, $salt, self::SCRYPT_N, 8, 1, 64);
+
+        return 'scrypt:16384:8:1$'.bin2hex($salt).'$'.$derived;
     }
 
     private static function verifyPassword(string $password, string $stored): bool
@@ -387,11 +406,17 @@ class AccountService
             return password_verify($password, $stored);
         }
         $salt = hex2bin($parts[1]);
-        $expected = hex2bin($parts[2]);
-        if ($salt === false || $expected === false || strlen($salt) !== 16 || strlen($expected) !== 64) {
+        if (
+            $salt === false
+            || strlen($salt) !== 16
+            || !preg_match('/^(?:[a-f0-9]{128}|[a-f0-9]{256})$/D', $parts[2])
+        ) {
             return false;
         }
 
-        return hash_equals($expected, scrypt($password, $salt, 14, 8, 1, 64));
+        $derived = scrypt($password, $salt, self::SCRYPT_N, 8, 1, 64);
+        $expected = strlen($parts[2]) === 256 ? bin2hex($derived) : $derived;
+
+        return hash_equals($parts[2], $expected);
     }
 }
