@@ -16,15 +16,17 @@ def sanitize_error(message: str | None) -> str | None:
     return ' '.join(str(message).split())[:220]
 
 
-def create_job(max_pages: int) -> dict:
+def create_job(max_pages: int, source_id: int = 1) -> dict:
     if type(max_pages) is not int or max_pages not in (1,2,3):
         raise ValueError('max_pages must be an integer from 1 to 3')
+    if type(source_id) is not int or source_id not in (1, 2, 3):
+        raise ValueError('source_id must be 1, 2, or 3')
     with connect() as con:
         con.execute('BEGIN IMMEDIATE')
         active = con.execute("SELECT id FROM crawl_jobs WHERE status IN ('PENDING','RUNNING') LIMIT 1").fetchone()
         if active:
             raise ActiveJobError(f"Crawl #{active['id']} is still active")
-        cur = con.execute("INSERT INTO crawl_jobs(source_id,max_pages,status,created_at) VALUES(1,?,'PENDING',?)", (max_pages,now_utc()))
+        cur = con.execute("INSERT INTO crawl_jobs(source_id,max_pages,status,created_at) VALUES(?,?,'PENDING',?)", (source_id,max_pages,now_utc()))
         con.execute("INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,'INFO','CREATED','Crawl job created',?)", (cur.lastrowid,now_utc()))
         return dict(con.execute('SELECT * FROM crawl_jobs WHERE id=?',(cur.lastrowid,)).fetchone())
 

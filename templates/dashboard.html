@@ -59,11 +59,15 @@
           <span>{{ t('source_safe') }}</span>
           <span class="locked-label">{{ icon('shield',14) }} HTTPS</span>
         </div>
-        <div class="source-input">
+        <div class="source-input" style="padding: 10px 14px;">
           <span class="source-input-globe">{{ icon('globe',20) }}</span>
-          <div>
-            <strong>books.toscrape.com</strong>
-            <span>Educational sandbox · robots.txt</span>
+          <div style="width: 100%;">
+            <select id="source-select" name="source_id" style="width: 100%; border: 0; background: transparent; font-weight: 700; font-size: 13px; color: inherit; cursor: pointer; outline: none;">
+              <option value="1">Books to Scrape (books.toscrape.com) · Sandbox</option>
+              <option value="2">Open Library (openlibrary.org) · Internet Archive</option>
+              <option value="3">Project Gutenberg (gutenberg.org) · Classic Archive</option>
+            </select>
+            <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Crawl có trách nhiệm · Tuân thủ robots.txt & Rate limit</div>
           </div>
         </div>
         <div class="form-group">

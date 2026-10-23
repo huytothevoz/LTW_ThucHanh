@@ -236,6 +236,8 @@ SELECT j.id,j.status,j.max_pages,j.catalogue_pages_done,j.books_found,
 FROM crawl_jobs j;
 
 INSERT INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) VALUES(1,'Books to Scrape','https://books.toscrape.com/','books.toscrape.com',1,'2026-10-21T00:00:00Z');
+INSERT INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) VALUES(2,'Open Library','https://openlibrary.org/','openlibrary.org',1,'2026-10-24T00:00:00Z');
+INSERT INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) VALUES(3,'Project Gutenberg','https://www.gutenberg.org/','www.gutenberg.org',1,'2026-10-24T00:00:00Z');
 
 INSERT INTO schema_migrations(version,filename,applied_at) VALUES(1,'001_core.sql','2026-10-21T00:00:00Z');
 

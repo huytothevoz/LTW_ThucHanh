@@ -6,24 +6,26 @@ use Illuminate\Support\Facades\DB;
 
 class CrawlJobService
 {
-    public static function create(int $maxPages, int $userId): array
+    public static function create(int $maxPages, int $userId, int $sourceId = 1): array
     {
-        return DB::transaction(function () use ($maxPages, $userId): array {
+        return DB::transaction(function () use ($maxPages, $userId, $sourceId): array {
             if (DB::selectOne("SELECT id FROM crawl_jobs WHERE status IN ('PENDING','RUNNING') LIMIT 1")) {
                 throw new \DomainException('JOB_ALREADY_ACTIVE');
             }
 
+            $source = DB::selectOne('SELECT id, name FROM sources WHERE id = ?', [$sourceId]);
+            $sourceName = $source ? $source->name : 'Books to Scrape';
             $now = AccountService::now();
             $id = DB::table('crawl_jobs')->insertGetId([
-                'source_id' => 1,
+                'source_id' => $sourceId,
                 'max_pages' => $maxPages,
                 'status' => 'PENDING',
                 'created_at' => $now,
                 'user_id' => $userId,
             ]);
             DB::insert(
-                "INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,'INFO','CREATED','Crawl job created',?)",
-                [$id, $now],
+                "INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,'INFO','CREATED',?,?)",
+                [$id, "Crawl job created for {$sourceName}", $now],
             );
 
             return (array) DB::selectOne(

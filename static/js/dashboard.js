@@ -211,10 +211,12 @@
     const selected = document.querySelector('input[name="max-pages"]:checked');
     const maxPages = selected ? Number(selected.value) : 1;
     if (![1, 2, 3].includes(maxPages)) return;
+    const sourceSelect = $('source-select');
+    const sourceId = sourceSelect ? Number(sourceSelect.value) || 1 : 1;
     setStartDisabled(true);
     try {
       const { job } = await fetchJSON('/api/jobs', {
-        method: 'POST', body: JSON.stringify({ max_pages: maxPages }),
+        method: 'POST', body: JSON.stringify({ max_pages: maxPages, source_id: sourceId }),
       });
       toast(`Crawl #${job.id} has been queued.`, 'success');
       trackJob(job.id);

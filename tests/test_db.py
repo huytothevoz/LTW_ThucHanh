@@ -109,3 +109,42 @@ def test_job_counter_check_constraint(isolated_db):
                 "UPDATE crawl_jobs SET items_saved=5,new_books=2,existing_books=2 WHERE id=?",
                 (job["id"],),
             )
+
+
+def test_create_job_supports_sources(isolated_db):
+    with db.connect() as con:
+        con.execute("INSERT OR IGNORE INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) VALUES(2,'Open Library','https://openlibrary.org/','openlibrary.org',1,'2026-04-01T00:00:00Z')")
+        con.execute("INSERT OR IGNORE INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) VALUES(3,'Project Gutenberg','https://www.gutenberg.org/','www.gutenberg.org',1,'2026-04-01T00:00:00Z')")
+
+    j1 = db.create_job(1, source_id=1)
+    assert j1["source_id"] == 1
+    db.finish_job(j1["id"], "COMPLETED")
+
+    j2 = db.create_job(2, source_id=2)
+    assert j2["source_id"] == 2
+    db.finish_job(j2["id"], "COMPLETED")
+
+    j3 = db.create_job(3, source_id=3)
+    assert j3["source_id"] == 3
+    db.finish_job(j3["id"], "COMPLETED")
+
+    with pytest.raises(ValueError):
+        db.create_job(1, source_id=99)
+
+
+def test_run_job_external_sources(isolated_db):
+    from crawler import run_job
+
+    with db.connect() as con:
+        con.execute("INSERT OR IGNORE INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) VALUES(2,'Open Library','https://openlibrary.org/','openlibrary.org',1,'2026-04-01T00:00:00Z')")
+
+    j = db.create_job(1, source_id=2)
+    exit_code = run_job.run(j["id"])
+    assert exit_code == 0
+    updated = db.get_job(j["id"])
+    assert updated["status"] == "COMPLETED"
+
+    events = db.list_job_events(j["id"])
+    event_messages = [e["message"] for e in events]
+    assert any("Open Library" in m for m in event_messages)
+
