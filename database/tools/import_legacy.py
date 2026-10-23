@@ -30,12 +30,18 @@ def import_database(source:Path,target:Path)->Path:
         raise FileExistsError(f'Temporary import exists; inspect first: {temp}')
     try:
         # Source URI mode=ro avoids silently creating an empty database.
-        with sqlite3.connect(source.as_uri()+'?mode=ro',uri=True) as original:
-            with sqlite3.connect(str(temp)) as copy:
+        original = sqlite3.connect(source.as_uri() + '?mode=ro', uri=True)
+        try:
+            copy = sqlite3.connect(str(temp))
+            try:
                 original.backup(copy)
-                if copy.execute('PRAGMA integrity_check').fetchone()[0]!='ok':
+                if copy.execute('PRAGMA integrity_check').fetchone()[0] != 'ok':
                     raise RuntimeError('Copied SQLite database failed integrity_check')
-        os.replace(temp,target)
+            finally:
+                copy.close()
+        finally:
+            original.close()
+        os.replace(temp, target)
         # The upgrade mechanism will make its own .before-v3 backup if needed.
         previous=os.environ.get('CRAWLINSIGHT_DB_PATH')
         os.environ['CRAWLINSIGHT_DB_PATH']=str(target)
