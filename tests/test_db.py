@@ -16,7 +16,7 @@ def test_fresh_database_is_empty(isolated_db):
     assert db.search_books()["total_pages"] == 0
 
 
-@pytest.mark.parametrize("invalid", [0, 4, "2", 2.0, True, None])
+@pytest.mark.parametrize("invalid", [0, 6, "2", 2.0, True, None])
 def test_max_pages_strict_types(isolated_db, invalid):
     with pytest.raises(ValueError):
         db.create_job(invalid)

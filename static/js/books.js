@@ -251,5 +251,25 @@
   loadCategories();
   loadSavedSearches();
   loadBooks();
+  const resetBooksBtn = $('reset-books-btn');
+  if (resetBooksBtn) {
+    resetBooksBtn.addEventListener('click', async () => {
+      const confirmMsg = t('resetConfirm') || 'Bạn có chắc chắn muốn xóa toàn bộ sách đã crawl? Thao tác này sẽ xóa tất cả sách và lịch sử crawl của bạn.';
+      if (!confirm(confirmMsg)) return;
+      resetBooksBtn.disabled = true;
+      try {
+        const res = await fetchJSON('/api/books/reset', { method: 'POST' });
+        toast(t('resetSuccess') || `Đã đặt lại dữ liệu sách (${res.deleted_books || 0} sách).`, 'success');
+        currentPage = 1;
+        await loadBooks();
+        await loadCategories();
+      } catch (err) {
+        toast(err.message || 'Không thể reset sách.', 'error');
+      } finally {
+        resetBooksBtn.disabled = false;
+      }
+    });
+  }
+
   $('category-filter')?.addEventListener('change', () => submitFilters());
 })();

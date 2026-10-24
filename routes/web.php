@@ -60,6 +60,7 @@ Route::middleware('authenticated')->group(function (): void {
     Route::get('/api/analytics', [ApiController::class, 'analytics']);
     Route::get('/api/sources', [ApiController::class, 'sources']);
     Route::get('/api/exports/books.csv', [ApiController::class, 'exportBooks']);
+    Route::post('/api/books/reset', [ApiController::class, 'resetBooks']);
 });
 
 Route::middleware('admin')->prefix('api/admin')->group(function (): void {

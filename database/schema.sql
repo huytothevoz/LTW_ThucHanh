@@ -96,7 +96,7 @@ CREATE TABLE crawl_job_books (
 CREATE TABLE crawl_jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id INTEGER NOT NULL DEFAULT 1 REFERENCES sources(id) ON DELETE RESTRICT,
-    max_pages INTEGER NOT NULL CHECK(max_pages BETWEEN 1 AND 3),
+    max_pages INTEGER NOT NULL CHECK(max_pages BETWEEN 1 AND 5),
     status TEXT NOT NULL DEFAULT 'PENDING'
         CHECK(status IN ('PENDING','RUNNING','COMPLETED','FAILED')),
     catalogue_pages_done INTEGER NOT NULL DEFAULT 0 CHECK(catalogue_pages_done >= 0),

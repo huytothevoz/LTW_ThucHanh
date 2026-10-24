@@ -6,5 +6,5 @@ from .database.jobs import (ACTIVE_STATUSES,TERMINAL_STATUSES,ActiveJobError,
                             finish_job,record_error,increment_catalogue,
                             record_catalogue_page,list_job_events)
 from .database.books import (InvalidBookError,validate_book,save_book_for_job,
-                             parse_price_filter,search_books)
+                             parse_price_filter,search_books,reset_user_books)
 from .database.analytics import summary
