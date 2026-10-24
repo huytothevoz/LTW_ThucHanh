@@ -221,13 +221,16 @@ class ApiController
     public function createJob(Request $request): JsonResponse
     {
         $data = $request->json()->all();
-        if (count($data) !== 1 || !array_key_exists('max_pages', $data)
+        if (!array_key_exists('max_pages', $data)
             || !is_int($data['max_pages']) || !in_array($data['max_pages'], [1, 2, 3], true)) {
             return $this->error('INVALID_MAX_PAGES', 'max_pages phải là số nguyên từ 1 đến 3.', 400);
         }
+        $sourceId = isset($data['source_id']) && is_int($data['source_id']) && in_array($data['source_id'], [1, 2, 3], true)
+            ? $data['source_id']
+            : 1;
 
         try {
-            $job = CrawlJobService::create($data['max_pages'], $this->user($request)['id']);
+            $job = CrawlJobService::create($data['max_pages'], $this->user($request)['id'], $sourceId);
         } catch (\DomainException $exception) {
             if ($exception->getMessage() === 'JOB_ALREADY_ACTIVE') {
                 return $this->error('JOB_ALREADY_ACTIVE', 'Đang có lượt crawl khác hoạt động.', 409);
