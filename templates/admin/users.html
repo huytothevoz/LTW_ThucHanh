@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% from '_icons.html' import icon %}
+{% block title %}{{ t('admin_users') }}{% endblock %}
+{% block head %}
+  <style>
+    .admin-toolbar{display:flex;gap:12px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    .admin-toolbar input{max-width:360px}
+    .admin-actions{display:flex;gap:8px;white-space:nowrap}
+    .admin-actions button{border:1px solid var(--line);border-radius:8px;background:var(--white);color:var(--ink);padding:7px 10px;cursor:pointer}
+    .admin-actions button:disabled{opacity:.45;cursor:not-allowed}
+    .admin-role,.admin-state{font-weight:700}
+    .admin-state.inactive{color:#c34b4b}
+    .admin-pagination{display:flex;justify-content:space-between;align-items:center;margin-top:16px}
+    @media(max-width:700px){.admin-toolbar{align-items:stretch;flex-direction:column}.admin-toolbar input{max-width:none}.admin-actions{flex-direction:column}.admin-pagination{gap:12px}}
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="page-heading">
+    <div>
+      <div class="eyebrow">ADMINISTRATION</div>
+      <h1>{{ t('admin_users') }}<span class="heading-period">.</span></h1>
+      <p>{{ t('admin_users_sub') }}</p>
+    </div>
+  </div>
+  <section class="panel spacious-panel">
+    <div class="admin-toolbar">
+      <input id="admin-user-search" type="search" maxlength="100" placeholder="{{ t('search_users') }}" aria-label="{{ t('search_users') }}">
+      <span id="admin-user-count" aria-live="polite"></span>
+    </div>
+    <div id="admin-users-error" class="inline-error" hidden></div>
+    <div class="table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>{{ t('full_name') }}</th><th>{{ t('email') }}</th>
+            <th>{{ t('role') }}</th><th>{{ t('status') }}</th><th>{{ t('created') }}</th><th>{{ t('last_login') }}</th><th>{{ t('actions') }}</th>
+          </tr>
+        </thead>
+        <tbody id="admin-users-body"><tr><td colspan="8">{{ t('loading') }}</td></tr></tbody>
+      </table>
+    </div>
+    <div class="admin-pagination">
+      <button class="outlined-action" id="admin-users-previous" type="button" disabled>{{ t('previous') }}</button>
+      <span id="admin-users-page"></span>
+      <button class="outlined-action" id="admin-users-next" type="button" disabled>{{ t('next') }}</button>
+    </div>
+  </section>
+{% endblock %}
+{% block scripts %}
+  <script src="{{ asset('static/js/admin-users.js') }}" defer></script>
+{% endblock %}

@@ -10,6 +10,7 @@
     </testsuites>
     <php>
         <env name="APP_ENV" value="testing" force="true"/>
+        <env name="DB_CONNECTION" value="sqlite" force="true"/>
         <env name="APP_KEY" value="base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="/>
         <env name="APP_DEBUG" value="false"/>
         <env name="CRAWLINSIGHT_DB_PATH" value=":memory:"/>

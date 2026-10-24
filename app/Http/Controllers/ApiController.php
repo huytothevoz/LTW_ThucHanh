@@ -22,7 +22,7 @@ class ApiController
         return response()->json([
             'status' => 'ok',
             'app' => 'CrawlInsight',
-            'database' => 'sqlite',
+            'database' => (string) config('database.default'),
         ]);
     }
 
@@ -265,9 +265,9 @@ class ApiController
         return response()->json($result);
     }
 
-    public function categories(): JsonResponse
+    public function categories(Request $request): JsonResponse
     {
-        return response()->json(['items' => BookService::categories()]);
+        return response()->json(['items' => BookService::categories($this->user($request)['id'])]);
     }
 
     public function books(Request $request): JsonResponse
@@ -283,7 +283,7 @@ class ApiController
         }
 
         try {
-            $result = BookService::search($query, $low, $high, $page, $category);
+            $result = BookService::search($this->user($request)['id'], $query, $low, $high, $page, $category);
         } catch (\DomainException $exception) {
             return $this->error('INVALID_FILTER', $exception->getMessage(), 400);
         }
@@ -374,8 +374,9 @@ class ApiController
     public function history(Request $request): JsonResponse
     {
         $items = DB::select(
-            'SELECT id,status,max_pages,catalogue_pages_done,books_found,items_saved,new_books,existing_books,error_count,created_at,started_at,finished_at
-             FROM crawl_jobs WHERE user_id=? ORDER BY id DESC LIMIT 100',
+            'SELECT c.id,c.status,c.max_pages,c.catalogue_pages_done,c.books_found,c.items_saved,c.new_books,c.existing_books,c.error_count,c.created_at,c.started_at,c.finished_at,
+                    (SELECT COUNT(*) FROM crawl_jobs t WHERE t.user_id = c.user_id AND t.id <= c.id) AS user_job_number
+             FROM crawl_jobs c WHERE c.user_id=? ORDER BY c.id DESC LIMIT 100',
             [$this->user($request)['id']],
         );
 
@@ -403,9 +404,9 @@ class ApiController
         return response()->json(['ok' => true]);
     }
 
-    public function analytics(): JsonResponse
+    public function analytics(Request $request): JsonResponse
     {
-        return response()->json(BookService::analytics());
+        return response()->json(BookService::analytics($this->user($request)['id']));
     }
 
     public function sources(): JsonResponse
@@ -417,16 +418,17 @@ class ApiController
         return response()->json(['items' => array_map(static fn (object $row): array => (array) $row, $items)]);
     }
 
-    public function exportBooks(): StreamedResponse
+    public function exportBooks(Request $request): StreamedResponse
     {
-        return response()->streamDownload(function (): void {
+        $userId = $this->user($request)['id'];
+        return response()->streamDownload(function () use ($userId): void {
             $output = fopen('php://output', 'wb');
             if ($output === false) {
                 throw new \RuntimeException('Unable to open CSV output stream.');
             }
             fwrite($output, "\xEF\xBB\xBF");
             fputcsv($output, ['id', 'title', 'price_gbp', 'rating', 'category', 'availability', 'source_url']);
-            foreach (BookService::exportRows() as $row) {
+            foreach (BookService::exportRows($userId) as $row) {
                 fputcsv($output, [
                     $row->id,
                     $this->csvCell($row->title),

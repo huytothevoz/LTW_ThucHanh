@@ -16,7 +16,7 @@ class ResolveIdentity
 
         if (is_int($userId) || (is_string($userId) && ctype_digit($userId))) {
             $user = DB::selectOne(
-                'SELECT id,full_name,email,created_at,last_login_at,is_active,session_version FROM users WHERE id=? AND is_active=1',
+                'SELECT id,full_name,email,created_at,last_login_at,is_active,session_version,role FROM users WHERE id=? AND is_active=1',
                 [(int) $userId],
             );
 
@@ -73,6 +73,7 @@ class ResolveIdentity
             'created_at' => $user->created_at,
             'last_login_at' => $user->last_login_at,
             'is_active' => (int) $user->is_active,
+            'role' => $user->role,
         ];
     }
 }

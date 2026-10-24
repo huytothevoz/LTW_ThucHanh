@@ -16,6 +16,7 @@ class BookDiscoveryAndBookmarkTest extends TestCase
                 full_name TEXT NOT NULL,
                 email TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user',
                 is_active INTEGER NOT NULL DEFAULT 1,
                 session_version INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
@@ -33,16 +34,40 @@ class BookDiscoveryAndBookmarkTest extends TestCase
                 id INTEGER PRIMARY KEY,
                 name TEXT NOT NULL UNIQUE
             );
+            CREATE TABLE sources (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL
+            );
             CREATE TABLE books (
                 id INTEGER PRIMARY KEY,
+                user_id INTEGER,
+                source_id INTEGER NOT NULL DEFAULT 1,
                 category_id INTEGER NOT NULL,
                 title TEXT NOT NULL,
                 price_pence INTEGER NOT NULL,
                 rating INTEGER NOT NULL DEFAULT 0,
                 availability TEXT NOT NULL DEFAULT 'In stock',
                 image_url TEXT,
-                source_url TEXT
+                upc TEXT,
+                source_url TEXT,
+                first_seen_at TEXT,
+                last_seen_at TEXT,
+                last_crawl_job_id INTEGER
             );
+            CREATE TABLE crawl_jobs (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER,
+                status TEXT NOT NULL,
+                max_pages INTEGER NOT NULL,
+                items_saved INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+            );
+            CREATE VIEW v_books_detail AS
+            SELECT b.id,b.source_url,b.title,b.price_pence,
+                   ROUND(b.price_pence/100.0,2) AS price_gbp,
+                   b.rating,c.name AS category,b.availability,b.image_url,b.upc,
+                   s.name AS source_name,b.first_seen_at,b.last_seen_at,b.last_crawl_job_id
+            FROM books b JOIN categories c ON c.id=b.category_id JOIN sources s ON s.id=b.source_id;
             CREATE TABLE bookmarks (
                 id INTEGER PRIMARY KEY,
                 user_id INTEGER NOT NULL,
@@ -66,10 +91,20 @@ class BookDiscoveryAndBookmarkTest extends TestCase
             ['id' => 1, 'name' => 'Fiction'],
             ['id' => 2, 'name' => 'Science'],
         ]);
+        DB::table('sources')->insert(['id' => 1, 'name' => 'Books to Scrape']);
+        DB::table('crawl_jobs')->insert([
+            'id' => 1,
+            'user_id' => 1,
+            'status' => 'COMPLETED',
+            'max_pages' => 1,
+            'items_saved' => 2,
+            'created_at' => '2026-10-24T00:00:00Z',
+        ]);
 
         DB::table('books')->insert([
             [
                 'id' => 1,
+                'user_id' => 1,
                 'category_id' => 1,
                 'title' => 'The Great Novel',
                 'price_pence' => 1500,
@@ -77,9 +112,12 @@ class BookDiscoveryAndBookmarkTest extends TestCase
                 'availability' => 'In stock',
                 'image_url' => 'https://books.toscrape.com/media/novel.jpg',
                 'source_url' => 'https://books.toscrape.com/catalogue/novel.html',
+                'first_seen_at' => '2026-10-24T00:00:00Z',
+                'last_seen_at' => '2026-10-24T00:00:00Z',
             ],
             [
                 'id' => 2,
+                'user_id' => 1,
                 'category_id' => 2,
                 'title' => 'Physics Explained',
                 'price_pence' => 2500,
@@ -87,6 +125,8 @@ class BookDiscoveryAndBookmarkTest extends TestCase
                 'availability' => 'In stock',
                 'image_url' => 'https://books.toscrape.com/media/physics.jpg',
                 'source_url' => 'https://books.toscrape.com/catalogue/physics.html',
+                'first_seen_at' => '2026-10-24T00:00:00Z',
+                'last_seen_at' => '2026-10-24T00:00:00Z',
             ],
         ]);
     }
@@ -150,5 +190,58 @@ class BookDiscoveryAndBookmarkTest extends TestCase
             ->assertOk()
             ->assertJsonPath('total', 0)
             ->assertJsonPath('items', []);
+    }
+
+    public function test_books_and_summaries_are_private_to_their_owner(): void
+    {
+        DB::table('users')->insert([
+            'id' => 2,
+            'full_name' => 'Other User',
+            'email' => 'other@example.com',
+            'password_hash' => 'hash',
+            'created_at' => '2026-10-24T00:00:00Z',
+            'updated_at' => '2026-10-24T00:00:00Z',
+        ]);
+        DB::table('crawl_jobs')->insert([
+            'id' => 2,
+            'user_id' => 2,
+            'status' => 'COMPLETED',
+            'max_pages' => 1,
+            'items_saved' => 1,
+            'created_at' => '2026-10-24T00:00:00Z',
+        ]);
+        DB::table('categories')->insert(['id' => 3, 'name' => 'Private']);
+        DB::table('books')->insert([
+            'id' => 3,
+            'user_id' => 2,
+            'category_id' => 3,
+            'title' => 'Another User Book',
+            'price_pence' => 9900,
+            'rating' => 5,
+            'availability' => 'In stock',
+            'source_url' => 'https://books.toscrape.com/catalogue/private.html',
+            'first_seen_at' => '2026-10-24T00:00:00Z',
+            'last_seen_at' => '2026-10-24T00:00:00Z',
+        ]);
+
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/books')
+            ->assertOk()
+            ->assertJsonPath('total', 2)
+            ->assertJsonMissing(['title' => 'Another User Book']);
+
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/books/3')
+            ->assertNotFound();
+
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->postJson('/api/bookmarks/3')
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'BOOK_NOT_FOUND');
+
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/summary')
+            ->assertOk()
+            ->assertJsonPath('total_books', 2);
     }
 }

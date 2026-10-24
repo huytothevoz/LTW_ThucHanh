@@ -9,7 +9,10 @@ class CrawlJobService
     public static function create(int $maxPages, int $userId, int $sourceId = 1): array
     {
         return DB::transaction(function () use ($maxPages, $userId, $sourceId): array {
-            if (DB::selectOne("SELECT id FROM crawl_jobs WHERE status IN ('PENDING','RUNNING') LIMIT 1")) {
+            if (DB::selectOne(
+                "SELECT id FROM crawl_jobs WHERE user_id=? AND status IN ('PENDING','RUNNING') LIMIT 1",
+                [$userId],
+            )) {
                 throw new \DomainException('JOB_ALREADY_ACTIVE');
             }
 
@@ -29,7 +32,9 @@ class CrawlJobService
             );
 
             return (array) DB::selectOne(
-                'SELECT id,status,max_pages,created_at FROM crawl_jobs WHERE id=?',
+                'SELECT c.id,c.status,c.max_pages,c.created_at,
+                        (SELECT COUNT(*) FROM crawl_jobs t WHERE t.user_id = c.user_id AND t.id <= c.id) AS user_job_number
+                 FROM crawl_jobs c WHERE c.id=?',
                 [$id],
             );
         });
@@ -49,8 +54,7 @@ class CrawlJobService
             $python = base_path($python);
         }
 
-        $databasePath = (string) config('database.connections.sqlite.database');
-        $logDirectory = dirname($databasePath).DIRECTORY_SEPARATOR.'logs';
+        $logDirectory = storage_path('logs');
         if (!is_dir($logDirectory) && !mkdir($logDirectory, 0700, true) && !is_dir($logDirectory)) {
             throw new \RuntimeException('Could not create private crawler log directory.');
         }
@@ -63,8 +67,13 @@ class CrawlJobService
             return;
         }
 
-        $command = 'CRAWLINSIGHT_DB_PATH='.escapeshellarg($databasePath)
-            .' nohup '.escapeshellarg($python)
+        $environment = self::crawlerEnvironment();
+        $prefix = implode(' ', array_map(
+            static fn (string $key, string $value): string => $key.'='.escapeshellarg($value),
+            array_keys($environment),
+            array_values($environment),
+        ));
+        $command = $prefix.' nohup '.escapeshellarg($python)
             .' -m crawler.run_job --job-id '.escapeshellarg((string) $jobId)
             .' </dev/null >>'.escapeshellarg($stdout)
             .' 2>>'.escapeshellarg($stderr).' &';
@@ -98,9 +107,12 @@ class CrawlJobService
 
     private static function launchWindows(string $python, int $jobId, string $stdout, string $stderr): void
     {
-        $script = '$ErrorActionPreference = "Stop"; $env:CRAWLINSIGHT_DB_PATH = '
-            .self::psQuote((string) config('database.connections.sqlite.database'))
-            .'; Start-Process -FilePath '.self::psQuote($python)
+        $assignments = '';
+        foreach (self::crawlerEnvironment() as $key => $value) {
+            $assignments .= '$env:'.$key.' = '.self::psQuote($value).'; ';
+        }
+        $script = '$ErrorActionPreference = "Stop"; '.$assignments
+            .'Start-Process -FilePath '.self::psQuote($python)
             .' -ArgumentList @("-m","crawler.run_job","--job-id",'.self::psQuote((string) $jobId).')'
             .' -WorkingDirectory '.self::psQuote(base_path())
             .' -RedirectStandardOutput '.self::psQuote($stdout)
@@ -128,5 +140,19 @@ class CrawlJobService
     private static function psQuote(string $value): string
     {
         return "'".str_replace("'", "''", $value)."'";
+    }
+
+    private static function crawlerEnvironment(): array
+    {
+        $mysql = config('database.connections.mysql');
+
+        return [
+            'DB_CONNECTION' => (string) config('database.default'),
+            'DB_HOST' => (string) $mysql['host'],
+            'DB_PORT' => (string) $mysql['port'],
+            'DB_DATABASE' => (string) $mysql['database'],
+            'DB_USERNAME' => (string) $mysql['username'],
+            'DB_PASSWORD' => (string) $mysql['password'],
+        ];
     }
 }

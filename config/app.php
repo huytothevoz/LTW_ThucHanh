@@ -7,6 +7,7 @@ return [
     'url' => env('APP_URL', 'http://127.0.0.1:8000'),
     'timezone' => 'UTC',
     'locale' => env('APP_LOCALE', 'vi'),
+    'admin_email' => env('ADMIN_EMAIL', ''),
     'fallback_locale' => 'en',
     'faker_locale' => 'vi_VN',
     'cipher' => 'AES-256-CBC',

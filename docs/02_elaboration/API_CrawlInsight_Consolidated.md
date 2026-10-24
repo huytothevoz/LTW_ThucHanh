@@ -9,12 +9,12 @@
 
 ## 1. Mục đích và phạm vi
 
-API cung cấp dữ liệu giữa frontend Twig + JavaScript và Laravel/PHP, gồm: xác thực, hồ sơ, cài đặt cá nhân, tạo/giám sát crawl job, duyệt sách, lưu sách, lịch sử, thống kê và xuất CSV. Python/Scrapy chỉ chạy worker crawler và ghi SQLite qua `src.db` cùng `src/database/`; **không có một crawler REST service riêng**.
+API cung cấp dữ liệu giữa frontend Twig + JavaScript và Laravel/PHP, gồm: xác thực, hồ sơ, cài đặt cá nhân, tạo/giám sát crawl job, duyệt sách, lưu sách, lịch sử, thống kê và xuất CSV. Python/Scrapy chỉ chạy worker crawler và ghi MySQL qua `src.db` cùng `src/database/`; **không có một crawler REST service riêng**.
 
 - **Base URL local:** `http://127.0.0.1:8000`; tất cả JSON API có tiền tố `/api`.
 - **Phiên bản URL:** baseline **không dùng** `/api/v1` hay `/api/crawl-jobs`; không tự ý đổi endpoint nếu chưa cập nhật frontend, test và SRS.
-- **Website crawl:** chỉ `https://books.toscrape.com/`, 1–3 trang catalogue/job, mỗi thời điểm tối đa một job toàn hệ thống.
-- **Phạm vi ứng dụng:** Laravel/PHP chạy local cùng SQLite; Python chỉ phục vụ crawler. Không serve source hoặc SQLite trực tiếp bằng Apache.
+- **Website crawl:** chỉ `https://books.toscrape.com/`, 1–3 trang catalogue/job, mỗi tài khoản tối đa một job đang chạy.
+- **Phạm vi ứng dụng:** Laravel/PHP và Python dùng chung MySQL/MariaDB (XAMPP port 3308); Python chỉ phục vụ crawler. Không công khai credentials qua Apache.
 - **Mục tiêu tài liệu:** để người làm frontend, backend, crawler hiểu giống nhau về tên field, quyền truy cập, lỗi và ví dụ payload.
 
 ## 2. Quy ước giao tiếp và bảo mật
@@ -30,7 +30,7 @@ API cung cấp dữ liệu giữa frontend Twig + JavaScript và Laravel/PHP, g�
 | Không lộ bí mật | Không trả password hash, SMTP secret hoặc reset token trừ `local_test_link` có điều kiện trong chế độ kiểm thử local. |
 | Thời gian | Các trường mốc thời gian của database dùng chuỗi UTC dạng ISO `YYYY-MM-DDTHH:MM:SSZ`. |
 | Giá sách | Lưu `price_pence` integer GBP × 100; bộ lọc `min_price`/`max_price` truyền theo chuỗi GBP thập phân. |
-| Dữ liệu multi-user | `books/categories/sources` dùng chung; `bookmarks/saved_searches/crawl_jobs` của người dùng chỉ thấy qua quyền sở hữu. |
+| Dữ liệu multi-user | `sources/categories` là metadata dùng chung; sách, jobs, bookmarks, saved searches và thông báo được cô lập theo user. |
 
 ### 2.1. Ví dụ gọi API có CSRF
 

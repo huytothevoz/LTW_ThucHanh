@@ -27,6 +27,7 @@ class AccountService
             'created_at' => $row->created_at,
             'last_login_at' => $row->last_login_at,
             'is_active' => (int) $row->is_active,
+            'role' => property_exists($row, 'role') ? $row->role : 'user',
         ];
     }
 
@@ -87,7 +88,7 @@ class AccountService
             DB::update('UPDATE users SET last_login_at=? WHERE id=?', [$now, $row->id]);
         }
 
-        return self::publicUser($row);
+        return self::publicUser(DB::selectOne('SELECT * FROM users WHERE id=?', [$row->id]));
     }
 
     public static function sessionVersion(int $userId): ?int
@@ -258,13 +259,14 @@ class AccountService
 
     public static function addBookmark(int $userId, int $bookId): bool
     {
-        if (!DB::selectOne('SELECT id FROM books WHERE id=?', [$bookId])) {
+        if (!DB::selectOne('SELECT id FROM books WHERE id=? AND user_id=?', [$bookId, $userId])) {
             return false;
         }
-        DB::statement(
-            'INSERT OR IGNORE INTO bookmarks(user_id,book_id,created_at) VALUES(?,?,?)',
-            [$userId, $bookId, self::now()],
-        );
+        DB::table('bookmarks')->insertOrIgnore([
+            'user_id' => $userId,
+            'book_id' => $bookId,
+            'created_at' => self::now(),
+        ]);
 
         return true;
     }
@@ -286,9 +288,9 @@ class AccountService
              FROM bookmarks bk
              JOIN books b ON b.id=bk.book_id
              JOIN categories c ON b.category_id=c.id
-             WHERE bk.user_id=?
+             WHERE bk.user_id=? AND b.user_id=?
              ORDER BY bk.created_at DESC,bk.id DESC LIMIT 12 OFFSET ?',
-            [$userId, ($page - 1) * 12],
+            [$userId, $userId, ($page - 1) * 12],
         );
 
         return [

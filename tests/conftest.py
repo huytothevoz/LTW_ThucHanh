@@ -3,10 +3,16 @@ import pytest
 from src import db
 
 
+@pytest.fixture(autouse=True)
+def sqlite_test_backend(monkeypatch):
+    monkeypatch.setenv("DB_CONNECTION", "sqlite")
+
+
 @pytest.fixture
 def isolated_db(tmp_path, monkeypatch):
     db_file = tmp_path / "test_crawlinsight.db"
     monkeypatch.setenv("CRAWLINSIGHT_DB_PATH", str(db_file))
+    monkeypatch.delenv("CRAWLINSIGHT_SQLITE_IMPORT", raising=False)
     db.init_db()
     yield db_file
 

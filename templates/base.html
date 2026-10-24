@@ -52,6 +52,12 @@
             {{ icon('settings',19) }}
             <span>{{ t('settings') }}</span>
           </a>
+          {% if user.role == 'admin' %}
+          <a class="side-link {{ active_page == 'admin-users' ? 'active' : '' }}" href="/admin/users">
+            {{ icon('users',19) }}
+            <span>{{ t('admin_users') }}</span>
+          </a>
+          {% endif %}
           <a class="side-link {{ active_page == 'guide' ? 'active' : '' }}" href="/help">
             {{ icon('file-text',19) }}
             <span>{{ t('guide') }}</span>

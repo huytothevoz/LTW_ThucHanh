@@ -13,14 +13,15 @@ class PriceNotificationService
              FROM price_change_notifications n
              JOIN books b ON b.id=n.book_id
              JOIN book_price_history h ON h.id=n.price_history_id
-             WHERE n.user_id=?
+             WHERE n.user_id=? AND b.user_id=?
              ORDER BY (n.read_at IS NULL) DESC,n.id DESC
              LIMIT 20',
-            [$userId],
+            [$userId, $userId],
         );
         $unread = (int) DB::scalar(
-            'SELECT COUNT(*) FROM price_change_notifications WHERE user_id=? AND read_at IS NULL',
-            [$userId],
+            'SELECT COUNT(*) FROM price_change_notifications n JOIN books b ON b.id=n.book_id '
+            .'WHERE n.user_id=? AND b.user_id=? AND n.read_at IS NULL',
+            [$userId, $userId],
         );
 
         return [

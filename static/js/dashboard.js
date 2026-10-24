@@ -81,8 +81,9 @@
       icon.textContent = '#';
       const content = document.createElement('div');
       content.className = 'history-text';
+      const displayNumber = Number(job.user_job_number || job.id || 0);
       const title = document.createElement('strong');
-      title.textContent = locale==='vi' ? `Phiên thu thập #${job.id}` : `Crawl session #${job.id}`;
+      title.textContent = locale==='vi' ? `Phiên thu thập #${displayNumber}` : `Crawl session #${displayNumber}`;
       const subtitle = document.createElement('span');
       subtitle.textContent = `${formatDate(job.created_at)} · ${job.items_saved} ${t('saved')} · ${job.max_pages} ${t('pages')}`;
       content.append(title, subtitle);
@@ -118,7 +119,8 @@
     $('completed-jobs').textContent = Number(data.completed_jobs).toLocaleString(locale==='vi'?'vi-VN':'en-GB');
     if ($('saved-count')) $('saved-count').textContent = Number(data.saved_books || 0).toLocaleString(locale==='vi'?'vi-VN':'en-GB');
     $('last-status').textContent = data.last_job ? (STATUS_TEXT[data.last_job.status] || data.last_job.status) : t('noData');
-    $('last-job-meta').textContent = data.last_job ? `Job #${data.last_job.id} · ${formatDate(data.last_job.created_at)}` : t('noData');
+    const lastJobNumber = data.last_job ? Number(data.last_job.user_job_number || data.last_job.id || 0) : null;
+    $('last-job-meta').textContent = data.last_job ? `Job #${lastJobNumber} · ${formatDate(data.last_job.created_at)}` : t('noData');
     renderChart(data.rating_distribution);
     renderHistory(data.recent_jobs || []);
     if (data.last_job && ACTIVE.has(data.last_job.status)) {
@@ -146,7 +148,8 @@
   function renderJob(job) {
     $('monitor-empty').hidden = true;
     $('monitor-active').hidden = false;
-    $('job-title').textContent = `Crawl #${job.id}`;
+    const displayNumber = Number(job.user_job_number || job.id || 0);
+    $('job-title').textContent = `Crawl #${displayNumber}`;
     const badge = $('job-status-badge');
     badge.className = `status-badge status-${job.status.toLowerCase()}`;
     badge.textContent = job.status === 'COMPLETED' && job.error_count > 0

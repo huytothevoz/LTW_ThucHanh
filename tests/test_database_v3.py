@@ -5,7 +5,8 @@ import sqlite3
 from pathlib import Path
 import pytest
 from src import db
-from database.tools.db_cli import open_ro,seed_demo,rows_of
+from src.database import migrations
+from database.tools.sqlite_legacy import open_ro,seed_demo,rows_of
 
 
 def test_tables_views_and_empty_initial_state(isolated_db):
@@ -17,7 +18,7 @@ def test_tables_views_and_empty_initial_state(isolated_db):
             assert con.execute(f'SELECT COUNT(*) FROM {name}').fetchone()[0]==0
         assert con.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
         assert con.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert {r[0] for r in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5}
+        assert {r[0] for r in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6}
     db.init_db()  # idempotent, no duplicate source
     with db.connect() as con:
         assert con.execute('SELECT COUNT(*) FROM sources').fetchone()[0]==1
@@ -66,7 +67,7 @@ def test_price_change_notifies_only_users_who_bookmarked_the_book(isolated_db,ex
                 (email.split('@')[0],email,'test-hash',db.now_utc(),db.now_utc()),
             )
 
-    first_job=db.create_job(1);db.mark_job_running(first_job['id'])
+    first_job=db.create_job(1,user_id=1);db.mark_job_running(first_job['id'])
     db.save_book_for_job(first_job['id'],example_book);db.finish_job(first_job['id'],'COMPLETED')
     with db.connect() as con:
         book_id=con.execute('SELECT id FROM books WHERE source_url=?',(example_book['source_url'],)).fetchone()[0]
@@ -77,9 +78,9 @@ def test_price_change_notifies_only_users_who_bookmarked_the_book(isolated_db,ex
                 (user['id'],book_id,db.now_utc()),
             )
 
-    unchanged_job=db.create_job(1);db.mark_job_running(unchanged_job['id'])
+    unchanged_job=db.create_job(1,user_id=1);db.mark_job_running(unchanged_job['id'])
     db.save_book_for_job(unchanged_job['id'],example_book);db.finish_job(unchanged_job['id'],'COMPLETED')
-    changed_job=db.create_job(1);db.mark_job_running(changed_job['id'])
+    changed_job=db.create_job(1,user_id=1);db.mark_job_running(changed_job['id'])
     db.save_book_for_job(changed_job['id'],{**example_book,'price_pence':2222})
     db.finish_job(changed_job['id'],'COMPLETED')
 
@@ -87,25 +88,129 @@ def test_price_change_notifies_only_users_who_bookmarked_the_book(isolated_db,ex
         notifications=con.execute(
             'SELECT user_id,book_id,price_history_id FROM price_change_notifications ORDER BY user_id',
         ).fetchall()
-        assert len(notifications)==2
-        assert {row['user_id'] for row in notifications}=={row['id'] for row in users}
+        assert len(notifications)==1
+        assert {row['user_id'] for row in notifications}=={users[0]['id']}
         assert {row['book_id'] for row in notifications}=={book_id}
         assert len({row['price_history_id'] for row in notifications})==1
         assert con.execute('PRAGMA foreign_key_check').fetchall()==[]
 
 
-def test_v4_database_gets_notifications_migration_idempotently(isolated_db):
-    with db.connect() as con:
-        con.execute('DROP TABLE price_change_notifications')
-        con.execute('DELETE FROM schema_migrations WHERE version=5')
-        con.execute('PRAGMA user_version=4')
+def test_current_database_migration_is_idempotent(isolated_db):
     db.init_db()
     db.init_db()
     with db.connect() as con:
         assert con.execute(
             "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='price_change_notifications'",
         ).fetchone()[0]==1
-        assert {row[0] for row in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5}
+        assert {row[0] for row in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6}
+
+
+def test_users_have_separate_crawl_jobs_and_book_catalogs(isolated_db,example_book):
+    with db.connect() as con:
+        for user_id in (11,22):
+            con.execute(
+                'INSERT INTO users(id,full_name,email,password_hash,created_at,updated_at) VALUES(?,?,?,?,?,?)',
+                (user_id,f'User {user_id}',f'user{user_id}@example.com','test-hash',db.now_utc(),db.now_utc()),
+            )
+    first=db.create_job(1,user_id=11)
+    second=db.create_job(1,user_id=22)
+    db.mark_job_running(first['id'])
+    assert db.save_book_for_job(first['id'],example_book)=='new'
+    db.finish_job(first['id'],'COMPLETED')
+
+    db.mark_job_running(second['id'])
+    assert db.save_book_for_job(second['id'],{**example_book,'price_pence':987})=='new'
+    db.finish_job(second['id'],'COMPLETED')
+
+    assert db.search_books(user_id=11)['total']==1
+    assert db.search_books(user_id=22)['total']==1
+    assert db.search_books(user_id=33)['total']==0
+    with db.connect() as con:
+        rows=con.execute('SELECT user_id,source_url,price_pence FROM books ORDER BY user_id').fetchall()
+        assert [(row['user_id'],row['price_pence']) for row in rows]==[(11,1234),(22,987)]
+        assert con.execute('PRAGMA foreign_key_check').fetchall()==[]
+
+
+def test_v5_migration_splits_shared_books_into_each_owner(tmp_path,monkeypatch,example_book):
+    path=tmp_path/'v5.db'
+    monkeypatch.setenv('CRAWLINSIGHT_DB_PATH',str(path))
+    with sqlite3.connect(path) as con:
+        con.executescript((migrations.MIGRATIONS_DIR/'001_core.sql').read_text(encoding='utf8'))
+        con.executescript((migrations.MIGRATIONS_DIR/'002_indexes.sql').read_text(encoding='utf8'))
+        con.executescript((migrations.MIGRATIONS_DIR/'003_views.sql').read_text(encoding='utf8'))
+        con.execute(
+            "INSERT INTO sources(id,name,base_url,allowed_host,created_at) VALUES(1,'Books','https://books.toscrape.com/','books.toscrape.com',?)",
+            (db.now_utc(),),
+        )
+        for version,filename in enumerate(migrations.FILES[:3],1):
+            con.execute(
+                'INSERT INTO schema_migrations(version,filename,applied_at) VALUES(?,?,?)',
+                (version,filename,db.now_utc()),
+            )
+    connection=db.connect()
+    try:
+        migrations._apply_identity_upgrade(connection)
+        migrations._apply_notifications_upgrade(connection)
+        now=db.now_utc()
+        for user_id in (1,2):
+            connection.execute(
+                'INSERT INTO users(id,full_name,email,password_hash,created_at,updated_at) VALUES(?,?,?,?,?,?)',
+                (user_id,f'User {user_id}',f'user{user_id}@example.com','test-hash',now,now),
+            )
+        connection.execute(
+            "INSERT INTO categories(id,source_id,name,first_seen_at) VALUES(1,1,?,?)",
+            (example_book['category'],now),
+        )
+        jobs=[]
+        for user_id in (1,2):
+            cursor=connection.execute(
+                "INSERT INTO crawl_jobs(source_id,max_pages,status,items_saved,new_books,created_at,finished_at,user_id) "
+                "VALUES(1,1,'COMPLETED',1,1,?,?,?)",
+                (now,now,user_id),
+            )
+            jobs.append(cursor.lastrowid)
+        connection.execute(
+            'INSERT INTO books(id,source_id,category_id,source_url,title,price_pence,rating,availability,first_seen_at,last_seen_at,last_crawl_job_id) '
+            "VALUES(1,1,1,?,?,?,?,'In stock',?,?,?)",
+            (example_book['source_url'],example_book['title'],example_book['price_pence'],
+             example_book['rating'],now,now,jobs[1]),
+        )
+        connection.execute(
+            'INSERT INTO books(id,source_id,category_id,source_url,title,price_pence,rating,availability,first_seen_at,last_seen_at) '
+            "VALUES(2,1,1,'https://books.toscrape.com/catalogue/unowned_2/index.html',"
+            "'Unowned legacy book',1300,3,'In stock',?,?)",
+            (now,now),
+        )
+        for job_id in jobs:
+            connection.execute(
+                "INSERT INTO crawl_job_books(job_id,book_id,action,observed_price_pence,observed_rating,observed_at) "
+                "VALUES(?,1,'NEW',?,?,?)",
+                (job_id,example_book['price_pence'],example_book['rating'],now),
+            )
+        for user_id in (1,2):
+            connection.execute(
+                'INSERT INTO bookmarks(user_id,book_id,created_at) VALUES(?,1,?)',
+                (user_id,now),
+            )
+        connection.commit()
+        migrations._apply_user_isolation_upgrade(connection)
+        copies=connection.execute(
+            'SELECT user_id,source_url FROM books WHERE source_url=? ORDER BY user_id',
+            (example_book['source_url'],),
+        ).fetchall()
+        assert [(row['user_id'],row['source_url']) for row in copies]==[
+            (1,example_book['source_url']),(2,example_book['source_url']),
+        ]
+        unowned=connection.execute(
+            'SELECT id,user_id FROM books WHERE source_url=?',
+            ('https://books.toscrape.com/catalogue/unowned_2/index.html',),
+        ).fetchone()
+        assert unowned is not None and unowned['user_id'] is None
+        assert len({row[0] for row in connection.execute('SELECT id FROM books')})==3
+        assert connection.execute('SELECT COUNT(*) FROM bookmarks').fetchone()[0]==2
+        assert connection.execute('PRAGMA foreign_key_check').fetchall()==[]
+    finally:
+        connection.close()
 
 
 def test_active_job_enforced_by_unique_index(isolated_db):

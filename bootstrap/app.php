@@ -18,6 +18,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [ResolveIdentity::class, SecurityHeaders::class]);
         $middleware->alias([
             'authenticated' => \App\Http\Middleware\EnsureAuthenticated::class,
+            'admin' => \App\Http\Middleware\EnsureAdmin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

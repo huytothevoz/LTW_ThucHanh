@@ -1,4 +1,4 @@
-"""CrawlInsight SQLite facade used by the Python crawler and database tools."""
+"""CrawlInsight database facade used by the Python crawler and database tools."""
 from .database.connection import (ROOT,DEFAULT_DB,SCHEMA_PATH,connect,database_path,now_utc,row_dict)
 from .database.migrations import init_db
 from .database.jobs import (ACTIVE_STATUSES,TERMINAL_STATUSES,ActiveJobError,
