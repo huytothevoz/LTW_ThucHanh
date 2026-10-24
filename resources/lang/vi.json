@@ -111,6 +111,8 @@
     "full_name": "Họ và tên",
     "email": "Địa chỉ email",
     "password": "Mật khẩu",
+    "show_password": "Hiện mật khẩu",
+    "hide_password": "Ẩn mật khẩu",
     "current_password": "Mật khẩu hiện tại",
     "new_password": "Mật khẩu mới",
     "confirm_password": "Xác nhận mật khẩu",

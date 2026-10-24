@@ -5,9 +5,7 @@
  const mode=form.dataset.mode;
  const error=document.getElementById('auth-error');const success=document.getElementById('auth-success');
  const button=document.getElementById('auth-submit');
- document.querySelectorAll('[data-reveal]').forEach(b=>b.addEventListener('click',()=>{
-   const input=document.getElementById(b.dataset.reveal);input.type=input.type==='password'?'text':'password';
- }));
+
  form.addEventListener('submit',async e=>{
    e.preventDefault();error.hidden=true;success.hidden=true;button.disabled=true;
    const payload={};let path='';
