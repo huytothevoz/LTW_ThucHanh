@@ -21,13 +21,15 @@
   box-sizing:border-box
 }
 html {
-  scroll-behavior:smooth
+  scroll-behavior:smooth;
+  overflow-x:hidden;
 }
 body {
   margin:0;
   background:var(--bg);
   color:var(--ink);
   font-family:var(--font);
+  overflow-x:hidden;
   font-size:14px;
   -webkit-font-smoothing:antialiased
 }

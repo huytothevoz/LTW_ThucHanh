@@ -70,8 +70,9 @@
                 maxlength="128"
                 placeholder="••••••••••"
               >
-              <button type="button" class="reveal" data-reveal="auth-password" aria-label="Show password">
-                {{ icon('search',17) }}
+              <button type="button" class="reveal" data-reveal="auth-password" aria-label="{{ t('show_password') | default('Show password') }}">
+                <span class="icon-eye">{{ icon('eye',17) }}</span>
+                <span class="icon-eye-off" hidden>{{ icon('eye-off',17) }}</span>
               </button>
             </div>
           {% endif %}
@@ -80,6 +81,10 @@
             <div class="form-control">
               {{ icon('lock',18) }}
               <input id="confirm-password" type="password" name="confirm" autocomplete="new-password" required maxlength="128" placeholder="••••••••••">
+              <button type="button" class="reveal" data-reveal="confirm-password" aria-label="{{ t('show_password') | default('Show password') }}">
+                <span class="icon-eye">{{ icon('eye',17) }}</span>
+                <span class="icon-eye-off" hidden>{{ icon('eye-off',17) }}</span>
+              </button>
             </div>
             <p class="form-hint">{{ t('auth_reset_desc') }}</p>
           {% endif %}

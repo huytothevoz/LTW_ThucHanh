@@ -18,6 +18,26 @@
   menu?.addEventListener('click',()=>toggleMenu(!sidebar.classList.contains('open')));
   overlay?.addEventListener('click',()=>toggleMenu(false));
   document.addEventListener('keydown',e=>{ if(e.key==='Escape') toggleMenu(false); });
+  sidebar?.querySelectorAll('a').forEach(a=>{
+    a.addEventListener('click',()=>{ if(window.innerWidth<=768) toggleMenu(false); });
+  });
+  document.querySelectorAll('[data-reveal]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const input=document.getElementById(b.dataset.reveal);
+      if(!input) return;
+      const isPassword=input.type==='password';
+      input.type=isPassword?'text':'password';
+      b.classList.toggle('revealed',isPassword);
+      const eye=b.querySelector('.icon-eye');
+      const eyeOff=b.querySelector('.icon-eye-off');
+      if(eye&&eyeOff){
+        eye.hidden=isPassword;
+        eyeOff.hidden=!isPassword;
+      }
+      const isVi=locale==='vi'||document.querySelector('meta[name="ci-locale"]')?.content==='vi';
+      b.setAttribute('aria-label',isPassword?(isVi?'Ẩn mật khẩu':'Hide password'):(isVi?'Hiện mật khẩu':'Show password'));
+    });
+  });
   const csrf = () => document.querySelector('meta[name="csrf-token"]')?.content || '';
   async function fetchJSON(path, options={}) {
     const headers = {Accept:'application/json', ...(options.body?{'Content-Type':'application/json'}:{}),

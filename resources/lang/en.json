@@ -111,6 +111,8 @@
     "full_name": "Full name",
     "email": "Email address",
     "password": "Password",
+    "show_password": "Show password",
+    "hide_password": "Hide password",
     "current_password": "Current password",
     "new_password": "New password",
     "confirm_password": "Confirm password",

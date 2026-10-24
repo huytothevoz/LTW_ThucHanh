@@ -1,0 +1,3 @@
+FIX || ADD
+- [x] Responsive cho mobile: Đã hoàn thiện (tối ưu hóa header, sidebar z-index/overlay, topbar breadcrumbs, filter catalog, bảng cuộn ngang, modal tự co giãn và chống tràn thanh cuộn ngang html/body).
+- [x] Trong trang đăng nhập tại nút show password đang có icon cái kính lúp => Đã đổi thành icon con mắt (eye / eye-off) và đồng bộ sang trang đăng ký (cả ô mật khẩu và ô xác nhận mật khẩu).
