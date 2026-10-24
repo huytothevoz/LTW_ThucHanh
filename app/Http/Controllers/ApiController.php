@@ -222,8 +222,8 @@ class ApiController
     {
         $data = $request->json()->all();
         if (!array_key_exists('max_pages', $data)
-            || !is_int($data['max_pages']) || !in_array($data['max_pages'], [1, 2, 3], true)) {
-            return $this->error('INVALID_MAX_PAGES', 'max_pages phải là số nguyên từ 1 đến 3.', 400);
+            || !is_int($data['max_pages']) || !in_array($data['max_pages'], [1, 2, 3, 4, 5], true)) {
+            return $this->error('INVALID_MAX_PAGES', 'max_pages phải là số nguyên từ 1 đến 5.', 400);
         }
         $sourceId = isset($data['source_id']) && is_int($data['source_id']) && in_array($data['source_id'], [1, 2, 3], true)
             ? $data['source_id']
@@ -444,6 +444,20 @@ class ApiController
             'Content-Type' => 'text/csv; charset=utf-8',
             'Cache-Control' => 'no-store',
         ]);
+    }
+
+    public function resetBooks(Request $request): JsonResponse
+    {
+        try {
+            $result = BookService::resetCrawledBooks($this->user($request)['id']);
+        } catch (\DomainException $exception) {
+            if ($exception->getMessage() === 'JOB_ALREADY_ACTIVE') {
+                return $this->error('JOB_ALREADY_ACTIVE', 'Không thể đặt lại khi có lượt crawl đang hoạt động.', 409);
+            }
+            throw $exception;
+        }
+
+        return response()->json($result);
     }
 
     private function user(Request $request): array

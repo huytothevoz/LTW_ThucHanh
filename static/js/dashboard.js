@@ -213,7 +213,7 @@
     event.preventDefault();
     const selected = document.querySelector('input[name="max-pages"]:checked');
     const maxPages = selected ? Number(selected.value) : 1;
-    if (![1, 2, 3].includes(maxPages)) return;
+    if (![1, 2, 3, 4, 5].includes(maxPages)) return;
     const sourceSelect = $('source-select');
     const sourceId = sourceSelect ? Number(sourceSelect.value) || 1 : 1;
     setStartDisabled(true);
@@ -221,7 +221,7 @@
       const { job } = await fetchJSON('/api/jobs', {
         method: 'POST', body: JSON.stringify({ max_pages: maxPages, source_id: sourceId }),
       });
-      toast(`Crawl #${job.id} has been queued.`, 'success');
+      toast(locale === 'vi' ? `Phiên crawl #${job.id} đã được thêm vào hàng đợi.` : `Crawl #${job.id} has been queued.`, 'success');
       trackJob(job.id);
       await loadSummary();
     } catch (error) {
@@ -230,6 +230,25 @@
       else setStartDisabled(false);
     }
   });
+
+  const resetBtn = $('reset-crawled-books-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      const confirmMsg = t('resetConfirm') || 'Bạn có chắc chắn muốn xóa toàn bộ sách đã crawl? Thao tác này sẽ xóa tất cả sách và lịch sử crawl của bạn.';
+      if (!confirm(confirmMsg)) return;
+      resetBtn.disabled = true;
+      try {
+        const res = await fetchJSON('/api/books/reset', { method: 'POST' });
+        toast(t('resetSuccess') || `Đã đặt lại dữ liệu sách (${res.deleted_books || 0} sách).`, 'success');
+        stopPolling();
+        await loadSummary();
+      } catch (err) {
+        toast(err.message || 'Không thể reset sách.', 'error');
+      } finally {
+        resetBtn.disabled = false;
+      }
+    });
+  }
 
   window.addEventListener('beforeunload', stopPolling);
   loadSummary();

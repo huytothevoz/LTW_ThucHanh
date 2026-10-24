@@ -73,27 +73,40 @@
         <div class="form-group">
           <div class="field-heading">
             <span>{{ t('crawl_pages') }}</span>
-            <span>1 — 3</span>
+            <span>1 — 5 (100 {{ t('book') }})</span>
           </div>
           <div class="page-picker" role="group" aria-label="Catalogue pages">
             <label>
               <input type="radio" name="max-pages" value="1" checked>
-              <span>1 {{ t('pages') }}<small>Quick</small></span>
+              <span>1 {{ t('pages') }}<small>20 {{ t('book') }}</small></span>
             </label>
             <label>
               <input type="radio" name="max-pages" value="2">
-              <span>2 {{ t('pages') }}<small>Standard</small></span>
+              <span>2 {{ t('pages') }}<small>40 {{ t('book') }}</small></span>
             </label>
             <label>
               <input type="radio" name="max-pages" value="3">
-              <span>3 {{ t('pages') }}<small>Extended</small></span>
+              <span>3 {{ t('pages') }}<small>60 {{ t('book') }}</small></span>
+            </label>
+            <label>
+              <input type="radio" name="max-pages" value="4">
+              <span>4 {{ t('pages') }}<small>80 {{ t('book') }}</small></span>
+            </label>
+            <label>
+              <input type="radio" name="max-pages" value="5">
+              <span>5 {{ t('pages') }}<small>100 {{ t('book') }}</small></span>
             </label>
           </div>
         </div>
-        <button id="start-button" type="submit" class="primary-button">
-          <span class="button-content">{{ icon('play',18) }} {{ t('start_crawl') }}</span>
-          <span class="button-end">{{ icon('arrow-right',18) }}</span>
-        </button>
+        <div class="crawl-form-actions" style="display:flex;gap:10px;align-items:stretch;">
+          <button id="start-button" type="submit" class="primary-button" style="flex:1;">
+            <span class="button-content">{{ icon('play',18) }} {{ t('start_crawl') }}</span>
+            <span class="button-end">{{ icon('arrow-right',18) }}</span>
+          </button>
+          <button id="reset-crawled-books-btn" type="button" class="outlined-action" title="{{ t('reset_books') }}" style="color:#ef4444;border-color:rgba(239,68,68,0.35);padding:0 14px;display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px;border-radius:12px;cursor:pointer;white-space:nowrap;">
+            {{ icon('trash',16) }} <span>{{ t('reset_books') }}</span>
+          </button>
+        </div>
       </form>
       <div class="crawl-explainer">{{ icon('shield',16) }} {{ t('robots_policy') }} · 1 request/second</div>
     </section>

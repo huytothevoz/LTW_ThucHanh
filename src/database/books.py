@@ -156,5 +156,43 @@ def search_books(q: str='',min_price: str|None=None,max_price: str|None=None,pag
     join=' FROM books b JOIN categories c ON c.id=b.category_id'
     with connect() as con:
         count=con.execute('SELECT COUNT(*)'+join+where,params).fetchone()[0]
-        rows=con.execute('SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'+join+where+' ORDER BY b.id DESC LIMIT 12 OFFSET ?', [*params,(page-1)*12]).fetchall()
-    return {'items':[dict(r) for r in rows], 'page':page,'page_size':12,'total':count,'total_pages':(count+11)//12}
+        rows=con.execute('SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'+join+where+' ORDER BY b.id DESC LIMIT 20 OFFSET ?', [*params,(page-1)*20]).fetchall()
+    return {'items':[dict(r) for r in rows], 'page':page,'page_size':20,'total':count,'total_pages':(count+19)//20}
+
+
+def reset_user_books(user_id: int | None = None) -> dict:
+    """Reset and remove all crawled books and crawl jobs for a user."""
+    with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
+        where_user = "user_id IS ?"
+        user_param = (user_id,)
+        active = con.execute(
+            f"SELECT id FROM crawl_jobs WHERE {where_user} AND status IN ('PENDING','RUNNING') LIMIT 1",
+            user_param,
+        ).fetchone()
+        if active:
+            raise RuntimeError("Cannot reset books while a crawl job is active")
+
+        book_rows = con.execute(f"SELECT id FROM books WHERE {where_user}", user_param).fetchall()
+        book_ids = [row["id"] if isinstance(row, dict) else row[0] for row in book_rows]
+        deleted_books = len(book_ids)
+
+        if deleted_books > 0:
+            placeholders = ",".join("?" for _ in book_ids)
+            con.execute(f"DELETE FROM bookmarks WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM price_change_notifications WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM book_price_history WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM crawl_job_books WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM books WHERE {where_user}", user_param)
+
+        job_rows = con.execute(f"SELECT id FROM crawl_jobs WHERE {where_user}", user_param).fetchall()
+        job_ids = [row["id"] if isinstance(row, dict) else row[0] for row in job_rows]
+        deleted_jobs = len(job_ids)
+        if deleted_jobs > 0:
+            job_placeholders = ",".join("?" for _ in job_ids)
+            con.execute(f"DELETE FROM crawl_events WHERE job_id IN ({job_placeholders})", job_ids)
+            con.execute(f"DELETE FROM crawl_pages WHERE job_id IN ({job_placeholders})", job_ids)
+            con.execute(f"DELETE FROM crawl_jobs WHERE {where_user}", user_param)
+
+        return {"ok": True, "deleted_books": deleted_books, "deleted_jobs": deleted_jobs}
+

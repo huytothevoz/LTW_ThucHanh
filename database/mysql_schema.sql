@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS crawl_jobs (
     KEY idx_crawl_jobs_user (user_id, id DESC),
     CONSTRAINT fk_crawl_jobs_source FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE RESTRICT,
     CONSTRAINT fk_crawl_jobs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    CHECK (max_pages BETWEEN 1 AND 3),
+    CHECK (max_pages BETWEEN 1 AND 5),
     CHECK (status IN ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED')),
     CHECK (items_saved = new_books + existing_books),
     CHECK (catalogue_pages_done <= max_pages),

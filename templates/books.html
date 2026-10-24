@@ -31,7 +31,7 @@
         <div class="panel-eyebrow">THE COLLECTION</div>
         <h3 id="explorer-title">{{ t('catalog') }} <span class="result-count" id="result-count">— records</span></h3>
       </div>
-      <span class="verified-label">{{ icon('database',17) }} {{ t('saved') }} · SQLite</span>
+      <span class="verified-label">{{ icon('database',17) }} {{ t('saved') }} · {{ db_driver|upper }}</span>
     </div>
     <form id="filter-form" class="filter-form">
       <div class="search-field">
@@ -69,6 +69,7 @@
     <div class="catalog-tools">
       <button type="button" id="save-filter" class="outlined-action">{{ icon('bookmark',16) }} {{ t('save_filter') }}</button>
       <a class="outlined-action" href="/api/exports/books.csv">{{ icon('file-text',16) }} CSV</a>
+      <button type="button" id="reset-books-btn" class="outlined-action" title="{{ t('reset_books') }}" style="color:#ef4444;border-color:rgba(239,68,68,0.35);">{{ icon('trash',16) }} {{ t('reset_books') }}</button>
       <span class="currency-note">{{ t('price_notice') }}</span>
     </div>
     <div class="saved-search-bar" id="saved-search-bar" hidden>

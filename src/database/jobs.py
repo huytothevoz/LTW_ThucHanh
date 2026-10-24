@@ -17,8 +17,8 @@ def sanitize_error(message: str | None) -> str | None:
 
 
 def create_job(max_pages: int, source_id: int = 1, user_id: int | None = None) -> dict:
-    if type(max_pages) is not int or max_pages not in (1,2,3):
-        raise ValueError('max_pages must be an integer from 1 to 3')
+    if type(max_pages) is not int or max_pages not in (1, 2, 3, 4, 5):
+        raise ValueError('max_pages must be an integer from 1 to 5')
     if type(source_id) is not int or source_id not in (1, 2, 3):
         raise ValueError('source_id must be 1, 2, or 3')
     with connect() as con:

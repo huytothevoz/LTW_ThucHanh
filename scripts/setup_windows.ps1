@@ -43,25 +43,29 @@ if (-not (Test-Path '.env')) {
 }
 
 function Get-DotEnvValue([string]$Name) {
-    $Line = Get-Content '.env' | Where-Object { $_ -match ('^' + [regex]::Escape($Name) + '=') } | Select-Object -First 1
+    $Line = Get-Content '.env' -Encoding UTF8 | Where-Object { $_ -match ('^' + [regex]::Escape($Name) + '=') } | Select-Object -First 1
     if (-not $Line) { return '' }
     return ($Line -split '=', 2)[1].Trim().Trim('"').Trim("'")
 }
 
 function Set-DotEnvValue([string]$Name, [string]$Value, [bool]$Replace = $false) {
+    $StoredValue = $Value
+    if ($StoredValue -match '\s' -and -not ($StoredValue.StartsWith("'") -and $StoredValue.EndsWith("'"))) {
+        $StoredValue = "'$StoredValue'"
+    }
     $Lines = New-Object 'System.Collections.Generic.List[string]'
-    foreach ($ExistingLine in Get-Content '.env') { $Lines.Add($ExistingLine) }
+    foreach ($ExistingLine in (Get-Content '.env' -Encoding UTF8)) { $Lines.Add($ExistingLine) }
     $Found = $false
     for ($Index = 0; $Index -lt $Lines.Count; $Index++) {
         if ($Lines[$Index] -match ('^' + [regex]::Escape($Name) + '=')) {
             $Found = $true
             $Current = ($Lines[$Index] -split '=', 2)[1].Trim().Trim('"').Trim("'")
             if ($Replace -or [string]::IsNullOrWhiteSpace($Current)) {
-                $Lines[$Index] = "$Name=$Value"
+                $Lines[$Index] = "$Name=$StoredValue"
             }
         }
     }
-    if (-not $Found) { $Lines.Add("$Name=$Value") }
+    if (-not $Found) { $Lines.Add("$Name=$StoredValue") }
     [System.IO.File]::WriteAllLines(
         (Join-Path $Root '.env'),
         $Lines,
@@ -86,12 +90,13 @@ if ([string]::IsNullOrWhiteSpace($LegacySqlitePath)) {
 if ([string]::IsNullOrWhiteSpace($LegacySqlitePath)) {
     if ((Split-Path (Split-Path $Root -Parent) -Leaf) -ieq 'htdocs') {
         $LegacySqlitePath = Join-Path (Split-Path (Split-Path $Root -Parent) -Parent) 'ltw-th-private-data\crawlinsight.db'
-    } else {
+    }
+    else {
         $LegacySqlitePath = Join-Path $Root 'data\crawlinsight.db'
     }
 }
-if (-not [System.IO.Path]::IsPathRooted($LegacySqlitePath)) {
-    $LegacySqlitePath = Join-Path $Root $LegacySqlitePath
+if ([System.IO.Path]::IsPathRooted($LegacySqlitePath) -and $LegacySqlitePath.StartsWith($Root, [System.StringComparison]::OrdinalIgnoreCase)) {
+    $LegacySqlitePath = $LegacySqlitePath.Substring($Root.Length).TrimStart('\', '/')
 }
 Set-DotEnvValue 'CRAWLINSIGHT_SQLITE_IMPORT' $LegacySqlitePath
 
@@ -102,7 +107,7 @@ if (-not $ComposerCommand) { $ComposerCommand = $Composer.FullName }
 & $ComposerCommand install --no-interaction --prefer-dist
 if ($LASTEXITCODE -ne 0) { throw 'Composer dependency installation failed.' }
 
-$AppKeyLine = Get-Content '.env' | Where-Object { $_ -match '^APP_KEY=' } | Select-Object -First 1
+$AppKeyLine = Get-Content '.env' -Encoding UTF8 | Where-Object { $_ -match '^APP_KEY=' } | Select-Object -First 1
 if (-not $AppKeyLine -or $AppKeyLine -eq 'APP_KEY=') {
     & $PhpExe artisan key:generate --no-interaction
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate the Laravel application key.' }
@@ -130,14 +135,18 @@ if (-not (Test-Path '.venv\Scripts\python.exe')) {
     if ($LASTEXITCODE -ne 0) { throw 'Could not create the crawler virtual environment.' }
 }
 $Python = Join-Path $Root '.venv\Scripts\python.exe'
+$env:PYTHONIOENCODING = 'utf-8'
+$env:PYTHONUTF8 = '1'
 & $Python -m pip install -r requirements.txt
 if ($LASTEXITCODE -ne 0) { throw 'Crawler dependency installation failed.' }
 
-foreach ($Line in Get-Content '.env') {
+foreach ($Line in (Get-Content '.env' -Encoding UTF8)) {
     if ($Line -match '^\s*([^#=\s]+)=(.*)$') {
         $Name = $Matches[1]
         $Value = $Matches[2].Trim().Trim('"').Trim("'")
-        [Environment]::SetEnvironmentVariable($Name, $Value, 'Process')
+        if ($Value.Length -le 32000) {
+            [Environment]::SetEnvironmentVariable($Name, $Value, 'Process')
+        }
     }
 }
 
@@ -170,11 +179,14 @@ function Get-MySqlServerVersion([string]$HostName, [int]$Port) {
         $VersionEnd = [Array]::IndexOf($Packet, [byte]0, 1)
         if ($VersionEnd -lt 2) { return $null }
         return [System.Text.Encoding]::ASCII.GetString($Packet, 1, $VersionEnd - 1)
-    } catch [System.Net.Sockets.SocketException] {
+    }
+    catch [System.Net.Sockets.SocketException] {
         return $null
-    } catch [System.IO.IOException] {
+    }
+    catch [System.IO.IOException] {
         return $null
-    } finally {
+    }
+    finally {
         $Client.Close()
     }
 }
@@ -215,7 +227,8 @@ if ($ExistingServerVersion -and $ExistingServerVersion -notmatch 'MariaDB') {
 
 if ($ExistingServerVersion) {
     Write-Host "Reusing XAMPP MariaDB $ExistingServerVersion on $env:DB_HOST`:$RequestedPort." -ForegroundColor Green
-} else {
+}
+else {
     Write-Host "Starting XAMPP MariaDB on $env:DB_HOST`:$RequestedPort ..." -ForegroundColor Cyan
     $LogDirectory = Join-Path $Root 'storage\logs'
     New-Item -ItemType Directory -Path $LogDirectory -Force | Out-Null
