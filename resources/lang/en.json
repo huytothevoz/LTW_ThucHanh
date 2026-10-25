@@ -75,7 +75,7 @@
     "rating_distribution": "Rating distribution",
     "recent_runs": "Latest crawl sessions",
     "no_data": "No data yet. Run a crawl to begin.",
-    "max_pages": "Up to 3 catalogue pages per crawl under the current policy.",
+    "max_pages": "Up to 5 catalogue pages (100 books) per crawl under the current policy.",
     "original_source": "Original source",
     "source_safe": "Approved test source",
     "catalog_title": "Explore the book collection",
@@ -175,5 +175,8 @@
     "logout_confirm": "Do you want to sign out?",
     "guest_nav": "About",
     "project_scope": "Student project · Web Crawling",
-    "contact_support": "Help center"
+    "contact_support": "Help center",
+    "reset_books": "Reset crawled books",
+    "reset_books_confirm": "Are you sure you want to reset all crawled books? This will delete all your books and crawl history.",
+    "reset_books_success": "Successfully reset all crawled books."
 }

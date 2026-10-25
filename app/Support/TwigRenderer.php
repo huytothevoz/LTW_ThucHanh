@@ -21,7 +21,12 @@ class TwigRenderer
             'strict_variables' => false,
         ]);
         $this->twig->addFunction(new TwigFunction('t', fn (string $key): string => Lang::get($key)));
-        $this->twig->addFunction(new TwigFunction('asset', fn (string $path): string => '/'.ltrim($path, '/')));
+        $this->twig->addFunction(new TwigFunction('asset', function (string $path): string {
+            $normalized = ltrim($path, '/');
+            $fullPath = base_path($normalized);
+            $v = file_exists($fullPath) ? filemtime($fullPath) : time();
+            return '/' . $normalized . '?v=' . $v;
+        }));
     }
 
     public function render(Request $request, string $template, array $context = []): string
@@ -33,6 +38,7 @@ class TwigRenderer
             'locale' => $request->attributes->get('locale', 'vi'),
             'active_page' => null,
             'csrf' => csrf_token(),
+            'db_driver' => env('DB_CONNECTION', 'mysql'),
         ];
 
         return $this->twig->render($template, $context);

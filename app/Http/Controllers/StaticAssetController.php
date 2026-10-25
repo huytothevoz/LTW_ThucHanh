@@ -24,7 +24,7 @@ class StaticAssetController
         };
 
         return response()->file($file, [
-            'Cache-Control' => 'public, max-age=3600',
+            'Cache-Control' => 'no-cache, must-revalidate',
             'Content-Type' => $contentType,
             'X-Content-Type-Options' => 'nosniff',
         ]);

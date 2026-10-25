@@ -57,9 +57,21 @@ class BookDiscoveryAndBookmarkTest extends TestCase
             CREATE TABLE crawl_jobs (
                 id INTEGER PRIMARY KEY,
                 user_id INTEGER,
+                source_id INTEGER NOT NULL DEFAULT 1,
                 status TEXT NOT NULL,
                 max_pages INTEGER NOT NULL,
-                items_saved INTEGER NOT NULL,
+                items_saved INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                finished_at TEXT,
+                last_error TEXT,
+                error_count INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE crawl_events (
+                id INTEGER PRIMARY KEY,
+                job_id INTEGER NOT NULL,
+                level TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                message TEXT NOT NULL,
                 created_at TEXT NOT NULL
             );
             CREATE VIEW v_books_detail AS
@@ -244,4 +256,59 @@ class BookDiscoveryAndBookmarkTest extends TestCase
             ->assertOk()
             ->assertJsonPath('total_books', 2);
     }
+
+    public function test_create_job_max_pages_validation_up_to_5(): void
+    {
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->postJson('/api/jobs', ['max_pages' => 6])
+            ->assertStatus(400)
+            ->assertJsonPath('error.code', 'INVALID_MAX_PAGES');
+
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->postJson('/api/jobs', ['max_pages' => 5])
+            ->assertStatus(202)
+            ->assertJsonPath('job.max_pages', 5);
+    }
+
+    public function test_reset_books_clears_current_user_data_safely(): void
+    {
+        DB::table('users')->insert([
+            'id' => 2,
+            'full_name' => 'Other User',
+            'email' => 'other_user@example.com',
+            'password_hash' => 'hash',
+            'created_at' => '2026-10-24T00:00:00Z',
+            'updated_at' => '2026-10-24T00:00:00Z',
+        ]);
+        DB::table('books')->insert([
+            'id' => 3,
+            'user_id' => 2,
+            'category_id' => 1,
+            'title' => 'Other User Book',
+            'price_pence' => 2500,
+            'rating' => 4,
+            'availability' => 'In stock',
+            'source_url' => 'https://books.toscrape.com/catalogue/other.html',
+            'first_seen_at' => '2026-10-24T00:00:00Z',
+            'last_seen_at' => '2026-10-24T00:00:00Z',
+        ]);
+
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->postJson('/api/books/reset')
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('deleted_books', 2);
+
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/books')
+            ->assertOk()
+            ->assertJsonPath('total', 0);
+
+        // User 2's books must remain intact
+        $this->withSession(['user_id' => 2, 'session_version' => 0])
+            ->getJson('/api/books')
+            ->assertOk()
+            ->assertJsonPath('total', 1);
+    }
 }
+

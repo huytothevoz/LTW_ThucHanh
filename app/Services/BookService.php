@@ -91,16 +91,16 @@ class BookService
         $total = (int) DB::scalar('SELECT COUNT(*)'.$join.$where, $bindings);
         $items = DB::select(
             'SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'
-            .$join.$where.' ORDER BY b.id DESC LIMIT 12 OFFSET ?',
-            [...$bindings, ($page - 1) * 12],
+            .$join.$where.' ORDER BY b.id DESC LIMIT 20 OFFSET ?',
+            [...$bindings, ($page - 1) * 20],
         );
 
         return [
             'items' => array_map(static fn (object $row): array => (array) $row, $items),
             'page' => $page,
-            'page_size' => 12,
+            'page_size' => 20,
             'total' => $total,
-            'total_pages' => (int) ceil($total / 12),
+            'total_pages' => (int) ceil($total / 20),
         ];
     }
 
@@ -185,4 +185,46 @@ class BookService
             [$userId],
         );
     }
+
+    public static function resetCrawledBooks(int $userId): array
+    {
+        return DB::transaction(function () use ($userId): array {
+            $activeJob = DB::selectOne(
+                "SELECT id FROM crawl_jobs WHERE user_id=? AND status IN ('PENDING','RUNNING') LIMIT 1",
+                [$userId],
+            );
+            if ($activeJob) {
+                throw new \DomainException('JOB_ALREADY_ACTIVE');
+            }
+
+            $bookIds = DB::table('books')->where('user_id', $userId)->pluck('id')->all();
+            $bookCount = count($bookIds);
+
+            if ($bookCount > 0) {
+                foreach (['bookmarks', 'price_change_notifications', 'book_price_history', 'crawl_job_books'] as $table) {
+                    if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
+                        DB::table($table)->whereIn('book_id', $bookIds)->delete();
+                    }
+                }
+                DB::table('books')->where('user_id', $userId)->delete();
+            }
+
+            $jobIds = DB::table('crawl_jobs')->where('user_id', $userId)->pluck('id')->all();
+            if (count($jobIds) > 0) {
+                foreach (['crawl_events', 'crawl_pages'] as $table) {
+                    if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
+                        DB::table($table)->whereIn('job_id', $jobIds)->delete();
+                    }
+                }
+                DB::table('crawl_jobs')->where('user_id', $userId)->delete();
+            }
+
+            return [
+                'ok' => true,
+                'deleted_books' => $bookCount,
+                'deleted_jobs' => count($jobIds),
+            ];
+        });
+    }
 }
+
