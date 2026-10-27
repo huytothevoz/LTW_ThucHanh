@@ -1,6 +1,6 @@
 # CrawlInsight — Technical Architecture
 
-**Current stack:** Laravel 12 / PHP 8.2+ for the web backend, Scrapy / Python 3.11–3.12 for the crawler worker, and shared MySQL/MariaDB storage (XAMPP port 3308).
+**Current stack:** Laravel 12 / PHP 8.2+ for the web backend, Scrapy / Python 3.11–3.12 for the crawler worker, and shared MySQL/MariaDB storage (XAMPP port 3306).
 
 ## 1. System overview
 
@@ -43,7 +43,7 @@ sequenceDiagram
   R->>D: RUNNING -> COMPLETED/FAILED
 ```
 
-PHP and Python read the same `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` values. The Windows setup defaults to XAMPP MySQL at `127.0.0.1:3308` and explicitly passes these connection values to the child crawler process. Legacy SQLite input is imported once during setup and is not used at runtime.
+PHP and Python read the same `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME`, and `DB_PASSWORD` values. The Windows setup defaults to XAMPP MySQL at `127.0.0.1:3306` and explicitly passes these connection values to the child crawler process. Legacy SQLite input is imported once during setup and is not used at runtime.
 
 ## 3. Database invariants
 

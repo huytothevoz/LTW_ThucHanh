@@ -72,7 +72,7 @@ Sản phẩm hiện tập trung vào dữ liệu sách từ [Books to Scrape](ht
 ```mermaid
 flowchart LR
     A[Người dùng] -->|Thao tác trên giao diện| B[Laravel PHP Backend]
-    B -->|Tạo job / đọc dữ liệu| C[(MySQL :3308)]
+    B -->|Tạo job / đọc dữ liệu| C[(MySQL :3306)]
     B -->|Khởi chạy tiến trình| D[Scrapy Crawler]
     D -->|Đọc HTML trong phạm vi cho phép| E[Books to Scrape]
     E -->|HTML| D
@@ -100,7 +100,7 @@ Crawler chỉ làm việc với `https://books.toscrape.com/`, kiểm tra giới
 | **Frontend** | HTML, CSS, JavaScript, Twig | Giao diện, responsive, đa ngôn ngữ, tương tác với API |
 | **Web Backend** | PHP 8.2+, Laravel 12 | Routes, session, API JSON, xử lý nghiệp vụ |
 | **Crawler** | Python 3.11/3.12, Scrapy | Duyệt URL hợp lệ, request HTML, parsing, crawling pipeline |
-| **Database** | MySQL/MariaDB (XAMPP, cổng 3308) | Sách, nguồn, job, lịch sử, tài khoản và tùy chọn cá nhân |
+| **Database** | MySQL/MariaDB (XAMPP, cổng 3306) | Sách, nguồn, job, lịch sử, tài khoản và tùy chọn cá nhân |
 | **Testing** | pytest | Kiểm thử database, parser, bảo mật và API ở mức phù hợp |
 | **Môi trường phát triển** | Windows, PHP/Composer, Python venv, Git/GitHub | Chạy local và phối hợp nhóm |
 
@@ -156,7 +156,7 @@ Clone hoặc tải repository, mở thư mục dự án rồi chạy:
 START_HERE.bat
 ```
 
-Chỉ cần double-click `START_HERE.bat`. Script tự khởi động XAMPP MariaDB trên cổng `3308` nếu chưa chạy, cài/cập nhật dependencies khi cần, tự tạo/cập nhật database `crawlinsight`, nhập SQLite cũ nếu tìm thấy và khởi chạy Laravel. Cổng này tách riêng ứng dụng khỏi MySQL80 hoặc MySQL khác đang dùng `3306`; setup không kết nối nhầm sang các dịch vụ đó và không sửa cấu hình XAMPP toàn cục. Không cần mở XAMPP Control Panel trước.
+Chỉ cần double-click `START_HERE.bat`. Script dùng XAMPP MariaDB trên cổng `3306`, khởi động nó nếu chưa chạy, cài/cập nhật dependencies khi cần, tự tạo/cập nhật database `crawlinsight`, nhập SQLite cũ nếu tìm thấy và khởi chạy Laravel. Nếu cổng `3306` thuộc về dịch vụ MySQL khác, setup sẽ dừng và báo lỗi thay vì kết nối nhầm. Không cần mở XAMPP Control Panel trước.
 
 **http://127.0.0.1:8000/**
 
@@ -170,7 +170,7 @@ Chỉ cần double-click `START_HERE.bat`. Script tự khởi động XAMPP Mari
 .\scripts\start_windows.ps1
 ```
 
-Ứng dụng mặc định **không có tài khoản mẫu** và cơ sở dữ liệu chạy thật **không chứa sẵn sách giả**. Hãy tự đăng ký tài khoản, đăng nhập và chạy thử một lượt crawl 1 trang. Thông tin MySQL được đặt trong `.env` (`DB_HOST=127.0.0.1`, `DB_PORT=3308`, `DB_DATABASE=crawlinsight`); setup truyền cùng cấu hình cho PHP và worker Python.
+Ứng dụng mặc định **không có tài khoản mẫu** và cơ sở dữ liệu chạy thật **không chứa sẵn sách giả**. Hãy tự đăng ký tài khoản, đăng nhập và chạy thử một lượt crawl 1 trang. Thông tin MySQL được đặt trong `.env` (`DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=crawlinsight`); setup truyền cùng cấu hình cho PHP và worker Python.
 
 > [!IMPORTANT]
 > Nếu lưu project ở `C:\xampp\htdocs\LTW-TH`, không truy cập qua Apache; hãy dùng `http://127.0.0.1:8000/`. MySQL chạy ngoài document root. Setup tạo backup SQLite trước khi nhập dữ liệu; hãy sao lưu MySQL trước khi nâng cấp.
@@ -195,7 +195,7 @@ Xem hướng dẫn chi tiết: [`docs/README_TECHNICAL.md`](docs/README_TECHNICA
 |---|---|
 | Landing, tài khoản, workspace nhiều trang, VI/EN và dark mode | **Đã có mã nguồn**; cần nghiệm thu UI/HTTP trên máy thực |
 | Scrapy, parsing, giới hạn nguồn, lưu dữ liệu | **Đã có mã nguồn**; chưa xác minh crawl live từ đầu đến cuối trong môi trường build |
-| MySQL/MariaDB, bootstrap schema, truy vấn và import SQLite | **Đã triển khai; cần kiểm thử với XAMPP đang chạy trên cổng 3308** |
+| MySQL/MariaDB, bootstrap schema, truy vấn và import SQLite | **Đã triển khai; cần kiểm thử với XAMPP đang chạy trên cổng 3306** |
 | Gửi email SMTP thực tế | **Có cơ chế**, phụ thuộc cấu hình và cần kiểm tra gửi/nhận |
 | Triển khai production public / HTTPS | **Chưa triển khai** |
 
@@ -233,7 +233,7 @@ Dự án giữa kỳ học phần **Lập trình Web & Ứng dụng (503073)** �
 
 ## 🌍 English summary
 
-**CrawlInsight** is a Vietnamese-first, bilingual web crawling and book analytics project developed for the *Web Programming & Applications* course at Ton Duc Thang University. **Laravel/PHP** provides the web backend and **Scrapy/Python** remains the isolated crawler worker; both share **MySQL/MariaDB** on port 3308. Setup can import an existing SQLite database once.
+**CrawlInsight** is a Vietnamese-first, bilingual web crawling and book analytics project developed for the *Web Programming & Applications* course at Ton Duc Thang University. **Laravel/PHP** provides the web backend and **Scrapy/Python** remains the isolated crawler worker; both share **MySQL/MariaDB** on port 3306. Setup can import an existing SQLite database once.
 
 **Current status:** Source implementation and offline database tests are available, while live crawling, browser-based end-to-end flows and SMTP delivery still require verification. The application is intended for local academic development, not production deployment.
 

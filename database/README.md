@@ -1,6 +1,6 @@
 # CrawlInsight Database — MySQL/MariaDB
 
-Laravel and the Python Scrapy worker use the same MySQL/MariaDB database. The Windows/XAMPP setup defaults to `127.0.0.1:3308`, database `crawlinsight`, username `root`, and an empty password. Configure the connection in the local `.env` file; never commit credentials.
+Laravel and the Python Scrapy worker use the same MySQL/MariaDB database. The Windows/XAMPP setup defaults to `127.0.0.1:3306`, database `crawlinsight`, username `root`, and an empty password. Configure the connection in the local `.env` file; never commit credentials.
 
 ## Quick setup
 
@@ -12,7 +12,7 @@ PHP must have `pdo_mysql` enabled. The Python worker installs PyMySQL from `requ
 
 ### Automatic XAMPP startup
 
-The launcher starts `mysqld.exe` directly with XAMPP's existing `my.ini`; the Control Panel does not need to be open. It binds XAMPP MariaDB to port `3308`, separately from other MySQL services such as MySQL80 on port `3306`. It reuses MariaDB already running on `3308`, but will not connect to a different MySQL server. Setup uses the local XAMPP `root` account without a password and does not alter other MySQL service accounts. It never edits XAMPP's global configuration. Set `XAMPP_HOME` if XAMPP is installed somewhere other than `C:\xampp`; startup logs are saved under `storage\logs`.
+The launcher starts `mysqld.exe` directly with XAMPP's existing `my.ini` on port `3306`; the Control Panel does not need to be open. It reuses XAMPP MariaDB already running on that port and never starts a second server against the same data directory. If another MySQL service owns port `3306`, setup stops rather than connecting to the wrong server. Setup uses the local XAMPP `root` account without a password and does not alter other MySQL service accounts. It never edits XAMPP's global configuration. Set `XAMPP_HOME` if XAMPP is installed somewhere other than `C:\xampp`; startup logs are saved under `storage\logs`.
 
 ## Connection and legacy import
 
@@ -21,7 +21,7 @@ The active connection keys are:
 ```dotenv
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=3308
+DB_PORT=3306
 DB_DATABASE=crawlinsight
 DB_USERNAME=root
 DB_PASSWORD=
