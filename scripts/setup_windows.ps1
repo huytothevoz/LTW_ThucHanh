@@ -78,7 +78,7 @@ if ($PreviousConnection -eq 'sqlite' -or [string]::IsNullOrWhiteSpace($PreviousC
     Set-DotEnvValue 'DB_CONNECTION' 'mysql' $true
 }
 Set-DotEnvValue 'DB_HOST' '127.0.0.1'
-Set-DotEnvValue 'DB_PORT' '3308' $true
+Set-DotEnvValue 'DB_PORT' '3306' $true
 Set-DotEnvValue 'DB_DATABASE' 'crawlinsight'
 Set-DotEnvValue 'DB_USERNAME' 'root'
 Set-DotEnvValue 'DB_PASSWORD' '' $true
@@ -113,28 +113,51 @@ if (-not $AppKeyLine -or $AppKeyLine -eq 'APP_KEY=') {
     if ($LASTEXITCODE -ne 0) { throw 'Could not generate the Laravel application key.' }
 }
 
-$PythonLauncher = $null
-if (Get-Command py -ErrorAction SilentlyContinue) {
-    foreach ($Version in @('-3.12', '-3.11')) {
-        & py $Version --version *> $null
-        if ($LASTEXITCODE -eq 0) { $PythonLauncher = @('py', $Version); break }
+$PythonOverride = Get-DotEnvValue 'CRAWLINSIGHT_PYTHON'
+$Python = $null
+
+if (-not [string]::IsNullOrWhiteSpace($PythonOverride)) {
+    $Python = $PythonOverride.Trim()
+    if (-not (Test-Path $Python)) {
+        throw "CRAWLINSIGHT_PYTHON points to a missing Python executable: $Python"
     }
+    & $Python -c 'import sys; raise SystemExit(0 if sys.version_info[:2] in ((3, 11), (3, 12)) else 1)'
+    if ($LASTEXITCODE -ne 0) { throw 'CRAWLINSIGHT_PYTHON must point to Python 3.11 or 3.12.' }
 }
-if (-not $PythonLauncher) {
-    if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
-        throw 'Python 3.11 or 3.12 is required for the crawler.'
+else {
+    $PythonLauncher = $null
+    if (Get-Command py -ErrorAction SilentlyContinue) {
+        foreach ($Version in @('-3.12', '-3.11')) {
+            & py $Version --version *> $null
+            if ($LASTEXITCODE -eq 0) { $PythonLauncher = @('py', $Version); break }
+        }
     }
-    & python -c 'import sys; raise SystemExit(0 if sys.version_info[:2] in ((3, 11), (3, 12)) else 1)'
-    if ($LASTEXITCODE -ne 0) { throw 'Python 3.11 or 3.12 is required for the crawler.' }
-    $PythonLauncher = @('python')
+    if (-not $PythonLauncher) {
+        if (-not (Get-Command python -ErrorAction SilentlyContinue)) {
+            throw 'Python 3.11 or 3.12 is required for the crawler.'
+        }
+        & python -c 'import sys; raise SystemExit(0 if sys.version_info[:2] in ((3, 11), (3, 12)) else 1)'
+        if ($LASTEXITCODE -ne 0) { throw 'Python 3.11 or 3.12 is required for the crawler.' }
+        $PythonLauncher = @('python')
+    }
+
+    $Python = Join-Path $Root '.venv\Scripts\python.exe'
+    if (-not (Test-Path $Python)) {
+        if ($PythonLauncher.Count -eq 2) { & $PythonLauncher[0] $PythonLauncher[1] -m venv .venv }
+        else { & $PythonLauncher[0] -m venv .venv }
+        if ($LASTEXITCODE -ne 0) { throw 'Could not create the crawler virtual environment.' }
+    }
+
+    & $Python -c 'import sys; raise SystemExit(0 if sys.version_info[:2] in ((3, 11), (3, 12)) else 1)'
+    if ($LASTEXITCODE -ne 0) {
+        Remove-Item '.venv' -Recurse -Force -ErrorAction SilentlyContinue
+        if ($PythonLauncher.Count -eq 2) { & $PythonLauncher[0] $PythonLauncher[1] -m venv .venv }
+        else { & $PythonLauncher[0] -m venv .venv }
+        if ($LASTEXITCODE -ne 0) { throw 'Could not repair the crawler virtual environment.' }
+        $Python = Join-Path $Root '.venv\Scripts\python.exe'
+    }
 }
 
-if (-not (Test-Path '.venv\Scripts\python.exe')) {
-    if ($PythonLauncher.Count -eq 2) { & $PythonLauncher[0] $PythonLauncher[1] -m venv .venv }
-    else { & $PythonLauncher[0] -m venv .venv }
-    if ($LASTEXITCODE -ne 0) { throw 'Could not create the crawler virtual environment.' }
-}
-$Python = Join-Path $Root '.venv\Scripts\python.exe'
 $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUTF8 = '1'
 & $Python -m pip install -r requirements.txt
@@ -223,6 +246,51 @@ if ([string]::IsNullOrWhiteSpace($RequestedPort) -or [int]$RequestedPort -lt 1 -
 $ExistingServerVersion = Get-MySqlServerVersion $env:DB_HOST ([int]$RequestedPort)
 if ($ExistingServerVersion -and $ExistingServerVersion -notmatch 'MariaDB') {
     throw "Port $RequestedPort is occupied by '$ExistingServerVersion', not XAMPP MariaDB. Stop or reconfigure that separate service, then run START_HERE.bat again."
+}
+
+if (-not $ExistingServerVersion) {
+    $XamppDefaultPort = $null
+    $InMySqlSection = $false
+    foreach ($IniLine in (Get-Content $MysqlIni -Encoding UTF8)) {
+        if ($IniLine -match '^\s*\[mysqld\]\s*$') {
+            $InMySqlSection = $true
+            continue
+        }
+        if ($IniLine -match '^\s*\[') {
+            $InMySqlSection = $false
+            continue
+        }
+        if ($InMySqlSection -and $IniLine -match '^\s*port\s*=\s*(\d+)') {
+            $XamppDefaultPort = [int]$Matches[1]
+            break
+        }
+    }
+
+    if ($XamppDefaultPort -and $XamppDefaultPort -ne [int]$RequestedPort) {
+        $XamppProcesses = Get-CimInstance Win32_Process -Filter "Name='mysqld.exe'" -ErrorAction Stop |
+            Where-Object {
+                $_.ExecutablePath -and
+                $_.ExecutablePath.Equals($MysqlServer, [System.StringComparison]::OrdinalIgnoreCase) -and
+                $_.CommandLine -and
+                $_.CommandLine.IndexOf($MysqlIni, [System.StringComparison]::OrdinalIgnoreCase) -ge 0
+            }
+        if ($XamppProcesses) {
+            $XamppDefaultVersion = Get-MySqlServerVersion $env:DB_HOST $XamppDefaultPort
+            if ($XamppDefaultVersion -and $XamppDefaultVersion -match 'MariaDB') {
+                $RequestedPort = "$XamppDefaultPort"
+                $env:DB_PORT = $RequestedPort
+                Set-DotEnvValue 'DB_PORT' $RequestedPort $true
+                $ExistingServerVersion = $XamppDefaultVersion
+                Write-Host "Reusing the running XAMPP MariaDB on its configured port $RequestedPort to avoid starting a second server against the same data directory." -ForegroundColor Green
+            }
+            elseif (-not $XamppDefaultVersion) {
+                throw "XAMPP mysqld is already running with '$MysqlIni' but is not accepting connections on port $XamppDefaultPort. Stop that XAMPP MariaDB instance or check its logs before retrying; setup will not start a second server against the same data directory."
+            }
+            else {
+                throw "XAMPP mysqld is already running, but port $XamppDefaultPort responds as '$XamppDefaultVersion'. Stop or inspect that server before retrying."
+            }
+        }
+    }
 }
 
 if ($ExistingServerVersion) {

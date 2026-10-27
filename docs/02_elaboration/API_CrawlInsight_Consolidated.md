@@ -14,7 +14,7 @@ API cung cấp dữ liệu giữa frontend Twig + JavaScript và Laravel/PHP, g�
 - **Base URL local:** `http://127.0.0.1:8000`; tất cả JSON API có tiền tố `/api`.
 - **Phiên bản URL:** baseline **không dùng** `/api/v1` hay `/api/crawl-jobs`; không tự ý đổi endpoint nếu chưa cập nhật frontend, test và SRS.
 - **Website crawl:** chỉ `https://books.toscrape.com/`, 1–3 trang catalogue/job, mỗi tài khoản tối đa một job đang chạy.
-- **Phạm vi ứng dụng:** Laravel/PHP và Python dùng chung MySQL/MariaDB (XAMPP port 3308); Python chỉ phục vụ crawler. Không công khai credentials qua Apache.
+- **Phạm vi ứng dụng:** Laravel/PHP và Python dùng chung MySQL/MariaDB (XAMPP port 3306); Python chỉ phục vụ crawler. Không công khai credentials qua Apache.
 - **Mục tiêu tài liệu:** để người làm frontend, backend, crawler hiểu giống nhau về tên field, quyền truy cập, lỗi và ví dụ payload.
 
 ## 2. Quy ước giao tiếp và bảo mật

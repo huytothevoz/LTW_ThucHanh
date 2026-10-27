@@ -15,11 +15,11 @@
 2. The setup starts XAMPP MariaDB if needed, prepares/imports the database, then starts Laravel.
 3. Open `http://127.0.0.1:8000/`, register a user, and start a one-page crawl.
 
-The launcher does not require XAMPP Control Panel to be open. It starts XAMPP `mysqld.exe` directly using the existing XAMPP `my.ini` and binds it to the project's local port `3308`. It reuses a MariaDB server already running on that port, but refuses to connect to another MySQL service (for example, MySQL80 on port `3306`). It never edits XAMPP's global configuration or deletes the SQLite file. If XAMPP is installed outside `C:\xampp`, set `XAMPP_HOME` to its installation directory.
+The launcher does not require XAMPP Control Panel to be open. It starts XAMPP `mysqld.exe` directly using the existing XAMPP `my.ini` on port `3306`, or reuses the same XAMPP instance if it is already running. It never starts a second server against the same data directory and refuses to connect to a different MySQL service on `3306`. It never edits XAMPP's global configuration or deletes the SQLite file. If XAMPP is installed outside `C:\xampp`, set `XAMPP_HOME` to its installation directory.
 
-Setup updates SQLite connection settings to MySQL, configures this local project for XAMPP `root` without a password on port `3308`, installs Composer/Python dependencies, generates an application key, creates the `crawlinsight` database/schema and imports the previous SQLite file once when found. It does not change SMTP settings such as `SMTP_PASSWORD` for Gmail OTP delivery. Startup diagnostics are written under `storage\logs` if MariaDB fails to start.
+Setup updates SQLite connection settings to MySQL, configures this local project for XAMPP `root` without a password on port `3306`, installs Composer/Python dependencies, generates an application key, creates the `crawlinsight` database/schema and imports the previous SQLite file once when found. It does not change SMTP settings such as `SMTP_PASSWORD` for Gmail OTP delivery. Startup diagnostics are written under `storage\logs` if MariaDB fails to start.
 
-The application uses port `3308` to keep its XAMPP MariaDB separate from other local MySQL installations. Setup resets this project's `DB_PASSWORD` to empty for the selected local XAMPP `root` account; it does not change the password of another MySQL service.
+The application uses the XAMPP default port `3306`. If another MySQL service already owns that port, setup stops with an explicit error; it does not change or reconfigure that service. Setup resets this project's `DB_PASSWORD` to empty for the selected local XAMPP `root` account.
 
 ## Shared MySQL configuration
 
@@ -28,7 +28,7 @@ Laravel and Python use the same environment variables:
 ```dotenv
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
-DB_PORT=3308
+DB_PORT=3306
 DB_DATABASE=crawlinsight
 DB_USERNAME=root
 DB_PASSWORD=
@@ -62,7 +62,7 @@ Run both language test suites:
 .\scripts\run_tests_windows.ps1
 ```
 
-PHP feature tests and isolated Python tests use SQLite in-memory/temp databases for speed. This does not change the MySQL runtime default. MySQL-specific bootstrap/import behavior should also be verified against XAMPP on port 3308.
+PHP feature tests and isolated Python tests use SQLite in-memory/temp databases for speed. This does not change the MySQL runtime default. MySQL-specific bootstrap/import behavior should also be verified against XAMPP on port 3306.
 
 ## Runtime boundaries
 
