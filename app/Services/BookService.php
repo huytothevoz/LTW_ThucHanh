@@ -6,13 +6,23 @@ use Illuminate\Support\Facades\DB;
 
 class BookService
 {
-    public static function summary(): array
+    public static function summary(int $userId): array
     {
-        $total = (int) DB::scalar('SELECT COUNT(*) FROM books');
-        $completed = (int) DB::scalar("SELECT COUNT(*) FROM crawl_jobs WHERE status='COMPLETED'");
-        $recent = DB::select('SELECT id,status,max_pages,items_saved,created_at FROM crawl_jobs ORDER BY id DESC LIMIT 5');
-        $last = DB::selectOne('SELECT id,status,created_at FROM crawl_jobs ORDER BY id DESC LIMIT 1');
-        $ratings = DB::select('SELECT rating,COUNT(*) AS count FROM books GROUP BY rating');
+        $total = (int) DB::scalar('SELECT COUNT(*) FROM books WHERE user_id=?', [$userId]);
+        $completed = (int) DB::scalar("SELECT COUNT(*) FROM crawl_jobs WHERE user_id=? AND status='COMPLETED'", [$userId]);
+        $recent = DB::select(
+            'SELECT c.id, c.status, c.max_pages, c.items_saved, c.created_at,
+                    (SELECT COUNT(*) FROM crawl_jobs t WHERE t.user_id = c.user_id AND t.id <= c.id) AS user_job_number
+             FROM crawl_jobs c WHERE c.user_id=? ORDER BY c.id DESC LIMIT 5',
+            [$userId],
+        );
+        $last = DB::selectOne(
+            'SELECT c.id, c.status, c.created_at,
+                    (SELECT COUNT(*) FROM crawl_jobs t WHERE t.user_id = c.user_id AND t.id <= c.id) AS user_job_number
+             FROM crawl_jobs c WHERE c.user_id=? ORDER BY c.id DESC LIMIT 1',
+            [$userId],
+        );
+        $ratings = DB::select('SELECT rating,COUNT(*) AS count FROM books WHERE user_id=? GROUP BY rating', [$userId]);
         $counts = [];
         foreach ($ratings as $row) {
             $counts[(int) $row->rating] = (int) $row->count;
@@ -30,13 +40,16 @@ class BookService
         ];
     }
 
-    public static function categories(): array
+    public static function categories(int $userId): array
     {
-        $rows = DB::select('SELECT id, name FROM categories ORDER BY name ASC');
+        $rows = DB::select(
+            'SELECT DISTINCT c.id,c.name FROM categories c JOIN books b ON b.category_id=c.id WHERE b.user_id=? ORDER BY c.name ASC',
+            [$userId],
+        );
         return array_map(static fn (object $row): array => (array) $row, $rows);
     }
 
-    public static function search(string $query, ?string $minPrice, ?string $maxPrice, int $page, ?string $category = null): array
+    public static function search(int $userId, string $query, ?string $minPrice, ?string $maxPrice, int $page, ?string $category = null): array
     {
         if (mb_strlen($query) > 100) {
             throw new \DomainException('q must be <=100 characters');
@@ -54,15 +67,15 @@ class BookService
             throw new \DomainException('min_price must be <= max_price');
         }
 
-        $conditions = [];
-        $bindings = [];
+        $conditions = ['b.user_id=?'];
+        $bindings = [$userId];
         if (trim($query) !== '') {
-            $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], trim($query));
-            $conditions[] = "b.title LIKE ? ESCAPE '\\' COLLATE NOCASE";
+            $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], trim($query));
+            $conditions[] = "b.title LIKE ? ESCAPE '!'";
             $bindings[] = '%'.$escaped.'%';
         }
         if ($category !== null && trim($category) !== '') {
-            $conditions[] = 'c.name = ? COLLATE NOCASE';
+            $conditions[] = 'c.name = ?';
             $bindings[] = trim($category);
         }
         if ($low !== null) {
@@ -78,41 +91,25 @@ class BookService
         $total = (int) DB::scalar('SELECT COUNT(*)'.$join.$where, $bindings);
         $items = DB::select(
             'SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'
-            .$join.$where.' ORDER BY b.id DESC LIMIT 12 OFFSET ?',
-            [...$bindings, ($page - 1) * 12],
+            .$join.$where.' ORDER BY b.id DESC LIMIT 20 OFFSET ?',
+            [...$bindings, ($page - 1) * 20],
         );
 
         return [
             'items' => array_map(static fn (object $row): array => (array) $row, $items),
             'page' => $page,
-            'page_size' => 12,
+            'page_size' => 20,
             'total' => $total,
-            'total_pages' => (int) ceil($total / 12),
+            'total_pages' => (int) ceil($total / 20),
         ];
     }
 
     public static function userSummary(int $userId): array
     {
-        $result = self::summary();
-        $result['completed_jobs'] = (int) DB::scalar(
-            "SELECT COUNT(*) FROM crawl_jobs WHERE user_id=? AND status='COMPLETED'",
-            [$userId],
-        );
-        $result['recent_jobs'] = array_map(
-            static fn (object $row): array => (array) $row,
-            DB::select(
-                'SELECT id,status,max_pages,items_saved,created_at FROM crawl_jobs WHERE user_id=? ORDER BY id DESC LIMIT 5',
-                [$userId],
-            ),
-        );
-        $last = DB::selectOne(
-            'SELECT id,status,created_at FROM crawl_jobs WHERE user_id=? ORDER BY id DESC LIMIT 1',
-            [$userId],
-        );
-        $result['last_job'] = $last ? (array) $last : null;
+        $result = self::summary($userId);
         $result['saved_books'] = (int) DB::scalar(
-            'SELECT COUNT(*) FROM bookmarks WHERE user_id=?',
-            [$userId],
+            'SELECT COUNT(*) FROM bookmarks bk JOIN books b ON b.id=bk.book_id WHERE bk.user_id=? AND b.user_id=?',
+            [$userId, $userId],
         );
 
         return $result;
@@ -120,7 +117,11 @@ class BookService
 
     public static function job(int $jobId, int $userId): ?array
     {
-        $job = DB::selectOne('SELECT * FROM crawl_jobs WHERE id=? AND user_id=?', [$jobId, $userId]);
+        $job = DB::selectOne(
+            'SELECT c.*, (SELECT COUNT(*) FROM crawl_jobs t WHERE t.user_id = c.user_id AND t.id <= c.id) AS user_job_number
+             FROM crawl_jobs c WHERE c.id=? AND c.user_id=?',
+            [$jobId, $userId],
+        );
         if (!$job) {
             return null;
         }
@@ -137,7 +138,10 @@ class BookService
 
     public static function bookDetail(int $bookId, int $userId): ?array
     {
-        $book = DB::selectOne('SELECT * FROM v_books_detail WHERE id=?', [$bookId]);
+        $book = DB::selectOne(
+            'SELECT d.* FROM v_books_detail d JOIN books b ON b.id=d.id WHERE d.id=? AND b.user_id=?',
+            [$bookId, $userId],
+        );
         if (!$book) {
             return null;
         }
@@ -153,27 +157,74 @@ class BookService
         ];
     }
 
-    public static function analytics(): array
+    public static function analytics(int $userId): array
     {
         $categories = DB::select(
-            'SELECT category,total_books,average_price_gbp FROM v_category_summary ORDER BY total_books DESC,category LIMIT 12',
+            'SELECT c.name AS category,COUNT(b.id) AS total_books,ROUND(AVG(b.price_pence)/100.0,2) AS average_price_gbp '
+            .'FROM books b JOIN categories c ON c.id=b.category_id WHERE b.user_id=? '
+            .'GROUP BY c.id,c.name ORDER BY total_books DESC,category LIMIT 12',
+            [$userId],
         );
         $prices = DB::selectOne(
-            'SELECT MIN(price_pence) AS minimum,MAX(price_pence) AS maximum,ROUND(AVG(price_pence)) AS average,COUNT(*) AS total FROM books',
+            'SELECT MIN(price_pence) AS minimum,MAX(price_pence) AS maximum,ROUND(AVG(price_pence)) AS average,COUNT(*) AS total FROM books WHERE user_id=?',
+            [$userId],
         );
 
         return [
             'categories' => array_map(static fn (object $row): array => (array) $row, $categories),
             'prices' => (array) $prices,
-            'rating_distribution' => self::summary()['rating_distribution'],
+            'rating_distribution' => self::summary($userId)['rating_distribution'],
         ];
     }
 
-    public static function exportRows(): iterable
+    public static function exportRows(int $userId): iterable
     {
         return DB::cursor(
             'SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.source_url
-             FROM books b JOIN categories c ON c.id=b.category_id ORDER BY b.id',
+             FROM books b JOIN categories c ON c.id=b.category_id WHERE b.user_id=? ORDER BY b.id',
+            [$userId],
         );
     }
+
+    public static function resetCrawledBooks(int $userId): array
+    {
+        return DB::transaction(function () use ($userId): array {
+            $activeJob = DB::selectOne(
+                "SELECT id FROM crawl_jobs WHERE user_id=? AND status IN ('PENDING','RUNNING') LIMIT 1",
+                [$userId],
+            );
+            if ($activeJob) {
+                throw new \DomainException('JOB_ALREADY_ACTIVE');
+            }
+
+            $bookIds = DB::table('books')->where('user_id', $userId)->pluck('id')->all();
+            $bookCount = count($bookIds);
+
+            if ($bookCount > 0) {
+                foreach (['bookmarks', 'price_change_notifications', 'book_price_history', 'crawl_job_books'] as $table) {
+                    if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
+                        DB::table($table)->whereIn('book_id', $bookIds)->delete();
+                    }
+                }
+                DB::table('books')->where('user_id', $userId)->delete();
+            }
+
+            $jobIds = DB::table('crawl_jobs')->where('user_id', $userId)->pluck('id')->all();
+            if (count($jobIds) > 0) {
+                foreach (['crawl_events', 'crawl_pages'] as $table) {
+                    if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
+                        DB::table($table)->whereIn('job_id', $jobIds)->delete();
+                    }
+                }
+                DB::table('crawl_jobs')->where('user_id', $userId)->delete();
+            }
+
+            return [
+                'ok' => true,
+                'deleted_books' => $bookCount,
+                'deleted_jobs' => count($jobIds),
+            ];
+        });
+    }
 }
+

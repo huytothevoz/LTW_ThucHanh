@@ -23,5 +23,5 @@ $PhpVersion = & $PhpExe -r 'echo PHP_VERSION_ID;'
 if ($LASTEXITCODE -ne 0 -or [int]$PhpVersion -lt 80200) { throw 'PHP 8.2 or newer is required.' }
 if (-not (Test-Path 'vendor/autoload.php')) { throw 'Missing vendor dependencies. Run scripts/setup_windows.ps1 first.' }
 if (-not (Test-Path '.env')) { throw 'Missing .env. Run scripts/setup_windows.ps1 first.' }
-Write-Host 'Starting Laravel at http://127.0.0.1:8000/' -ForegroundColor Cyan
-& $PhpExe artisan serve --host=127.0.0.1 --port=8000
+Write-Host 'Starting Laravel at http://127.0.0.1:8090/' -ForegroundColor Cyan
+& $PhpExe artisan serve --host=127.0.0.1 --port=8090

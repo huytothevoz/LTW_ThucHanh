@@ -16,6 +16,7 @@ class RegistrationTest extends TestCase
                 full_name TEXT NOT NULL,
                 email TEXT NOT NULL COLLATE NOCASE UNIQUE,
                 password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user',
                 is_active INTEGER NOT NULL DEFAULT 1,
                 session_version INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
@@ -58,6 +59,7 @@ class RegistrationTest extends TestCase
         ])->assertCreated()
             ->assertJsonPath('user.full_name', 'Test User')
             ->assertJsonPath('user.email', 'test.user@example.com')
+            ->assertJsonPath('user.role', 'user')
             ->assertJsonPath('preferences.locale', 'vi');
 
         $passwordHash = DB::table('users')->value('password_hash');

@@ -20,7 +20,7 @@ class BooksSpider(scrapy.Spider):
         super().__init__(*args, **kwargs)
         self.job_id = int(job_id)
         self.max_pages = int(max_pages)
-        if self.max_pages not in (1, 2, 3):
+        if self.max_pages not in (1, 2, 3, 4, 5):
             raise ValueError("max_pages outside SRS scope")
         self.seen_urls: set[str] = set()
 

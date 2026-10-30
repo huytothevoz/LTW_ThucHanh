@@ -1,6 +1,6 @@
--- CrawlInsight v5 | Reference SQL for a FRESH EMPTY install.
+-- CrawlInsight v6 | Reference SQL for a FRESH EMPTY install.
 
--- Runtime migrations 001..005 remain authoritative for existing users.
+-- Runtime migrations 001..006 remain authoritative for existing users.
 
 -- Includes one trusted source; NO books and NO user accounts.
 
@@ -49,7 +49,8 @@ CREATE TABLE books (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id INTEGER NOT NULL DEFAULT 1 REFERENCES sources(id) ON DELETE RESTRICT,
     category_id INTEGER NOT NULL,
-    source_url TEXT NOT NULL UNIQUE,
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    source_url TEXT NOT NULL,
     title TEXT NOT NULL CHECK(length(trim(title)) > 0),
     price_pence INTEGER NOT NULL CHECK(price_pence BETWEEN 0 AND 999999),
     rating INTEGER NOT NULL CHECK(rating BETWEEN 1 AND 5),
@@ -59,7 +60,8 @@ CREATE TABLE books (
     first_seen_at TEXT NOT NULL,
     last_seen_at TEXT NOT NULL,
     last_crawl_job_id INTEGER REFERENCES crawl_jobs(id) ON DELETE SET NULL,
-    FOREIGN KEY(category_id,source_id) REFERENCES categories(id,source_id) ON DELETE RESTRICT
+    FOREIGN KEY(category_id,source_id) REFERENCES categories(id,source_id) ON DELETE RESTRICT,
+    UNIQUE(user_id,source_url)
 );
 
 CREATE TABLE categories (
@@ -94,7 +96,7 @@ CREATE TABLE crawl_job_books (
 CREATE TABLE crawl_jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id INTEGER NOT NULL DEFAULT 1 REFERENCES sources(id) ON DELETE RESTRICT,
-    max_pages INTEGER NOT NULL CHECK(max_pages BETWEEN 1 AND 3),
+    max_pages INTEGER NOT NULL CHECK(max_pages BETWEEN 1 AND 5),
     status TEXT NOT NULL DEFAULT 'PENDING'
         CHECK(status IN ('PENDING','RUNNING','COMPLETED','FAILED')),
     catalogue_pages_done INTEGER NOT NULL DEFAULT 0 CHECK(catalogue_pages_done >= 0),
@@ -170,6 +172,7 @@ CREATE TABLE users (
  full_name TEXT NOT NULL CHECK(length(trim(full_name)) BETWEEN 2 AND 100),
  email TEXT NOT NULL COLLATE NOCASE UNIQUE CHECK(length(email) BETWEEN 5 AND 254),
  password_hash TEXT NOT NULL,
+ role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','admin')),
  is_active INTEGER NOT NULL DEFAULT 1 CHECK(is_active IN (0,1)),
  session_version INTEGER NOT NULL DEFAULT 0 CHECK(session_version >= 0),
  created_at TEXT NOT NULL,
@@ -186,6 +189,8 @@ CREATE INDEX idx_books_category ON books(category_id);
 CREATE INDEX idx_books_price ON books(price_pence);
 
 CREATE INDEX idx_books_source ON books(source_id);
+
+CREATE INDEX idx_books_user ON books(user_id,id DESC);
 
 CREATE INDEX idx_books_title ON books(title COLLATE NOCASE);
 
@@ -208,7 +213,7 @@ CREATE INDEX idx_reset_user_expiry ON password_reset_tokens(user_id,expires_at);
 
 CREATE INDEX idx_saved_searches_user ON saved_searches(user_id,id DESC);
 
-CREATE UNIQUE INDEX ux_jobs_one_active ON crawl_jobs((1))
+CREATE UNIQUE INDEX ux_jobs_one_active_per_user ON crawl_jobs(COALESCE(user_id,0))
     WHERE status IN ('PENDING','RUNNING');
 
 CREATE VIEW v_books_detail AS
@@ -249,6 +254,8 @@ INSERT INTO schema_migrations(version,filename,applied_at) VALUES(4,'004_identit
 
 INSERT INTO schema_migrations(version,filename,applied_at) VALUES(5,'005_price_change_notifications.sql','2026-10-23T00:00:00Z');
 
+INSERT INTO schema_migrations(version,filename,applied_at) VALUES(6,'006_user_isolation_and_admin.sql','2026-10-24T00:00:00Z');
+
 COMMIT;
 
-PRAGMA user_version=5;
+PRAGMA user_version=6;

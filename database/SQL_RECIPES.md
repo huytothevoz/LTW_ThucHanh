@@ -1,20 +1,23 @@
-# SQL RECIPES — kiểm tra CrawlInsight V3 bằng câu lệnh thật
+# SQL RECIPES — kiểm tra CrawlInsight MySQL V6 bằng câu lệnh thật
 
-Mọi truy vấn dưới đây đều dành cho **SQLite 3**, không phải MySQL. Có thể chạy trong DB Browser for SQLite → **Execute SQL**. Các câu `SELECT` không thay đổi dữ liệu. Không ghi SQL trực tiếp trong UI; Laravel API dùng service/query có parameter binding, còn crawler dùng `src/database` và parameterized queries.
+Các truy vấn dưới đây dành cho **MySQL/MariaDB** và có thể chạy trong phpMyAdmin → **SQL**. Các câu `SELECT` không thay đổi dữ liệu. Không ghi SQL trực tiếp trong UI; Laravel API dùng service/query có parameter binding, còn crawler dùng `src/database` và parameterized queries.
+
+**Lưu ý quyền riêng tư:** truy vấn quản trị database nhìn thấy mọi tenant. Các query minh họa trong tài liệu là dành cho admin/dev; API của user luôn bổ sung `WHERE user_id = <current account>` khi đọc dữ liệu cá nhân.
 
 ## 1. Kiểm tra bảng, migration, dữ liệu
 
 ```sql
-SELECT name, type FROM sqlite_master
-WHERE type IN ('table','view') AND name NOT LIKE 'sqlite_%'
-ORDER BY type,name;
+SELECT table_name, table_type FROM information_schema.tables
+WHERE table_schema=DATABASE()
+ORDER BY table_type,table_name;
 
 SELECT * FROM schema_migrations ORDER BY version;
 SELECT * FROM sources;
 SELECT COUNT(*) AS total_books FROM books;
 SELECT COUNT(*) AS total_jobs FROM crawl_jobs;
-PRAGMA integrity_check;
-PRAGMA foreign_key_check;
+SELECT table_name, constraint_name, referenced_table_name
+FROM information_schema.key_column_usage
+WHERE table_schema=DATABASE() AND referenced_table_name IS NOT NULL;
 ```
 
 ## 2. Danh sách sách rõ ràng kèm tên danh mục và giá GBP
@@ -22,7 +25,8 @@ PRAGMA foreign_key_check;
 ```sql
 SELECT id, title, category, price_pence, price_gbp, rating, availability,
        source_url, first_seen_at, last_seen_at
-FROM v_books_detail ORDER BY id DESC LIMIT 20;
+FROM v_books_detail WHERE id IN (SELECT id FROM books WHERE user_id = 1)
+ORDER BY id DESC LIMIT 20;
 ```
 
 Tại sao dùng `v_books_detail`? Vì `books` có `category_id` chứ không lặp lại text `category`; view đã JOIN `books` + `categories` + `sources`.
@@ -111,13 +115,14 @@ GROUP BY j.id HAVING j.items_saved != COUNT(jb.id);
 -- Kết quả nên là 0 hàng: tổng counter sai invariant.
 SELECT id FROM crawl_jobs WHERE items_saved != new_books + existing_books;
 
-PRAGMA foreign_key_check;
-PRAGMA integrity_check;
+SELECT table_name, table_rows
+FROM information_schema.tables
+WHERE table_schema=DATABASE() AND table_type='BASE TABLE';
 ```
 
 ## 10. Import / export đúng cách
 
-Không dùng phpMyAdmin để import `.sqlite3`; phpMyAdmin quản lý MySQL/MariaDB. Mở SQLite với DB Browser for SQLite hoặc lệnh:
+Không import thủ công file `.sqlite3` qua phpMyAdmin. Setup chuyển dữ liệu SQLite cũ sang MySQL một lần; các file SQLite demo chỉ để tham khảo, không được dùng làm database runtime.
 
 ```powershell
 .\.venv\Scripts\python.exe -m database.tools.db_cli tables
@@ -125,4 +130,4 @@ Không dùng phpMyAdmin để import `.sqlite3`; phpMyAdmin quản lý MySQL/Mar
 .\.venv\Scripts\python.exe -m database.tools.db_cli export v_books_detail --format csv --output "$env:TEMP\ltw-books.csv"
 ```
 
-Để làm database mới, dùng `python -m database.tools.db_cli init`, không chạy `DROP TABLE` hay `DELETE FROM` trên DB đang dùng.
+Để khởi tạo/cập nhật database, dùng `python -m database.tools.db_cli init`; lệnh tạo schema MySQL và chỉ nhập SQLite cũ một lần. Không chạy `DROP TABLE` hay `DELETE FROM` trên DB đang dùng.

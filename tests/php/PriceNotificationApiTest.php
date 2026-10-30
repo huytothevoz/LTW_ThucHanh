@@ -16,6 +16,7 @@ class PriceNotificationApiTest extends TestCase
                 full_name TEXT NOT NULL,
                 email TEXT NOT NULL,
                 password_hash TEXT NOT NULL,
+                role TEXT NOT NULL DEFAULT 'user',
                 is_active INTEGER NOT NULL DEFAULT 1,
                 session_version INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
@@ -31,6 +32,7 @@ class PriceNotificationApiTest extends TestCase
             );
             CREATE TABLE books (
                 id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
                 title TEXT NOT NULL
             );
             CREATE TABLE book_price_history (
@@ -61,8 +63,8 @@ class PriceNotificationApiTest extends TestCase
         }
 
         DB::table('books')->insert([
-            ['id' => 1, 'title' => 'Book One'],
-            ['id' => 2, 'title' => 'Book Two'],
+            ['id' => 1, 'user_id' => 1, 'title' => 'Book One'],
+            ['id' => 2, 'user_id' => 2, 'title' => 'Book Two'],
         ]);
         DB::table('book_price_history')->insert([
             ['id' => 1, 'old_price_pence' => 1000, 'new_price_pence' => 900, 'changed_at' => '2026-10-23T00:00:00Z'],

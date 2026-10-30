@@ -1,9 +1,10 @@
 """Book validation, normalized categories, item upsert, price audit and search."""
 from __future__ import annotations
 import re
+import hashlib
 from decimal import Decimal, InvalidOperation
 from urllib.parse import urldefrag,urlsplit
-from .connection import connect,now_utc
+from .connection import connect,database_driver,now_utc
 
 PRICE_PATTERN = re.compile(r'(?:0|[1-9]\d{0,3})(?:\.\d{1,2})?\Z')
 
@@ -54,13 +55,17 @@ def save_book_for_job(job_id: int, book: dict) -> str:
     when=now_utc()
     with connect() as con:
         con.execute('BEGIN IMMEDIATE')
-        job=con.execute('SELECT status,source_id FROM crawl_jobs WHERE id=?',(job_id,)).fetchone()
+        job=con.execute('SELECT status,source_id,user_id FROM crawl_jobs WHERE id=?',(job_id,)).fetchone()
         if job is None or job['status']!='RUNNING':
             raise RuntimeError('Cannot save a book for a non-running job')
         source_id=int(job['source_id'])
+        user_id=job['user_id']
         con.execute('INSERT OR IGNORE INTO categories(source_id,name,first_seen_at) VALUES(?,?,?)', (source_id,data['category'],when))
         category=con.execute('SELECT id FROM categories WHERE source_id=? AND name=? COLLATE NOCASE', (source_id,data['category'])).fetchone()
-        existing=con.execute('SELECT * FROM books WHERE source_url=?',(data['source_url'],)).fetchone()
+        existing=con.execute(
+            'SELECT * FROM books WHERE source_url=? AND user_id IS ?',
+            (data['source_url'],user_id),
+        ).fetchone()
         if existing and existing['source_id']!=source_id:
             raise InvalidBookError('Source collision in books table')
         if existing:
@@ -81,15 +86,29 @@ def save_book_for_job(job_id: int, book: dict) -> str:
                 price_history_id = con.execute('SELECT last_insert_rowid()').fetchone()[0]
                 con.execute(
                     'INSERT OR IGNORE INTO price_change_notifications(user_id,book_id,price_history_id,created_at) '
-                    'SELECT user_id,?,?,? FROM bookmarks WHERE book_id=?',
-                    (existing['id'], price_history_id, when, existing['id']),
+                    'SELECT user_id,?,?,? FROM bookmarks WHERE book_id=? AND user_id IS ?',
+                    (existing['id'], price_history_id, when, existing['id'], user_id),
                 )
             con.execute('UPDATE books SET category_id=?,title=?,price_pence=?,rating=?,availability=?,image_url=?,upc=?,last_seen_at=?,last_crawl_job_id=? WHERE id=?', (category['id'],data['title'],data['price_pence'],data['rating'],data['availability'],data['image_url'],data['upc'],when,job_id,existing['id']))
             book_id=existing['id']
             counter='existing_books'
             outcome='existing'
         else:
-            cur=con.execute('INSERT INTO books(source_id,category_id,source_url,title,price_pence,rating,availability,image_url,upc,first_seen_at,last_seen_at,last_crawl_job_id) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)', (source_id,category['id'],data['source_url'],data['title'],data['price_pence'],data['rating'],data['availability'],data['image_url'],data['upc'],when,when,job_id))
+            if database_driver() == 'mysql':
+                cur=con.execute(
+                    'INSERT INTO books(source_id,category_id,user_id,source_url,source_url_hash,title,price_pence,rating,availability,image_url,upc,first_seen_at,last_seen_at,last_crawl_job_id) '
+                    'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                    (source_id,category['id'],user_id,data['source_url'],
+                     hashlib.sha256(data['source_url'].encode('utf-8')).hexdigest(),data['title'],data['price_pence'],
+                     data['rating'],data['availability'],data['image_url'],data['upc'],when,when,job_id),
+                )
+            else:
+                cur=con.execute(
+                    'INSERT INTO books(source_id,category_id,user_id,source_url,title,price_pence,rating,availability,image_url,upc,first_seen_at,last_seen_at,last_crawl_job_id) '
+                    'VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                    (source_id,category['id'],user_id,data['source_url'],data['title'],data['price_pence'],
+                     data['rating'],data['availability'],data['image_url'],data['upc'],when,when,job_id),
+                )
             book_id=cur.lastrowid
             update_kind='NEW'
             counter='new_books'
@@ -114,7 +133,7 @@ def parse_price_filter(value: str | None, key: str) -> int | None:
     return result
 
 
-def search_books(q: str='',min_price: str|None=None,max_price: str|None=None,page: int=1)->dict:
+def search_books(q: str='',min_price: str|None=None,max_price: str|None=None,page: int=1,user_id: int|None=None)->dict:
     if len(q)>100:
         raise ValueError('q must be <=100 characters')
     if type(page) is not int or not 1<=page<=100000:
@@ -123,11 +142,11 @@ def search_books(q: str='',min_price: str|None=None,max_price: str|None=None,pag
     high=parse_price_filter(max_price,'max_price')
     if low is not None and high is not None and low>high:
         raise ValueError('min_price must be <= max_price')
-    conditions=[]
-    params=[]
+    conditions=['b.user_id IS ?']
+    params=[user_id]
     if q.strip():
-        escaped=q.strip().replace('\\','\\\\').replace('%','\\%').replace('_','\\_')
-        conditions.append("b.title LIKE ? ESCAPE '\\' COLLATE NOCASE")
+        escaped=q.strip().replace('!','!!').replace('%','!%').replace('_','!_')
+        conditions.append("b.title LIKE ? ESCAPE '!' COLLATE NOCASE")
         params.append(f'%{escaped}%')
     if low is not None:
         conditions.append('b.price_pence>=?');params.append(low)
@@ -137,5 +156,43 @@ def search_books(q: str='',min_price: str|None=None,max_price: str|None=None,pag
     join=' FROM books b JOIN categories c ON c.id=b.category_id'
     with connect() as con:
         count=con.execute('SELECT COUNT(*)'+join+where,params).fetchone()[0]
-        rows=con.execute('SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'+join+where+' ORDER BY b.id DESC LIMIT 12 OFFSET ?', [*params,(page-1)*12]).fetchall()
-    return {'items':[dict(r) for r in rows], 'page':page,'page_size':12,'total':count,'total_pages':(count+11)//12}
+        rows=con.execute('SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'+join+where+' ORDER BY b.id DESC LIMIT 20 OFFSET ?', [*params,(page-1)*20]).fetchall()
+    return {'items':[dict(r) for r in rows], 'page':page,'page_size':20,'total':count,'total_pages':(count+19)//20}
+
+
+def reset_user_books(user_id: int | None = None) -> dict:
+    """Reset and remove all crawled books and crawl jobs for a user."""
+    with connect() as con:
+        con.execute("BEGIN IMMEDIATE")
+        where_user = "user_id IS ?"
+        user_param = (user_id,)
+        active = con.execute(
+            f"SELECT id FROM crawl_jobs WHERE {where_user} AND status IN ('PENDING','RUNNING') LIMIT 1",
+            user_param,
+        ).fetchone()
+        if active:
+            raise RuntimeError("Cannot reset books while a crawl job is active")
+
+        book_rows = con.execute(f"SELECT id FROM books WHERE {where_user}", user_param).fetchall()
+        book_ids = [row["id"] if isinstance(row, dict) else row[0] for row in book_rows]
+        deleted_books = len(book_ids)
+
+        if deleted_books > 0:
+            placeholders = ",".join("?" for _ in book_ids)
+            con.execute(f"DELETE FROM bookmarks WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM price_change_notifications WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM book_price_history WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM crawl_job_books WHERE book_id IN ({placeholders})", book_ids)
+            con.execute(f"DELETE FROM books WHERE {where_user}", user_param)
+
+        job_rows = con.execute(f"SELECT id FROM crawl_jobs WHERE {where_user}", user_param).fetchall()
+        job_ids = [row["id"] if isinstance(row, dict) else row[0] for row in job_rows]
+        deleted_jobs = len(job_ids)
+        if deleted_jobs > 0:
+            job_placeholders = ",".join("?" for _ in job_ids)
+            con.execute(f"DELETE FROM crawl_events WHERE job_id IN ({job_placeholders})", job_ids)
+            con.execute(f"DELETE FROM crawl_pages WHERE job_id IN ({job_placeholders})", job_ids)
+            con.execute(f"DELETE FROM crawl_jobs WHERE {where_user}", user_param)
+
+        return {"ok": True, "deleted_books": deleted_books, "deleted_jobs": deleted_jobs}
+

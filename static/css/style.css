@@ -64,22 +64,26 @@ svg {
 .app-shell {
   display:flex;
   min-height:100vh;
-  width:100%
+  width:100%;
+  --sidebar-width:262px;
+  padding-left:var(--sidebar-width)
 }
 .sidebar {
   width:250px;
   flex-shrink:0;
-  min-height:100vh;
+  min-height:0;
   background:var(--navy);
   color:#fff;
   padding:31px 15px 17px;
   display:flex;
   flex-direction:column;
-  position:sticky;
-  top:0;
+  position:fixed;
+  inset:0 auto 0 0;
   height:100vh;
+  height:100dvh;
   overflow-y:auto;
-  z-index:20
+  z-index:20;
+  overscroll-behavior:contain
 }
 .brand {
   display:flex;
@@ -268,9 +272,13 @@ svg {
   flex:1;
   min-width:0;
   display:flex;
-  flex-direction:column
+  flex-direction:column;
+  min-height:100vh
 }
 .topbar {
+  position:sticky;
+  top:0;
+  z-index:15;
   height:77px;
   display:flex;
   align-items:center;
@@ -278,7 +286,8 @@ svg {
   gap:20px;
   background:#fff;
   border-bottom:1px solid var(--line);
-  padding:0 48px
+  padding:0 48px;
+  backdrop-filter:blur(10px)
 }
 .topbar-left,.topbar-right {
   display:flex;
@@ -713,7 +722,7 @@ svg {
 }
 .page-picker {
   display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));
+  grid-template-columns:repeat(5,minmax(0,1fr));
   gap:10px
 }
 .page-picker label {

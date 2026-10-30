@@ -2,12 +2,13 @@
 setlocal
 cd /d "%~dp0"
 echo.
-echo   CrawlInsight - safe local installation
-echo   Does not modify XAMPP, MySQL, or other projects.
+echo   CrawlInsight - one-click local setup and launch
+echo   Starts XAMPP MariaDB automatically, prepares the database, then starts Laravel.
+echo   Keep this window open while testing the application.
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\setup_windows.ps1"
 if errorlevel 1 (
-    echo Setup failed. Read the error above and see README.md.
+    echo Automatic setup failed. Read the error above and see README.md.
     pause
     exit /b 1
 )

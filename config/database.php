@@ -1,29 +1,31 @@
 <?php
 
-$defaultSqlitePath = dirname(dirname(base_path())).DIRECTORY_SEPARATOR.'ltw-th-private-data'
-    .DIRECTORY_SEPARATOR.'crawlinsight.db';
-if (strtolower(basename(dirname(base_path()))) !== 'htdocs') {
-    $defaultSqlitePath = base_path('data/crawlinsight.db');
-}
-$configuredSqlitePath = env('CRAWLINSIGHT_DB_PATH');
-$sqlitePath = is_string($configuredSqlitePath) && trim($configuredSqlitePath) !== ''
-    ? $configuredSqlitePath
-    : $defaultSqlitePath;
-if (
-    $sqlitePath !== ':memory:'
-    && !str_starts_with($sqlitePath, '/')
-    && !preg_match('/^[A-Za-z]:[\\\\\\/]/', $sqlitePath)
-) {
-    $sqlitePath = base_path($sqlitePath);
-}
-
 return [
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
     'connections' => [
+        'mysql' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3308'),
+            'database' => env('DB_DATABASE', 'crawlinsight'),
+            'username' => env('DB_USERNAME', 'root'),
+            'password' => env('DB_PASSWORD', ''),
+            'unix_socket' => env('DB_SOCKET', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => 'InnoDB',
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::ATTR_TIMEOUT => 5,
+            ]) : [],
+        ],
         'sqlite' => [
             'driver' => 'sqlite',
             'url' => env('DB_URL'),
-            'database' => $sqlitePath,
+            'database' => env('CRAWLINSIGHT_DB_PATH', database_path('database.sqlite')),
             'prefix' => '',
             'foreign_key_constraints' => true,
             'busy_timeout' => 5000,

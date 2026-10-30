@@ -1,4 +1,7 @@
 /* Responsive rules for the base workspace and book explorer. */ @media(max-width:1290px) {
+  .app-shell {
+    --sidebar-width:230px
+  }
   .sidebar {
     width:230px
   }
@@ -22,6 +25,9 @@
 
 }
 @media(max-width:1060px) {
+  .app-shell {
+    --sidebar-width:215px
+  }
   .sidebar {
     width:215px
   }
@@ -60,6 +66,10 @@
 
 }
 @media(max-width:760px) {
+  .app-shell {
+    --sidebar-width:0;
+    padding-left:0
+  }
   .sidebar {
     position:fixed;
     top:0;
@@ -71,6 +81,7 @@
     transition:transform .24s cubic-bezier(0.16,1,0.3,1);
     box-shadow:0 20px 60px rgba(0,0,0,.35);
     z-index:100;
+    overflow-y:auto
   }
   .sidebar.open {
     transform:translateX(0);
@@ -380,7 +391,8 @@
     gap:3px
   }
   .page-picker {
-    gap:6px
+    grid-template-columns: repeat(auto-fit, minmax(50px, 1fr));
+    gap:5px
   }
   .page-picker label span {
     font-size:11px

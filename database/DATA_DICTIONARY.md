@@ -1,16 +1,16 @@
-# DATA DICTIONARY — CrawlInsight Database V3
+# DATA DICTIONARY — CrawlInsight MySQL Database V6
 
-Tài liệu này giải thích **dữ liệu lưu thực tế**. Tên cột là hợp đồng kỹ thuật; phần ví dụ chỉ nhằm giúp đọc DB, không phải dữ liệu crawl.
+Tài liệu này giải thích **dữ liệu lưu thực tế trong MySQL/MariaDB**. Tên cột là hợp đồng kỹ thuật; phần ví dụ chỉ nhằm giúp đọc DB, không phải dữ liệu crawl. Các migration SQLite cũ chỉ được giữ lại để nhập dữ liệu và chạy kiểm thử.
 
 ## Quy ước thống nhất
 
 | Quy ước | Giá trị/ý nghĩa |
 |---|---|
-| `id` | INTEGER, khóa chính, ID nội bộ; không dùng làm URL sách |
+| `id` | BIGINT AUTO_INCREMENT, khóa chính; không dùng làm URL sách |
 | `_id` | Khóa ngoại tới bảng tương ứng |
-| `_at` | Thời điểm UTC dạng `YYYY-MM-DDTHH:MM:SSZ` (TEXT ISO8601) |
+| `_at` | Thời điểm UTC dạng `YYYY-MM-DDTHH:MM:SSZ` (VARCHAR ISO-8601) |
 | `price_pence` | Đơn vị **pence (GBP)**, số nguyên; `1234` = £12.34 |
-| `source_url` | URL HTTPS sách nguồn đã kiểm tra domain, duy nhất |
+| `source_url` | URL HTTPS sách nguồn đã kiểm tra domain, duy nhất trong từng tài khoản |
 | `NULL` | Không trích xuất được hoặc dữ liệu tùy chọn, khác chuỗi rỗng |
 | `rating` | Số nguyên 1–5, nguồn trang sản phẩm |
 | `status` | `PENDING`, `RUNNING`, `COMPLETED`, `FAILED` |
@@ -20,12 +20,12 @@ Tài liệu này giải thích **dữ liệu lưu thực tế**. Tên cột là 
 
 | Cột | Kiểu | Bắt buộc | Mô tả |
 |---|---|---|---|
-| `id` | INTEGER PK | Có | Nguồn mặc định có ID = 1 |
-| `name` | TEXT | Có | Tên hiển thị nguồn |
-| `base_url` | TEXT UNIQUE | Có | Trang bắt đầu `https://books.toscrape.com/` |
-| `allowed_host` | TEXT UNIQUE | Có | Tên miền whitelist `books.toscrape.com` |
-| `is_enabled` | INTEGER CHECK(0/1) | Có | Cờ metadata; web MVP vẫn cố định source 1 |
-| `created_at` | TEXT | Có | UTC lúc khởi tạo |
+| `id` | BIGINT PK | Có | Nguồn mặc định có ID = 1 |
+| `name` | VARCHAR | Có | Tên hiển thị nguồn |
+| `base_url` | VARCHAR UNIQUE | Có | Trang bắt đầu `https://books.toscrape.com/` |
+| `allowed_host` | VARCHAR UNIQUE | Có | Tên miền whitelist `books.toscrape.com` |
+| `is_enabled` | TINYINT CHECK(0/1) | Có | Cờ metadata; web MVP vẫn cố định source 1 |
+| `created_at` | VARCHAR | Có | UTC lúc khởi tạo |
 
 **Quan hệ:** một nguồn có nhiều danh mục, sách và job. Phiên bản hiện tại không cho phép thêm nguồn tự do từ UI vì spider chỉ hỗ trợ Books to Scrape; `is_enabled` chưa phải nút tắt crawler toàn hệ thống.
 
@@ -33,22 +33,24 @@ Tài liệu này giải thích **dữ liệu lưu thực tế**. Tên cột là 
 
 | Cột | Kiểu | Bắt buộc | Mô tả |
 |---|---|---|---|
-| `id` | INTEGER PK | Có | Mã danh mục |
-| `source_id` | INTEGER FK → sources | Có | Danh mục thuộc nguồn nào |
-| `name` | TEXT NOCASE | Có | Ví dụ `Travel`, `Science`; không trùng trong cùng nguồn |
-| `first_seen_at` | TEXT | Có | Lần đầu crawler phát hiện danh mục |
+| `id` | BIGINT PK | Có | Mã danh mục |
+| `source_id` | BIGINT FK → sources | Có | Danh mục thuộc nguồn nào |
+| `name` | VARCHAR, case-insensitive collation | Có | Ví dụ `Travel`, `Science`; không trùng trong cùng nguồn |
+| `first_seen_at` | VARCHAR | Có | Lần đầu crawler phát hiện danh mục |
 
-**Quan hệ:** một category chứa nhiều books. Spider nhận text từ breadcrumb, code tự tạo category nếu chưa có. `Science` và `science` được coi là cùng danh mục khi tìm theo collation NOCASE.
+**Quan hệ:** một category chứa nhiều books. Spider nhận text từ breadcrumb, code tự tạo category nếu chưa có. MySQL `utf8mb4_unicode_ci` so sánh tên không phân biệt hoa/thường.
 
 ## 3. `books` — dữ liệu sách MỚI NHẤT
 
 | Cột | Kiểu | Bắt buộc | Mô tả |
 |---|---|---|---|
-| `id` | INTEGER PK | Có | Khóa nội bộ, giữ nguyên qua nhiều lượt crawl |
-| `source_id` | INTEGER FK → sources | Có | Nguồn của sách |
-| `category_id` | INTEGER FK → categories | Có | Khóa danh mục; cặp (category_id,source_id) phải hợp lệ |
-| `source_url` | TEXT UNIQUE | Có | URL chi tiết, định danh chống trùng |
-| `title` | TEXT | Có | Tên sách, đã chuẩn hóa khoảng trắng |
+| `id` | BIGINT PK | Có | Khóa nội bộ, giữ nguyên qua nhiều lượt crawl |
+| `source_id` | BIGINT FK → sources | Có | Nguồn của sách |
+| `category_id` | BIGINT FK → categories | Có | Khóa danh mục; cặp (category_id,source_id) phải hợp lệ |
+| `user_id` | BIGINT FK → users | Không | Chủ sở hữu catalog; NULL chỉ dành cho dữ liệu legacy/chưa gán |
+| `source_url` | VARCHAR(2000) | Có | URL chi tiết; URL hash unique trong phạm vi tài khoản |
+| `source_url_hash` | CHAR(64) | Có | SHA-256 của URL; dùng làm khóa unique theo user để tránh giới hạn độ dài index MySQL |
+| `title` | VARCHAR(500) | Có | Tên sách, đã chuẩn hóa khoảng trắng |
 | `price_pence` | INTEGER 0..999999 | Có | Giá hiện tại, ví dụ `2599` là £25.99 |
 | `rating` | INTEGER 1..5 | Có | Mức đánh giá sao |
 | `availability` | TEXT | Có | Ví dụ `In stock` hoặc `Out of stock` |
@@ -79,7 +81,7 @@ Tài liệu này giải thích **dữ liệu lưu thực tế**. Tên cột là 
 | `started_at` | TEXT | Không | Lúc worker bắt đầu |
 | `finished_at` | TEXT | Không | Lúc kết thúc, bắt buộc nếu terminal |
 
-**Quy tắc:** chỉ một job ở `PENDING/RUNNING` (kiểm bằng SQLite index). `items_saved = new_books + existing_books`. Nếu crawler chết đột ngột có thể cần recovery thủ công (xem README chính).
+**Quy tắc:** mỗi tài khoản chỉ có một job ở `PENDING/RUNNING` (được bảo vệ bằng generated unique key trong MySQL). `items_saved = new_books + existing_books`. Nếu crawler chết đột ngột có thể cần recovery thủ công (xem README chính).
 
 ## 5. `crawl_pages` — chứng cứ crawling qua trang listing
 
@@ -92,7 +94,7 @@ Tài liệu này giải thích **dữ liệu lưu thực tế**. Tên cột là 
 | `books_discovered` | INTEGER | Có | Số URL sách mới được scheduling từ trang đó |
 | `visited_at` | TEXT | Có | Lúc parse trang thành công |
 
-**UNIQUE:** `(job_id,page_number)` và `(job_id,page_url)` ngăn cùng một trang được đếm hai lần. Dòng này chứng minh spider có thực sự đi trang `page-2.html` hay không.
+**UNIQUE:** `(job_id,page_number)` và index URL ngăn cùng một trang được đếm hai lần. Dòng này chứng minh spider có thực sự đi trang `page-2.html` hay không.
 
 ## 6. `crawl_job_books` — sách gặp trong từng lần crawl
 
@@ -106,7 +108,7 @@ Tài liệu này giải thích **dữ liệu lưu thực tế**. Tên cột là 
 | `observed_rating` | INTEGER | Có | Rating thu được *tại lần crawl này* |
 | `observed_at` | TEXT | Có | Thời điểm crawler lưu |
 
-**UNIQUE:** `(job_id,book_id)`. Bảng này khác `books`: `books` là trạng thái hiện tại, `crawl_job_books` là lịch sử mỗi lần quan sát. Nếu sách đổi tiêu đề nhưng không đổi giá, `action=UPDATED` mà `book_price_history` không tăng.
+**UNIQUE:** `(job_id,book_id)`. Bảng này khác `books`: `books` là trạng thái hiện tại riêng của chủ sở hữu, `crawl_job_books` là lịch sử mỗi lần quan sát. Nếu sách đổi tiêu đề nhưng không đổi giá, `action=UPDATED` mà `book_price_history` không tăng.
 
 ## 7. `book_price_history` — thay đổi GIÁ thật giữa các job
 
@@ -142,7 +144,7 @@ Tài liệu này giải thích **dữ liệu lưu thực tế**. Tên cột là 
 | `filename` | TEXT | Có | Tên script áp dụng |
 | `applied_at` | TEXT | Có | Thời điểm áp dụng |
 
-Bảng này lưu metadata; không phải dữ liệu người dùng. Đã áp dụng 3 migration `001_core.sql`, `002_indexes.sql`, `003_views.sql`. Không sửa tay số version.
+Bảng này lưu metadata; không phải dữ liệu người dùng. Runtime MySQL khởi tạo từ `database/mysql_schema.sql`; lịch sử migration được quản lý bởi `src/database/migrations.py`. Không sửa tay số version.
 
 ## 10. View (không lưu thêm dòng dữ liệu)
 
@@ -170,9 +172,9 @@ The previous nine crawler tables remain unchanged except `crawl_jobs.user_id` (n
 
 | Table | Fields (high-level) | Meaning |
 |---|---|---|
-| `users` | `id`, `full_name`, `email` (unique case-insensitive), `password_hash`, `is_active`, `session_version`, `created_at`, `updated_at`, `last_login_at` | One login identity; scrypt salted password hash; increment session_version after reset/change to revoke old cookies. |
+| `users` | `id`, `full_name`, `email` (unique case-insensitive), `password_hash`, `role` (`user`/`admin`), `is_active`, `session_version`, `created_at`, `updated_at`, `last_login_at` | Login identity and role; only `admin` can access `/admin/users`. |
 | `user_preferences` | `user_id` (PK + FK), `locale` (vi/en), `theme` (light/dark/system), `book_layout` (grid/list), `updated_at` | One preference set per account. |
-| `bookmarks` | `id`, `user_id`, `book_id`, `note`, `created_at`; `UNIQUE(user_id,book_id)` | Per-account book saves; FK references global real books. |
+| `bookmarks` | `id`, `user_id`, `book_id`, `note`, `created_at`; `UNIQUE(user_id,book_id)` | Per-account saves; API allows saving only a book owned by the same account. |
 | `saved_searches` | `id`, `user_id`, `name`, `query`, `min_price`, `max_price`, `created_at` | Personal search presets; max 20 per account, enforced in service logic. |
 | `password_reset_tokens` | `id`, `user_id`, `token_hash`, `expires_at`, `used_at`, `created_at` | One-time 20-minute reset proof; stores SHA-256 of random token, **not** raw token. |
 | `auth_attempts` | `id`, `subject_hash`, `attempted_at`, `success` | Login/reset request rate limiter; subject is hashed, not stored as raw IP/email. |
@@ -180,8 +182,12 @@ The previous nine crawler tables remain unchanged except `crawl_jobs.user_id` (n
 
 ## V5 addendum — per-user price change notifications
 
-Migration `005_price_change_notifications.sql` adds in-app notifications when a crawler observes a price change for a book a user has bookmarked. The notification, price-history row and book update are committed in the same SQLite transaction. Unchanged prices and books without bookmarks produce no notification. Notifications remain visible if the user later removes the bookmark; deleting the associated book or price-history row removes them.
+Migration `005_price_change_notifications.sql` adds in-app notifications when a crawler observes a price change for a book a user has bookmarked. The notification, price-history row and book update are committed in the same InnoDB transaction. Unchanged prices and books without bookmarks produce no notification. Notifications remain visible if the user later removes the bookmark; deleting the associated book or price-history row removes them.
 
 The authenticated API returns the latest 20 notifications and the unread count. Users can mark one notification or all of their notifications as read; every query and update is scoped to the current account.
 
-**Important:** The runtime SQLite database is *not* a user database dump or demonstration data source. `database/schema.sql` is a V5 **fresh-install reference snapshot**; existing databases use `database/migrations/005_price_change_notifications.sql` automatically via `init_db()`. Never publish the generated HTML report on live user tables: it could reveal email addresses and password hashes (which are still sensitive).
+**Important:** The runtime MySQL database is *not* a demonstration data source. `database/mysql_schema.sql` is the runtime fresh-install schema; `database/schema.sql` and `database/migrations/` remain only for upgrading legacy SQLite input and isolated tests. Never publish reports from live user tables: they could reveal email addresses and password hashes.
+
+## V6 addendum — private catalogs and administrator
+
+Migration `006_user_isolation_and_admin.sql` adds `users.role`, adds nullable `books.user_id`, and makes book URLs unique per account. Existing shared books are copied to each prior owner found in crawl observations/bookmarks; the SQLite source is backed up before it is upgraded/imported. `sources` and category labels remain shared reference data; book records, prices, analytics, bookmarks, and exports are private to their owner. The admin screen is `/admin/users`; `ADMIN_EMAIL` in `.env` selects an existing verified account for administrator promotion.

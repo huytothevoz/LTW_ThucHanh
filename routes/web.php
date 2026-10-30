@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ApiController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\StaticAssetController;
 use Illuminate\Http\Request;
@@ -25,6 +26,9 @@ Route::middleware('authenticated')->group(function (): void {
     Route::get('/settings', fn (Request $request, PageController $pages) => $pages->show($request, 'settings.html', 'settings'));
     Route::get('/help', fn (Request $request, PageController $pages) => $pages->show($request, 'help.html', 'guide'));
 });
+
+Route::get('/admin/users', fn (Request $request, PageController $pages) => $pages->show($request, 'admin/users.html', 'admin-users'))
+    ->middleware('admin');
 
 Route::get('/api/health', [ApiController::class, 'health']);
 Route::get('/api/auth/me', [ApiController::class, 'whoami']);
@@ -56,6 +60,12 @@ Route::middleware('authenticated')->group(function (): void {
     Route::get('/api/analytics', [ApiController::class, 'analytics']);
     Route::get('/api/sources', [ApiController::class, 'sources']);
     Route::get('/api/exports/books.csv', [ApiController::class, 'exportBooks']);
+    Route::post('/api/books/reset', [ApiController::class, 'resetBooks']);
+});
+
+Route::middleware('admin')->prefix('api/admin')->group(function (): void {
+    Route::get('/users', [AdminController::class, 'users']);
+    Route::patch('/users/{userId}', [AdminController::class, 'updateUser'])->whereNumber('userId');
 });
 
 Route::fallback(function (Request $request, PageController $pages) {

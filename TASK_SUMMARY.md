@@ -2,7 +2,7 @@
 
 ## Mục tiêu chung
 
-- Hoàn thiện CrawlInsight với **Laravel/PHP là backend chính**, **Python/Scrapy là crawler**, và hai phần dùng chung SQLite.
+- Hoàn thiện CrawlInsight với **Laravel/PHP là backend chính**, **Python/Scrapy là crawler**, và hai phần dùng chung MySQL/MariaDB trên cổng XAMPP 3308.
 - Ưu tiên xử lý các hạng mục chưa được chạy kiểm thử thực tế trước khi bổ sung tính năng mới.
 - Mỗi thành viên cập nhật trạng thái và lưu minh chứng kiểm thử sau khi hoàn thành công việc.
 
@@ -41,14 +41,14 @@
   - Chuẩn hóa thông báo lỗi và tài liệu hợp đồng API khi có thay đổi.
   - Đánh giá hiệu năng các truy vấn tìm kiếm, dashboard và analytics trước khi tối ưu.
 
-## 3. Nguyễn Trọng Quý — Crawler, SQLite và tích hợp/chạy thử
+## 3. Nguyễn Trọng Quý — Crawler, MySQL và tích hợp/chạy thử
 
-- Kiểm tra cấu hình để Laravel và Python worker cùng phân giải chính xác một `CRAWLINSIGHT_DB_PATH`.
-- Chạy kiểm tra SQLite: phiên bản schema, `PRAGMA integrity_check`, `PRAGMA foreign_key_check` và migration trên bản sao dữ liệu.
+- Kiểm tra cấu hình để Laravel và Python worker cùng dùng `DB_HOST`, `DB_PORT`, `DB_DATABASE`, `DB_USERNAME` và `DB_PASSWORD`.
+- Chạy kiểm tra MySQL/MariaDB trên cổng 3308; xác minh schema, foreign keys, import SQLite cũ và backup.
 - Chạy crawler thật với giới hạn nhỏ trên nguồn sandbox được phép; xác minh job được tạo, worker khởi chạy, log được ghi, sự kiện/trạng thái cập nhật và dữ liệu sách được lưu.
 - Kiểm tra xử lý lỗi và khôi phục job khi worker dừng bất thường; xác minh không để lại job hoạt động bị treo hoặc tạo hai job trái quy định.
 - Kiểm thử `START_HERE.bat`, `scripts/setup_windows.ps1`, `scripts/start_windows.ps1` và `scripts/run_tests_windows.ps1` trên Windows có PHP, Composer và Python phù hợp.
-- Kiểm tra cài đặt sạch từ hướng dẫn/ZIP, cấu hình database khi dự án nằm trong hoặc ngoài thư mục XAMPP `htdocs`, và bảo đảm file database/`.env` không bị phục vụ công khai.
+- Kiểm tra cài đặt sạch từ hướng dẫn/ZIP, kết nối XAMPP MySQL khi dự án nằm trong hoặc ngoài `htdocs`, và bảo đảm `.env` không bị phục vụ công khai.
 - Thực hiện diễn tập sao lưu và phục hồi database trên bản sao; ghi lại lệnh, kết quả và các bước xử lý lỗi thường gặp.
 - Phát triển thêm sau khi tích hợp hiện tại ổn định:
   - Cải thiện khả năng quan sát job: log dễ đọc, thông tin lỗi hữu ích và tiến độ nhất quán.
@@ -61,8 +61,8 @@
 - Không đánh dấu chức năng là hoàn tất chỉ dựa trên việc có mã nguồn: phải chạy và lưu kết quả kiểm thử tương ứng.
 - Trước khi gộp thay đổi:
   - Chạy `scripts/run_tests_windows.ps1` và xử lý các lỗi liên quan.
-  - Kiểm tra thay đổi không làm sai hợp đồng API, schema SQLite hoặc luồng giao diện.
-  - Không commit `.env`, mật khẩu SMTP, khóa ứng dụng, database thật hoặc dữ liệu cá nhân.
+  - Kiểm tra thay đổi không làm sai hợp đồng API, schema MySQL hoặc luồng giao diện.
+  - Không commit `.env`, mật khẩu MySQL/SMTP, khóa ứng dụng, database thật hoặc dữ liệu cá nhân.
 - Trước buổi nghiệm thu:
   - Chạy thử toàn bộ luồng từ tạo tài khoản đến crawl và xem dữ liệu.
   - Chuẩn bị dữ liệu demo phi định danh, ảnh chụp màn hình và kịch bản dự phòng.
