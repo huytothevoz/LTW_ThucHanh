@@ -295,21 +295,21 @@ svg {
   gap:12px
 }
 .topbar-left {
-  color:#a1aaba;
+  color:var(--muted);
   font-size:12px
 }
 .topbar-left svg {
-  color:#b3bfd1
+  color:var(--muted)
 }
 .breadcrumb-current {
-  color:#384966;
+  color:var(--ink);
   font-weight:700
 }
 .topbar-right {
   gap:22px;
   font-size:11px;
   font-weight:600;
-  color:#71809a
+  color:var(--ink-2)
 }
 .topbar-local {
   display:flex;
@@ -328,7 +328,7 @@ svg {
 .topbar-divider {
   height:20px;
   width:1px;
-  background:#e8edf4
+  background:var(--line)
 }
 .source-link {
   color:#3f5071;
