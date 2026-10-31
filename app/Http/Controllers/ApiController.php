@@ -122,16 +122,17 @@ class ApiController
         }
 
         $link = url('/reset-password/'.rawurlencode($created['token']));
+        $otp = $created['otp'] ?? sprintf('%06d', random_int(100000, 999999));
         if ($smtpReady) {
             $name = $created['user']['full_name'];
             $locale = $request->attributes->get('locale', 'vi');
             $body = $locale === 'en'
-                ? "Hello {$name},\n\nUse this link to reset your CrawlInsight password within 20 minutes:\n{$link}\n\nIf you did not request this, ignore this message."
-                : "Xin chào {$name},\n\nDùng liên kết này để đặt lại mật khẩu CrawlInsight trong vòng 20 phút:\n{$link}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.";
+                ? "Hello {$name},\n\nYour OTP verification code is: {$otp}\n\nYou can also click this link to reset your CrawlInsight password within 20 minutes:\n{$link}\n\nIf you did not request this, please ignore this message."
+                : "Xin chào {$name},\n\nMã xác thực OTP của bạn là: {$otp}\n(Mã có hiệu lực trong vòng 20 phút).\n\nBạn cũng có thể bấm vào liên kết bên dưới để đặt lại mật khẩu:\n{$link}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.";
             try {
-                Mail::raw($body, static function ($message) use ($created, $locale): void {
+                Mail::raw($body, static function ($message) use ($created, $locale, $otp): void {
                     $message->to($created['user']['email'])
-                        ->subject($locale === 'en' ? 'CrawlInsight password reset' : 'Đặt lại mật khẩu CrawlInsight');
+                        ->subject($locale === 'en' ? "CrawlInsight password reset OTP: {$otp}" : "Mã OTP đặt lại mật khẩu CrawlInsight: {$otp}");
                 });
             } catch (TransportExceptionInterface $exception) {
                 Log::warning('Password-reset email delivery failed.', ['exception' => $exception]);
@@ -144,6 +145,7 @@ class ApiController
             }
         } elseif ($testing || $localOptIn) {
             $response['local_test_link'] = $link;
+            $response['local_test_otp'] = $otp;
         }
 
         return response()->json($response);

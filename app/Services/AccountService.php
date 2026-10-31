@@ -177,6 +177,7 @@ class AccountService
             }
 
             $token = rtrim(strtr(base64_encode(random_bytes(36)), '+/', '-_'), '=');
+            $otp = sprintf('%06d', random_int(100000, 999999));
             $now = self::now();
             $expiry = gmdate('Y-m-d\TH:i:s\Z', time() + 20 * 60);
             DB::update(
@@ -188,7 +189,7 @@ class AccountService
                 [$user->id, hash('sha256', $token), $expiry, $now],
             );
 
-            return ['token' => $token, 'user' => self::publicUser($user)];
+            return ['token' => $token, 'otp' => $otp, 'user' => self::publicUser($user)];
         });
     }
 

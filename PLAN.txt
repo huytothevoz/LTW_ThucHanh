@@ -1,3 +1,13 @@
 FIX || ADD
-- [x] Responsive cho mobile: Đã hoàn thiện (tối ưu hóa header, sidebar z-index/overlay, topbar breadcrumbs, filter catalog, bảng cuộn ngang, modal tự co giãn và chống tràn thanh cuộn ngang html/body).
-- [x] Trong trang đăng nhập tại nút show password đang có icon cái kính lúp => Đã đổi thành icon con mắt (eye / eye-off) và đồng bộ sang trang đăng ký (cả ô mật khẩu và ô xác nhận mật khẩu).
+- [x] Khi chuyển qua darkmode một số thanh menu bị tối màu không thể thấy được:
+  + Đã sửa màu chữ breadcrumb (.breadcrumb-current: var(--ink)) và các thành phần trên topbar (.topbar-left, .topbar-right, .topbar-local, .topbar-divider).
+  + Đã bổ sung viền phân cách bên phải cho sidebar (border-right: 1px solid var(--line)), tăng độ tương phản cho nhãn nhóm, link điều hướng và icon khi ở chế độ dark.
+  + Đã tối ưu độ tương phản cho thanh menu công khai (.public-header), các link .public-links, nút .public-signin.
+  + Đã xử lý thanh bộ lọc (.filter-form, .category-field select, input, .reset-button, .saved-search-bar).
+- [x] Cấu hình SMTP và mail để gửi OTP (phamngocduynd06@gmail.com):
+  + Đã cập nhật SMTP_USER, SMTP_FROM và Google App Password vào file .env.
+  + Đã kiểm thử kết nối SMTP trực tiếp tới smtp.gmail.com:587: Xác thực thành công (Authentication SUCCESSFUL).
+  + Đã lập trình tạo mã OTP 6 chữ số ngẫu nhiên và chèn mã OTP vào tiêu đề & nội dung email gửi kèm link khôi phục mật khẩu (Phương án A).
+- [x] Thêm nút để chuyển qua darkmode theo ý tưởng từ đường dẫn https://uiverse.io/rishichawda/fluffy-robin-48:
+  + Đã tích hợp trọn vẹn bộ nút toggle ngày/đêm animated SVG (mặt trời, mặt trăng, sao, mây lướt chuyển động mượt mà) vào Topbar workspace và Header trang landing.
+  + Đã đồng bộ sự kiện chuyển đổi theme với dataset, LocalStorage, cài đặt người dùng và chế độ hệ thống.
