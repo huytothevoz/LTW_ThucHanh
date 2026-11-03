@@ -123,6 +123,7 @@
     $('last-job-meta').textContent = data.last_job ? `Job #${lastJobNumber} · ${formatDate(data.last_job.created_at)}` : t('noData');
     renderChart(data.rating_distribution);
     renderHistory(data.recent_jobs || []);
+
     if (data.last_job && ACTIVE.has(data.last_job.status)) {
       if (trackedJobId !== data.last_job.id) trackJob(data.last_job.id);
     } else if (trackedJobId === null && data.last_job) {
@@ -211,9 +212,7 @@
 
   $('crawl-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const selected = document.querySelector('input[name="max-pages"]:checked');
-    const maxPages = selected ? Number(selected.value) : 1;
-    if (![1, 2, 3, 4, 5].includes(maxPages)) return;
+    const maxPages = 5;
     const sourceSelect = $('source-select');
     const sourceId = sourceSelect ? Number(sourceSelect.value) || 1 : 1;
     setStartDisabled(true);

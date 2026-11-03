@@ -81,7 +81,14 @@ def record_catalogue_page(job_id: int, page_url: str, page_number: int, discover
     """Page evidence and counters committed together. Repeated page is idempotent."""
     if type(discovered) is not int or discovered < 0 or type(page_number) is not int or page_number < 1:
         raise ValueError('Invalid page evidence')
-    if not (page_url.startswith('https://books.toscrape.com/') and len(page_url) <= 2000):
+    approved_prefixes = (
+        'https://books.toscrape.com/',
+        'https://openlibrary.org/',
+        'https://www.openlibrary.org/',
+        'https://gutenberg.org/',
+        'https://www.gutenberg.org/',
+    )
+    if not (any(page_url.startswith(prefix) for prefix in approved_prefixes) and len(page_url) <= 2000):
         raise ValueError('Unapproved catalogue page URL')
     with connect() as con:
         con.execute('BEGIN IMMEDIATE')

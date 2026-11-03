@@ -270,6 +270,7 @@ class BookDiscoveryAndBookmarkTest extends TestCase
             ->assertJsonPath('job.max_pages', 5);
     }
 
+
     public function test_reset_books_clears_current_user_data_safely(): void
     {
         DB::table('users')->insert([
