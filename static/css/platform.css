@@ -536,15 +536,25 @@ body {
   background:var(--white);
   border-radius:9px
 }
+.saved-search-pill.is-active {
+  border-color:var(--brand);
+  background:rgba(91,96,245,.1)
+}
 .saved-search-pill button {
   font-size:11px;
   background:none;
   color:var(--ink);
-  border:0
+  border:0;
+  cursor:pointer
+}
+.saved-search-pill.is-active button:not(.delete-chip) {
+  font-weight:700;
+  color:var(--brand)
 }
 .saved-search-pill .delete-chip {
   color:#e36b7d;
-  font-size:15px
+  font-size:15px;
+  cursor:pointer
 }
 .book-quick-actions {
   display:flex;

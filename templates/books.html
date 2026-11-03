@@ -103,6 +103,7 @@
   <dialog class="ci-dialog" id="save-filter-dialog" aria-labelledby="filter-dialog-title">
     <form id="save-filter-form">
       <h3 id="filter-dialog-title">{{ t('save_filter') }}</h3>
+      <div id="save-filter-summary" style="margin:8px 0 14px;padding:10px 14px;background:rgba(91,96,245,0.08);border-radius:8px;font-size:12px;line-height:1.5;" hidden></div>
       <label for="saved-filter-name">{{ t('saved_filters') }}</label>
       <input type="text" id="saved-filter-name" maxlength="60" required placeholder="{{ t('save_filter') }}">
       <div class="dialog-actions">
