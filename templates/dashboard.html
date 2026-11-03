@@ -70,34 +70,6 @@
             <div style="font-size: 11px; opacity: 0.7; margin-top: 2px;">Crawl có trách nhiệm · Tuân thủ robots.txt & Rate limit</div>
           </div>
         </div>
-        <div class="form-group">
-          <div class="field-heading">
-            <span>{{ t('crawl_pages') }}</span>
-            <span>1 — 5 (100 {{ t('book') }})</span>
-          </div>
-          <div class="page-picker" role="group" aria-label="Catalogue pages">
-            <label>
-              <input type="radio" name="max-pages" value="1" checked>
-              <span>1 {{ t('pages') }}<small>20 {{ t('book') }}</small></span>
-            </label>
-            <label>
-              <input type="radio" name="max-pages" value="2">
-              <span>2 {{ t('pages') }}<small>40 {{ t('book') }}</small></span>
-            </label>
-            <label>
-              <input type="radio" name="max-pages" value="3">
-              <span>3 {{ t('pages') }}<small>60 {{ t('book') }}</small></span>
-            </label>
-            <label>
-              <input type="radio" name="max-pages" value="4">
-              <span>4 {{ t('pages') }}<small>80 {{ t('book') }}</small></span>
-            </label>
-            <label>
-              <input type="radio" name="max-pages" value="5">
-              <span>5 {{ t('pages') }}<small>100 {{ t('book') }}</small></span>
-            </label>
-          </div>
-        </div>
         <div class="crawl-form-actions" style="display:flex;gap:10px;align-items:stretch;">
           <button id="start-button" type="submit" class="primary-button" style="flex:1;">
             <span class="button-content">{{ icon('play',18) }} {{ t('start_crawl') }}</span>

@@ -8,10 +8,20 @@
   let lastRequestController = null;
   const pricePattern = /^(?:0|[1-9]\d{0,3})(?:\.\d{1,2})?$/;
   let bookmarkedIds = new Set();
+  const APPROVED_HOSTS = new Set([
+    'books.toscrape.com',
+    'openlibrary.org',
+    'www.openlibrary.org',
+    'covers.openlibrary.org',
+    'archive.org',
+    'gutenberg.org',
+    'www.gutenberg.org',
+  ]);
   function safeSourceURL(url) {
     try {
       const parsed = new URL(url);
-      return parsed.protocol === 'https:' && parsed.hostname === 'books.toscrape.com' && !parsed.username
+      const isApproved = APPROVED_HOSTS.has(parsed.hostname) || parsed.hostname.endsWith('.archive.org');
+      return parsed.protocol === 'https:' && isApproved && !parsed.username
         ? parsed.href : null;
     } catch { return null; }
   }

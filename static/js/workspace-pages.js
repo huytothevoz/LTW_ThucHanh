@@ -5,7 +5,7 @@
   const $ = id => document.getElementById(id);
   const text = (tag, cls, value) => { const el = document.createElement(tag); el.className = cls; el.textContent = String(value); return el; };
   const el = (tag, cls) => { const e = document.createElement(tag); e.className = cls; return e; };
-  const sourceUrl = value => { try { const u = new URL(value); return u.protocol === 'https:' && u.hostname === 'books.toscrape.com' && !u.username && !u.password ? u.href : null; } catch { return null; } };
+  const APPROVED_HOSTS = new Set(['books.toscrape.com', 'openlibrary.org', 'www.openlibrary.org', 'covers.openlibrary.org', 'archive.org', 'gutenberg.org', 'www.gutenberg.org']); const sourceUrl = value => { try { const u = new URL(value); const isApproved = APPROVED_HOSTS.has(u.hostname) || u.hostname.endsWith('.archive.org'); return u.protocol === 'https:' && isApproved && !u.username && !u.password ? u.href : null; } catch { return null; } };
 
   async function savedPage() {
     let page = 1, totalPages = 0;

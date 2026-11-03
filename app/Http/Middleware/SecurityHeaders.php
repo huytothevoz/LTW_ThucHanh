@@ -17,7 +17,7 @@ class SecurityHeaders
         $response->headers->set('X-Frame-Options', 'DENY');
         $response->headers->set(
             'Content-Security-Policy',
-            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://books.toscrape.com data:; font-src 'self'; connect-src 'self'; form-action 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
+            "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://books.toscrape.com https://covers.openlibrary.org https://openlibrary.org https://www.openlibrary.org https://archive.org https://*.archive.org https://www.gutenberg.org https://gutenberg.org data:; font-src 'self'; connect-src 'self'; form-action 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none'",
         );
 
         if ($request->is('api/*') || $request->is('reset-password/*')) {

@@ -75,7 +75,7 @@
     "rating_distribution": "Phân bố đánh giá",
     "recent_runs": "Lượt crawl gần nhất",
     "no_data": "Chưa có dữ liệu. Hãy chạy crawler để bắt đầu.",
-    "max_pages": "Tối đa 5 trang (100 sách) mỗi lượt theo chính sách hiện tại.",
+    "max_pages": "Crawl tối đa 5 trang (100 sách) mỗi nguồn.",
     "original_source": "Trang nguồn",
     "source_safe": "Nguồn thử nghiệm được phê duyệt",
     "catalog_title": "Khám phá bộ sưu tập sách",

@@ -19,10 +19,26 @@ def validate_book(item: dict) -> dict:
         raise InvalidBookError('Missing mandatory book field')
     url,_ = urldefrag(str(item['source_url']))
     parts=urlsplit(url)
-    if parts.scheme!='https' or parts.hostname!='books.toscrape.com' or parts.port is not None or parts.username or parts.password or parts.query:
+    approved_hosts = {
+        'books.toscrape.com',
+        'openlibrary.org',
+        'www.openlibrary.org',
+        'gutenberg.org',
+        'www.gutenberg.org',
+    }
+    if parts.scheme!='https' or parts.hostname not in approved_hosts or parts.port is not None or parts.username or parts.password:
         raise InvalidBookError('Unapproved book URL')
-    if not parts.path.startswith('/catalogue/') or not parts.path.endswith('/index.html'):
-        raise InvalidBookError('Invalid detail URL path')
+    if parts.hostname == 'books.toscrape.com':
+        if parts.query:
+            raise InvalidBookError('Unapproved book URL')
+        if not parts.path.startswith('/catalogue/') or not parts.path.endswith('/index.html'):
+            raise InvalidBookError('Invalid detail URL path')
+    elif parts.hostname in ('openlibrary.org', 'www.openlibrary.org'):
+        if not parts.path.startswith('/works/'):
+            raise InvalidBookError('Invalid detail URL path')
+    elif parts.hostname in ('gutenberg.org', 'www.gutenberg.org'):
+        if not parts.path.startswith('/ebooks/'):
+            raise InvalidBookError('Invalid detail URL path')
     if len(url)>2000:
         raise InvalidBookError('Book URL too long')
     if type(item['price_pence']) is not int or not 0 <= item['price_pence'] <= 999999:
@@ -40,7 +56,9 @@ def validate_book(item: dict) -> dict:
         result[field] = str(val).strip()[:1000] if val else None
     if result['image_url']:
         p=urlsplit(result['image_url'])
-        if p.scheme!='https' or p.hostname!='books.toscrape.com' or p.username or p.password or p.port:
+        allowed_img_hosts = approved_hosts | {'covers.openlibrary.org', 'archive.org'}
+        is_allowed = (p.hostname in allowed_img_hosts) or bool(p.hostname and p.hostname.endswith('.archive.org'))
+        if p.scheme!='https' or not is_allowed or p.username or p.password or p.port:
             result['image_url']=None
     return result
 
