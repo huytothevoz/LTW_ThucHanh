@@ -22,7 +22,7 @@
     <div id="mobile-overlay" class="mobile-overlay" hidden></div>
     <div class="app-shell">
       <aside class="sidebar" id="sidebar" aria-label="Main menu">
-        <a href="/" class="brand">
+        <a href="/workspace" class="brand">
           <span class="brand-mark">{{ icon('layers',26) }}</span>
           <span class="brand-copy">
             <strong>Crawl<span>Insight</span></strong>
@@ -64,15 +64,10 @@
           </a>
         </nav>
         <div class="sidebar-bottom">
-          <div class="source-tile">
-            <span class="source-symbol">{{ icon('shield',18) }}</span>
-            <div>
-              <strong>Books to Scrape</strong>
-              <span>{{ t('source_safe') }}</span>
-            </div>
-          </div>
           <a href="/settings" class="sidebar-user">
-            <span class="user-avatar">{{ user.full_name|slice(0,1)|upper }}</span>
+            <span class="user-avatar">
+              {% if user.avatar_url %}<img src="{{ user.avatar_url }}" alt="">{% else %}{{ user.full_name|slice(0,1)|upper }}{% endif %}
+            </span>
             <span>
               <strong>{{ user.full_name }}</strong>
               <small>{{ user.email }}</small>
@@ -169,7 +164,7 @@
             </button>
             <span class="topbar-divider"></span>
             <a class="top-avatar" href="/settings" aria-label="{{ t('settings') }}">
-              {{ user.full_name|slice(0,1)|upper }}
+              {% if user.avatar_url %}<img src="{{ user.avatar_url }}" alt="">{% else %}{{ user.full_name|slice(0,1)|upper }}{% endif %}
             </a>
           </div>
         </header>

@@ -25,18 +25,23 @@ class GutenbergSpider(scrapy.Spider):
     allowed_domains = ["gutenberg.org", "www.gutenberg.org"]
     start_urls = ["https://www.gutenberg.org/browse/scores/top"]
 
-    def __init__(self, job_id: int, max_pages: int = 1, *args, **kwargs):
+    def __init__(self, job_id: int, max_pages: int = 1, start_page: int = 1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.job_id = int(job_id)
         self.max_pages = int(max_pages)
+        self.start_page = int(start_page)
         if self.max_pages not in (1, 2, 3, 4, 5):
             raise ValueError("max_pages outside SRS scope")
+        if self.start_page < 1:
+            raise ValueError("start_page must be positive")
+        self.start_urls = [f"https://www.gutenberg.org/browse/scores/top?page={self.start_page}"]
         self.seen_urls: set[str] = set()
 
     def parse(self, response):
-        return self.parse_catalogue(response, page_number=1)
+        return self.parse_catalogue(response, page_number=1, source_page_number=self.start_page)
 
-    def parse_catalogue(self, response, page_number: int):
+    def parse_catalogue(self, response, page_number: int, source_page_number: int | None = None):
+        source_page_number = source_page_number or self.start_page + page_number - 1
         # Extract book links from top list
         raw_links = response.css("ol li a[href^='/ebooks/']")
         if not raw_links:
@@ -48,7 +53,7 @@ class GutenbergSpider(scrapy.Spider):
 
         # Partition into page batches of 20 books each (page 1: 0..20, page 2: 20..40, ...)
         page_size = 20
-        start_idx = (page_number - 1) * page_size
+        start_idx = (source_page_number - 1) * page_size
         end_idx = start_idx + page_size
         batch = raw_links[start_idx:end_idx]
 
@@ -67,7 +72,7 @@ class GutenbergSpider(scrapy.Spider):
                 self.seen_urls.add(url)
                 new_items.append((url, clean_title))
 
-        catalogue_url = f"https://www.gutenberg.org/browse/scores/top?page={page_number}"
+        catalogue_url = f"https://www.gutenberg.org/browse/scores/top?page={source_page_number}"
         db.record_catalogue_page(self.job_id, catalogue_url, page_number, len(new_items))
         self.logger.info("Project Gutenberg catalogue %s/%s: %s unique books", page_number, self.max_pages, len(new_items))
 
@@ -81,11 +86,14 @@ class GutenbergSpider(scrapy.Spider):
 
         # Next catalogue page iteration within top list
         if page_number < self.max_pages and end_idx < len(raw_links):
-            next_url = f"https://www.gutenberg.org/browse/scores/top?page={page_number + 1}"
+            next_url = f"https://www.gutenberg.org/browse/scores/top?page={source_page_number + 1}"
             yield scrapy.Request(
                 next_url,
                 callback=self.parse_catalogue,
-                cb_kwargs={"page_number": page_number + 1},
+                cb_kwargs={
+                    "page_number": page_number + 1,
+                    "source_page_number": source_page_number + 1,
+                },
                 dont_filter=True,
                 meta={"kind": "catalogue"},
             )

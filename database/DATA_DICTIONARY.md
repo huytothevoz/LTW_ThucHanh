@@ -172,19 +172,28 @@ The previous nine crawler tables remain unchanged except `crawl_jobs.user_id` (n
 
 | Table | Fields (high-level) | Meaning |
 |---|---|---|
-| `users` | `id`, `full_name`, `email` (unique case-insensitive), `password_hash`, `role` (`user`/`admin`), `is_active`, `session_version`, `created_at`, `updated_at`, `last_login_at` | Login identity and role; only `admin` can access `/admin/users`. |
+| `users` | `id`, `full_name`, `email` (unique case-insensitive), `password_hash`, `role` (`user`/`admin`), `is_active`, `session_version`, `avatar_path`, `created_at`, `updated_at`, `last_login_at` | Login identity, role, and private avatar reference; only `admin` can access `/admin/users`. |
 | `user_preferences` | `user_id` (PK + FK), `locale` (vi/en), `theme` (light/dark/system), `book_layout` (grid/list), `updated_at` | One preference set per account. |
 | `bookmarks` | `id`, `user_id`, `book_id`, `note`, `created_at`; `UNIQUE(user_id,book_id)` | Per-account saves; API allows saving only a book owned by the same account. |
 | `saved_searches` | `id`, `user_id`, `name`, `query`, `min_price`, `max_price`, `created_at` | Personal search presets; max 20 per account, enforced in service logic. |
 | `password_reset_tokens` | `id`, `user_id`, `token_hash`, `expires_at`, `used_at`, `created_at` | One-time 20-minute reset proof; stores SHA-256 of random token, **not** raw token. |
 | `auth_attempts` | `id`, `subject_hash`, `attempted_at`, `success` | Login/reset request rate limiter; subject is hashed, not stored as raw IP/email. |
 | `price_change_notifications` | `id`, `user_id`, `book_id`, `price_history_id`, `created_at`, `read_at` | One notification per bookmarked user and observed price-history row; unique `price_history_id` prevents duplicate alerts. |
+| `crawl_notifications` | `id`, `user_id`, `job_id`, `status`, `created_at`, `read_at` | One personal bell notification per crawl job; status follows queued, running, completed or failed, and read state is account-scoped. |
 
 ## V5 addendum — per-user price change notifications
 
 Migration `005_price_change_notifications.sql` adds in-app notifications when a crawler observes a price change for a book a user has bookmarked. The notification, price-history row and book update are committed in the same InnoDB transaction. Unchanged prices and books without bookmarks produce no notification. Notifications remain visible if the user later removes the bookmark; deleting the associated book or price-history row removes them.
 
 The authenticated API returns the latest 20 notifications and the unread count. Users can mark one notification or all of their notifications as read; every query and update is scoped to the current account.
+
+## V8 addendum — private user avatars
+
+Migration `008_user_avatars.sql` adds the nullable `users.avatar_path` reference. Avatar PNGs are stored outside the public web root, and the authenticated `/api/me/avatar` endpoint only serves the current account's file. The Settings editor uses a square crop canvas so users can reposition and zoom their image before upload.
+
+## V7 addendum — crawl notifications
+
+Migration `007_crawl_notifications.sql` adds one persistent, account-scoped notification per crawl job. Its state updates as the job moves through queued, running, completed or failed, and the workspace bell combines it with price-change alerts. Crawl sequence numbers shown to users are computed from that user's jobs; global job IDs remain internal identifiers.
 
 **Important:** The runtime MySQL database is *not* a demonstration data source. `database/mysql_schema.sql` is the runtime fresh-install schema; `database/schema.sql` and `database/migrations/` remain only for upgrading legacy SQLite input and isolated tests. Never publish reports from live user tables: they could reveal email addresses and password hashes.
 

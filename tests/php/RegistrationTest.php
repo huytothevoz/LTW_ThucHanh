@@ -21,7 +21,8 @@ class RegistrationTest extends TestCase
                 session_version INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                last_login_at TEXT
+                last_login_at TEXT,
+                avatar_path TEXT
             );
             CREATE TABLE user_preferences (
                 user_id INTEGER PRIMARY KEY REFERENCES users(id),

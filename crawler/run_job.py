@@ -30,6 +30,7 @@ def run(job_id: int) -> int:
             3: "Project Gutenberg (gutenberg.org)",
         }
         src_name = source_names.get(source_id, f"Source #{source_id}")
+        start_page = db.next_source_page(job_id, source_id)
         now = now_utc()
 
         # Record standard connection & policy events
@@ -79,7 +80,7 @@ def run(job_id: int) -> int:
             db.record_error(job_id, f"Unexpected spider callback error on {src_name}")
 
         crawler.signals.connect(on_spider_error, signal=signals.spider_error)
-        process.crawl(crawler, job_id=job_id, max_pages=job["max_pages"])
+        process.crawl(crawler, job_id=job_id, max_pages=job["max_pages"], start_page=start_page)
         process.start(stop_after_crawl=True, install_signal_handlers=False)
 
         updated = db.get_job(job_id)

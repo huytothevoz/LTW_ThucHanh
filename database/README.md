@@ -5,8 +5,8 @@ Laravel and the Python Scrapy worker use the same MySQL/MariaDB database. The Wi
 ## Quick setup
 
 1. Double-click `START_HERE.bat`.
-2. Setup starts XAMPP MariaDB if needed, installs dependencies, creates/updates the MySQL schema, imports the previous SQLite database once if present, then starts Laravel.
-3. Register an account and run a crawl. A new database contains source metadata and schema migrations, but no sample users or books.
+2. Setup starts XAMPP MariaDB if needed, installs or reuses dependencies, creates/updates the MySQL schema, imports the previous SQLite database once if present, then starts Laravel. Composer and pip are skipped on later runs while their manifests and successful-install fingerprints are unchanged.
+3. Use the local admin or demo account printed during the first setup. The demo account has sample books; a new database otherwise contains source metadata and schema migrations.
 
 PHP must have `pdo_mysql` enabled. The Python worker installs PyMySQL from `requirements.txt`. Both processes receive the connection settings from `.env`.
 

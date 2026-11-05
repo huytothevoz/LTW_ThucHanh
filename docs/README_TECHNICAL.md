@@ -12,12 +12,12 @@
 ## Windows quick start
 
 1. Double-click `START_HERE.bat`.
-2. The setup starts XAMPP MariaDB if needed, prepares/imports the database, then starts Laravel.
-3. Open `http://127.0.0.1:8000/`, register a user, and start a one-page crawl.
+2. The setup starts XAMPP MariaDB if needed, prepares/imports the database, creates local-only admin/demo accounts with sample books, then starts Laravel.
+3. Open `http://127.0.0.1:8090/` and sign in using the local credentials in the root README, or register a separate user.
 
 The launcher does not require XAMPP Control Panel to be open. It starts XAMPP `mysqld.exe` directly using the existing XAMPP `my.ini` on port `3306`, or reuses the same XAMPP instance if it is already running. It never starts a second server against the same data directory and refuses to connect to a different MySQL service on `3306`. It never edits XAMPP's global configuration or deletes the SQLite file. If XAMPP is installed outside `C:\xampp`, set `XAMPP_HOME` to its installation directory.
 
-Setup updates SQLite connection settings to MySQL, configures this local project for XAMPP `root` without a password on port `3306`, installs Composer/Python dependencies, generates an application key, creates the `crawlinsight` database/schema and imports the previous SQLite file once when found. It does not change SMTP settings such as `SMTP_PASSWORD` for Gmail OTP delivery. Startup diagnostics are written under `storage\logs` if MariaDB fails to start.
+Setup updates SQLite connection settings to MySQL, configures this local project for XAMPP `root` without a password on port `3306`, installs Composer/Python dependencies when needed, generates an application key, creates the `crawlinsight` database/schema and imports the previous SQLite file once when found. It does not change SMTP settings such as `SMTP_PASSWORD` for Gmail OTP delivery. Startup diagnostics are written under `storage\logs` if MariaDB fails to start.
 
 The application uses the XAMPP default port `3306`. If another MySQL service already owns that port, setup stops with an explicit error; it does not change or reconfigure that service. Setup resets this project's `DB_PASSWORD` to empty for the selected local XAMPP `root` account.
 

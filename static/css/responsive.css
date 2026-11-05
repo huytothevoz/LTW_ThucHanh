@@ -6,7 +6,7 @@
     width:230px
   }
   .page-content {
-    padding:35px 34px 48px
+    padding:68px 34px 48px
   }
   .topbar {
     padding:0 34px
@@ -32,7 +32,7 @@
     width:215px
   }
   .page-content {
-    padding:30px 25px
+    padding:60px 25px
   }
   .topbar {
     padding:0 25px
@@ -113,7 +113,7 @@
     padding:0 20px
   }
   .page-content {
-    padding:29px 20px 40px
+    padding:50px 20px 40px
   }
   .main-footer {
     padding:0 20px 20px;
@@ -186,7 +186,7 @@
 }
 @media(max-width:540px) {
   .page-content {
-    padding:25px 15px 35px
+    padding:44px 15px 35px
   }
   .topbar {
     padding:0 15px

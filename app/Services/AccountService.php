@@ -28,6 +28,7 @@ class AccountService
             'last_login_at' => $row->last_login_at,
             'is_active' => (int) $row->is_active,
             'role' => property_exists($row, 'role') ? $row->role : 'user',
+            'avatar_url' => property_exists($row, 'avatar_path') && $row->avatar_path ? '/api/me/avatar' : null,
         ];
     }
 

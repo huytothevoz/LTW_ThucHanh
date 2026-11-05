@@ -83,7 +83,30 @@ svg {
   height:100dvh;
   overflow-y:auto;
   z-index:20;
-  overscroll-behavior:contain
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:transparent transparent;
+  transition:scrollbar-color .18s ease
+}
+.sidebar:hover,.sidebar:focus-within {
+  scrollbar-color:rgba(160,177,207,.58) transparent
+}
+.sidebar::-webkit-scrollbar {
+  width:9px
+}
+.sidebar::-webkit-scrollbar-track {
+  background:transparent
+}
+.sidebar::-webkit-scrollbar-thumb {
+  background:transparent;
+  border:2px solid transparent;
+  border-radius:8px;
+  background-clip:padding-box
+}
+.sidebar:hover::-webkit-scrollbar-thumb,.sidebar:focus-within::-webkit-scrollbar-thumb {
+  background:rgba(160,177,207,.58);
+  border:2px solid transparent;
+  background-clip:padding-box
 }
 .brand {
   display:flex;
@@ -341,7 +364,7 @@ svg {
   color:var(--primary)
 }
 .page-content {
-  padding:41px 48px 51px;
+  padding:76px 48px 51px;
   width:100%;
   max-width:1670px;
   margin:0 auto;

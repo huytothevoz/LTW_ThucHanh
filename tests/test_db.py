@@ -6,6 +6,14 @@ import pytest
 from src import db
 
 
+def _insert_test_user(connection, user_id):
+    connection.execute(
+        'INSERT INTO users(id,full_name,email,password_hash,created_at,updated_at) '
+        'VALUES(?,?,?,?,?,?)',
+        (user_id, f'Test User {user_id}', f'user{user_id}@example.test', 'hash', db.now_utc(), db.now_utc()),
+    )
+
+
 def test_fresh_database_is_empty(isolated_db):
     result = db.summary()
     assert result["total_books"] == 0
@@ -16,7 +24,7 @@ def test_fresh_database_is_empty(isolated_db):
     assert db.search_books()["total_pages"] == 0
 
 
-@pytest.mark.parametrize("invalid", [0, 6, "2", 2.0, True, None])
+@pytest.mark.parametrize("invalid", [0, 4, 5, 6, "2", 2.0, True, None])
 def test_max_pages_strict_types(isolated_db, invalid):
     with pytest.raises(ValueError):
         db.create_job(invalid)
@@ -32,6 +40,62 @@ def test_one_active_job_only(isolated_db):
         db.create_job(3)
     db.finish_job(job["id"], "FAILED", "Test failure")
     assert db.create_job(2)["status"] == "PENDING"
+
+
+def test_crawl_sequence_continues_per_user_and_source(isolated_db):
+    with db.connect() as con:
+        _insert_test_user(con, 1)
+        _insert_test_user(con, 2)
+        con.execute(
+            "INSERT OR IGNORE INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) "
+            "VALUES(2,'Open Library','https://openlibrary.org/','openlibrary.org',1,?)",
+            (db.now_utc(),),
+        )
+
+    first = db.create_job(3, source_id=1, user_id=1)
+    assert db.next_source_page(first["id"], 1) == 1
+    assert db.mark_job_running(first["id"])
+    for local_page, url in enumerate((
+        "https://books.toscrape.com/",
+        "https://books.toscrape.com/catalogue/page-2.html",
+        "https://books.toscrape.com/catalogue/page-3.html",
+    ), 1):
+        db.record_catalogue_page(first["id"], url, local_page, 0)
+    db.finish_job(first["id"], "COMPLETED")
+
+    next_for_owner = db.create_job(2, source_id=1, user_id=1)
+    assert db.next_source_page(next_for_owner["id"], 1) == 4
+    db.finish_job(next_for_owner["id"], "FAILED", "Test cleanup")
+    other_owner = db.create_job(1, source_id=1, user_id=2)
+    assert db.next_source_page(other_owner["id"], 1) == 1
+    other_source = db.create_job(1, source_id=2, user_id=1)
+    assert db.next_source_page(other_source["id"], 2) == 1
+
+
+def test_crawl_notifications_follow_job_lifecycle_and_owner(isolated_db):
+    with db.connect() as con:
+        _insert_test_user(con, 7)
+    job = db.create_job(1, user_id=7)
+    with db.connect() as con:
+        notification = con.execute(
+            'SELECT user_id,status,read_at FROM crawl_notifications WHERE job_id=?',
+            (job["id"],),
+        ).fetchone()
+    assert tuple(notification) == (7, "QUEUED", None)
+
+    assert db.mark_job_running(job["id"])
+    with db.connect() as con:
+        assert con.execute(
+            'SELECT status FROM crawl_notifications WHERE job_id=?',
+            (job["id"],),
+        ).fetchone()[0] == "RUNNING"
+    db.finish_job(job["id"], "COMPLETED")
+    with db.connect() as con:
+        result = con.execute(
+            'SELECT status,read_at FROM crawl_notifications WHERE job_id=?',
+            (job["id"],),
+        ).fetchone()
+    assert tuple(result) == ("COMPLETED", None)
 
 
 def test_books_upsert_and_counter_atomicity(isolated_db, example_book):
@@ -147,4 +211,3 @@ def test_run_job_external_sources(isolated_db):
     events = db.list_job_events(j["id"])
     event_messages = [e["message"] for e in events]
     assert any("Open Library" in m for m in event_messages)
-

@@ -100,12 +100,32 @@ if ([System.IO.Path]::IsPathRooted($LegacySqlitePath) -and $LegacySqlitePath.Sta
 }
 Set-DotEnvValue 'CRAWLINSIGHT_SQLITE_IMPORT' $LegacySqlitePath
 
-Write-Host 'Installing Laravel dependencies ...' -ForegroundColor Cyan
 $ComposerCommand = $Composer.Source
 if (-not $ComposerCommand) { $ComposerCommand = $Composer.Path }
 if (-not $ComposerCommand) { $ComposerCommand = $Composer.FullName }
-& $ComposerCommand install --no-interaction --prefer-dist
-if ($LASTEXITCODE -ne 0) { throw 'Composer dependency installation failed.' }
+$ComposerFingerprint = (Get-FileHash 'composer.json').Hash + ':' + (Get-FileHash 'composer.lock').Hash
+$ComposerFingerprintPath = Join-Path $Root 'vendor\.setup-dependencies.sha256'
+$InstalledComposerFingerprint = if (Test-Path $ComposerFingerprintPath) {
+    (Get-Content $ComposerFingerprintPath -Raw -Encoding ASCII).Trim()
+}
+else {
+    ''
+}
+if ((Test-Path 'vendor/autoload.php') -and
+    (Test-Path 'vendor/composer/installed.php') -and
+    $InstalledComposerFingerprint -eq $ComposerFingerprint) {
+    Write-Host 'Laravel dependencies are unchanged; skipping Composer install.' -ForegroundColor Green
+}
+else {
+    Write-Host 'Installing Laravel dependencies ...' -ForegroundColor Cyan
+    & $ComposerCommand install --no-interaction --prefer-dist
+    if ($LASTEXITCODE -ne 0) { throw 'Composer dependency installation failed.' }
+    [System.IO.File]::WriteAllText(
+        $ComposerFingerprintPath,
+        $ComposerFingerprint,
+        [System.Text.Encoding]::ASCII
+    )
+}
 
 $AppKeyLine = Get-Content '.env' -Encoding UTF8 | Where-Object { $_ -match '^APP_KEY=' } | Select-Object -First 1
 if (-not $AppKeyLine -or $AppKeyLine -eq 'APP_KEY=') {
@@ -160,8 +180,27 @@ else {
 
 $env:PYTHONIOENCODING = 'utf-8'
 $env:PYTHONUTF8 = '1'
-& $Python -m pip install -r requirements.txt
-if ($LASTEXITCODE -ne 0) { throw 'Crawler dependency installation failed.' }
+$PythonFingerprint = (Get-FileHash 'requirements.txt').Hash
+$PythonFingerprintPath = Join-Path $Root '.venv\.requirements.sha256'
+$InstalledPythonFingerprint = if (Test-Path $PythonFingerprintPath) {
+    (Get-Content $PythonFingerprintPath -Raw -Encoding ASCII).Trim()
+}
+else {
+    ''
+}
+if ((Test-Path $Python) -and $InstalledPythonFingerprint -eq $PythonFingerprint) {
+    Write-Host 'Crawler dependencies are unchanged; skipping pip install.' -ForegroundColor Green
+}
+else {
+    Write-Host 'Installing crawler dependencies ...' -ForegroundColor Cyan
+    & $Python -m pip install -r requirements.txt
+    if ($LASTEXITCODE -ne 0) { throw 'Crawler dependency installation failed.' }
+    [System.IO.File]::WriteAllText(
+        $PythonFingerprintPath,
+        $PythonFingerprint,
+        [System.Text.Encoding]::ASCII
+    )
+}
 
 foreach ($Line in (Get-Content '.env' -Encoding UTF8)) {
     if ($Line -match '^\s*([^#=\s]+)=(.*)$') {
@@ -344,5 +383,9 @@ Write-Host "Creating/updating MySQL database '$env:DB_DATABASE' on $env:DB_HOST`
 if ($LASTEXITCODE -ne 0) {
     throw 'MySQL initialization failed. Check the XAMPP MariaDB startup logs in storage\logs and confirm the XAMPP root account allows local login without a password.'
 }
+
+Write-Host 'Creating local admin/demo accounts and sample books ...' -ForegroundColor Cyan
+& $PhpExe artisan app:seed-demo --no-interaction
+if ($LASTEXITCODE -ne 0) { throw 'Could not create the local admin/demo accounts.' }
 
 Write-Host 'Database setup complete. START_HERE.bat will now start Laravel.' -ForegroundColor Green

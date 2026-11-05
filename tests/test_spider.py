@@ -35,3 +35,8 @@ def test_one_page_does_not_follow_next(monkeypatch):
     html = (Path(__file__).parent / 'fixtures' / 'catalogue.html').read_bytes()
     response = HtmlResponse(url=url, body=html, encoding='utf-8', request=Request(url))
     assert len(list(spider.parse(response))) == 2
+
+
+def test_spider_starts_at_requested_catalogue_page():
+    spider = BooksSpider(job_id=14, max_pages=2, start_page=4)
+    assert spider.start_urls == ['https://books.toscrape.com/catalogue/page-4.html']

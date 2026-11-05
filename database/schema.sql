@@ -1,6 +1,6 @@
--- CrawlInsight v6 | Reference SQL for a FRESH EMPTY install.
+-- CrawlInsight v7 | Reference SQL for a FRESH EMPTY install.
 
--- Runtime migrations 001..006 remain authoritative for existing users.
+-- Runtime migrations 001..007 remain authoritative for existing users.
 
 -- Includes one trusted source; NO books and NO user accounts.
 
@@ -34,6 +34,15 @@ CREATE TABLE price_change_notifications (
     created_at TEXT NOT NULL,
     read_at TEXT,
     UNIQUE(user_id, price_history_id)
+);
+
+CREATE TABLE crawl_notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    job_id INTEGER NOT NULL UNIQUE REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+    status TEXT NOT NULL CHECK(status IN ('QUEUED','RUNNING','COMPLETED','FAILED')),
+    created_at TEXT NOT NULL,
+    read_at TEXT
 );
 
 CREATE TABLE bookmarks (
@@ -96,7 +105,7 @@ CREATE TABLE crawl_job_books (
 CREATE TABLE crawl_jobs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     source_id INTEGER NOT NULL DEFAULT 1 REFERENCES sources(id) ON DELETE RESTRICT,
-    max_pages INTEGER NOT NULL CHECK(max_pages BETWEEN 1 AND 5),
+    max_pages INTEGER NOT NULL CHECK(max_pages BETWEEN 1 AND 3),
     status TEXT NOT NULL DEFAULT 'PENDING'
         CHECK(status IN ('PENDING','RUNNING','COMPLETED','FAILED')),
     catalogue_pages_done INTEGER NOT NULL DEFAULT 0 CHECK(catalogue_pages_done >= 0),
@@ -209,6 +218,9 @@ CREATE INDEX idx_price_changes_book ON book_price_history(book_id,changed_at DES
 CREATE INDEX idx_price_notifications_user_unread
     ON price_change_notifications(user_id,read_at,id DESC);
 
+CREATE INDEX idx_crawl_notifications_user_unread
+    ON crawl_notifications(user_id,read_at,id DESC);
+
 CREATE INDEX idx_reset_user_expiry ON password_reset_tokens(user_id,expires_at);
 
 CREATE INDEX idx_saved_searches_user ON saved_searches(user_id,id DESC);
@@ -256,6 +268,8 @@ INSERT INTO schema_migrations(version,filename,applied_at) VALUES(5,'005_price_c
 
 INSERT INTO schema_migrations(version,filename,applied_at) VALUES(6,'006_user_isolation_and_admin.sql','2026-10-24T00:00:00Z');
 
+INSERT INTO schema_migrations(version,filename,applied_at) VALUES(7,'007_crawl_notifications.sql','2026-10-24T00:00:00Z');
+
 COMMIT;
 
-PRAGMA user_version=6;
+PRAGMA user_version=7;

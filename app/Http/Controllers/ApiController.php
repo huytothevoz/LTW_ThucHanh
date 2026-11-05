@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\AccountService;
+use App\Services\AvatarService;
 use App\Services\BookService;
 use App\Services\CrawlJobService;
 use App\Services\PriceNotificationService;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ApiController
 {
@@ -34,6 +36,36 @@ class ApiController
             'user' => $user,
             'preferences' => $user ? AccountService::preferences($user['id']) : null,
         ]);
+    }
+
+    public function avatar(Request $request): BinaryFileResponse
+    {
+        $filename = DB::table('users')->where('id', $this->user($request)['id'])->value('avatar_path');
+        $path = AvatarService::path($filename);
+        if (!$path || !is_file($path)) {
+            abort(404);
+        }
+
+        return response()->file($path, [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    public function updateAvatar(Request $request): JsonResponse
+    {
+        $file = $request->file('avatar');
+        if (!$file || !$file->isValid() || $file->getSize() > 4 * 1024 * 1024) {
+            return $this->error('INVALID_AVATAR', 'Ảnh phải là tệp PNG hợp lệ và không lớn hơn 4 MB.', 422);
+        }
+
+        try {
+            $avatarUrl = AvatarService::replace($this->user($request)['id'], $file);
+        } catch (\DomainException $exception) {
+            return $this->error('INVALID_AVATAR', $exception->getMessage(), 422);
+        }
+
+        return response()->json(['avatar_url' => $avatarUrl]);
     }
 
     public function register(Request $request): JsonResponse
@@ -223,10 +255,10 @@ class ApiController
     public function createJob(Request $request): JsonResponse
     {
         $data = $request->json()->all();
-        $maxPages = 5;
+        $maxPages = 3;
         if (array_key_exists('max_pages', $data)) {
-            if (!is_int($data['max_pages']) || !in_array($data['max_pages'], [1, 2, 3, 4, 5], true)) {
-                return $this->error('INVALID_MAX_PAGES', 'max_pages phải là số nguyên từ 1 đến 5.', 400);
+            if (!is_int($data['max_pages']) || !in_array($data['max_pages'], [1, 2, 3], true)) {
+                return $this->error('INVALID_MAX_PAGES', 'max_pages phải là số nguyên từ 1 đến 3.', 400);
             }
             $maxPages = $data['max_pages'];
         }
@@ -268,6 +300,22 @@ class ApiController
         }
 
         return response()->json($result);
+    }
+
+    public function deleteJob(Request $request, int $jobId): JsonResponse
+    {
+        try {
+            if (!CrawlJobService::delete($jobId, $this->user($request)['id'])) {
+                return $this->error('JOB_NOT_FOUND', 'Không tìm thấy lượt crawl.', 404);
+            }
+        } catch (\DomainException $exception) {
+            if ($exception->getMessage() === 'JOB_ALREADY_ACTIVE') {
+                return $this->error('JOB_ALREADY_ACTIVE', 'Không thể xóa lượt crawl đang hoạt động.', 409);
+            }
+            throw $exception;
+        }
+
+        return response()->json(['ok' => true]);
     }
 
     public function categories(Request $request): JsonResponse
@@ -394,7 +442,7 @@ class ApiController
         return response()->json(PriceNotificationService::listForUser($this->user($request)['id']));
     }
 
-    public function markNotificationRead(Request $request, int $notificationId): JsonResponse
+    public function markNotificationRead(Request $request, string $notificationId): JsonResponse
     {
         if (!PriceNotificationService::markRead($this->user($request)['id'], $notificationId)) {
             return $this->error('NOTIFICATION_NOT_FOUND', 'Không tìm thấy thông báo.', 404);
