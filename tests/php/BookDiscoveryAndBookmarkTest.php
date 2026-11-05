@@ -88,6 +88,16 @@ class BookDiscoveryAndBookmarkTest extends TestCase
                 created_at TEXT NOT NULL,
                 UNIQUE (user_id, book_id)
             );
+            CREATE TABLE saved_searches (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                name TEXT NOT NULL,
+                query TEXT NOT NULL DEFAULT '',
+                category TEXT NOT NULL DEFAULT '',
+                min_price TEXT NOT NULL DEFAULT '',
+                max_price TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL
+            );
         SQL);
 
         DB::table('users')->insert([
@@ -310,6 +320,32 @@ class BookDiscoveryAndBookmarkTest extends TestCase
             ->getJson('/api/books')
             ->assertOk()
             ->assertJsonPath('total', 1);
+    }
+
+    public function test_user_can_save_and_retrieve_filter_with_category(): void
+    {
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->postJson('/api/saved-searches', [
+                'name' => 'helo',
+                'q' => 'Pride',
+                'category' => 'Fiction',
+                'min_price' => '30',
+                'max_price' => '70',
+            ])
+            ->assertStatus(201)
+            ->assertJsonPath('item.name', 'helo')
+            ->assertJsonPath('item.category', 'Fiction');
+
+        $response = $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/saved-searches')
+            ->assertOk();
+
+        $items = $response->json('items');
+        $this->assertCount(1, $items);
+        $this->assertSame('helo', $items[0]['name']);
+        $this->assertSame('Fiction', $items[0]['category']);
+        $this->assertSame('30', $items[0]['min_price']);
+        $this->assertSame('70', $items[0]['max_price']);
     }
 }
 

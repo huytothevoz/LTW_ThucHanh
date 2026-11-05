@@ -342,7 +342,7 @@ class ApiController
     public function savedSearches(Request $request): JsonResponse
     {
         $items = DB::select(
-            'SELECT id,name,query,min_price,max_price,created_at FROM saved_searches WHERE user_id=? ORDER BY id DESC',
+            'SELECT id,name,query,category,min_price,max_price,created_at FROM saved_searches WHERE user_id=? ORDER BY id DESC',
             [$this->user($request)['id']],
         );
 
@@ -356,9 +356,10 @@ class ApiController
             $item = AccountService::saveSearch(
                 $this->user($request)['id'],
                 $data['name'] ?? '',
-                $data['q'] ?? '',
+                $data['q'] ?? ($data['query'] ?? ''),
                 $data['min_price'] ?? '',
                 $data['max_price'] ?? '',
+                $data['category'] ?? '',
             );
         } catch (\DomainException $exception) {
             return $this->error('VALIDATION_ERROR', $exception->getMessage(), 400);

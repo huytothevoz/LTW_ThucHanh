@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS saved_searches (
  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
  name TEXT NOT NULL CHECK(length(trim(name)) BETWEEN 1 AND 60),
  query TEXT NOT NULL DEFAULT '' CHECK(length(query)<=100),
+ category TEXT NOT NULL DEFAULT '' CHECK(length(category)<=100),
  min_price TEXT NOT NULL DEFAULT '' CHECK(length(min_price)<=12),
  max_price TEXT NOT NULL DEFAULT '' CHECK(length(max_price)<=12),
  created_at TEXT NOT NULL

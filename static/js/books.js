@@ -159,7 +159,15 @@
     const value = input.trim();
     return value === '' || pricePattern.test(value);
   }
+  let activeSavedFilterId = null;
+
+  function clearActiveSavedFilter() {
+    activeSavedFilterId = null;
+    document.querySelectorAll('.saved-search-pill').forEach(p => p.classList.remove('is-active'));
+  }
+
   function submitFilters() {
+    clearActiveSavedFilter();
     const min = $('min-price').value.trim();
     const max = $('max-price').value.trim();
     const cat = $('category-filter') ? $('category-filter').value.trim() : '';
@@ -179,7 +187,9 @@
   $('filter-form').addEventListener('submit', (event) => { event.preventDefault(); submitFilters(); });
   $('reset-filters').addEventListener('click', () => {
     $('filter-form').reset();
+    if ($('category-filter')) $('category-filter').value = '';
     currentFilters = { q: '', category: '', min_price: '', max_price: '' };
+    clearActiveSavedFilter();
     currentPage = 1;
     loadBooks();
   });
@@ -233,29 +243,140 @@
   }
   document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.closeDialog)?.close()));
   const filterDialog = $('save-filter-dialog');
-  $('save-filter')?.addEventListener('click', () => { filterDialog.showModal(); $('saved-filter-name').focus(); });
-  $('save-filter-form')?.addEventListener('submit', async e => {
-    e.preventDefault(); const name = $('saved-filter-name').value.trim(); if (!name) return;
-    try {
-      await fetchJSON('/api/saved-searches', { method: 'POST', body: JSON.stringify({ name, ...currentFilters }) });
-      filterDialog.close(); $('save-filter-form').reset(); toast(t('filterSaved'), 'success'); loadSavedSearches();
-    } catch (error) { toast(error.message, 'error'); }
+  const summaryBox = $('save-filter-summary');
+
+  $('save-filter')?.addEventListener('click', () => {
+    const q = $('search-query').value.trim();
+    const cat = $('category-filter') ? $('category-filter').value.trim() : '';
+    const min = $('min-price').value.trim();
+    const max = $('max-price').value.trim();
+
+    if (!validatePrice(min) || !validatePrice(max)) {
+      toast(t('invalidPrice'), 'error');
+      return;
+    }
+    if (min && max && Number(min) > Number(max)) {
+      toast(t('invalidRange'), 'error');
+      return;
+    }
+
+    if (!q && !cat && !min && !max) {
+      toast(locale === 'vi'
+        ? 'Vui lòng nhập ít nhất một điều kiện lọc (tên sách, thể loại hoặc khoảng giá) trước khi lưu.'
+        : 'Please specify at least one filter criteria before saving.', 'error');
+      return;
+    }
+
+    if (summaryBox) {
+      const parts = [];
+      if (q) parts.push(`<strong>${locale === 'vi' ? 'Từ khóa' : 'Query'}:</strong> "${q}"`);
+      if (cat) parts.push(`<strong>${locale === 'vi' ? 'Thể loại' : 'Category'}:</strong> ${cat}`);
+      if (min || max) {
+        const priceStr = min && max ? `${min} £ — ${max} £` : (min ? `≥ ${min} £` : `≤ ${max} £`);
+        parts.push(`<strong>${locale === 'vi' ? 'Khoảng giá' : 'Price'}:</strong> ${priceStr}`);
+      }
+      summaryBox.innerHTML = `<div>${locale === 'vi' ? 'Tiêu chí sẽ lưu trong bộ lọc:' : 'Criteria to be saved:'}</div><ul style="margin:4px 0 0 16px;padding:0;">${parts.map(p => `<li>${p}</li>`).join('')}</ul>`;
+      summaryBox.hidden = false;
+    }
+
+    filterDialog.showModal();
+    $('saved-filter-name').focus();
   });
-  async function loadSavedSearches() {
-    const bar = $('saved-search-bar'), list = $('saved-search-list'); if (!bar || !list) return;
+
+  $('save-filter-form')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = $('saved-filter-name').value.trim();
+    if (!name) return;
+
+    const q = $('search-query').value.trim();
+    const cat = $('category-filter') ? $('category-filter').value.trim() : '';
+    const min = $('min-price').value.trim();
+    const max = $('max-price').value.trim();
+
     try {
-      const data = await fetchJSON('/api/saved-searches'); bar.hidden = data.items.length === 0; list.replaceChildren();
-      data.items.forEach(item => {
-        const wrapper = document.createElement('span'); wrapper.className = 'saved-search-pill';
-        const apply = document.createElement('button'); apply.textContent = item.name; apply.addEventListener('click', () => {
-          currentFilters = { q: item.query, min_price: item.min_price, max_price: item.max_price };
-          $('search-query').value = currentFilters.q; $('min-price').value = currentFilters.min_price; $('max-price').value = currentFilters.max_price; currentPage = 1; loadBooks();
-        });
-        const del = document.createElement('button'); del.textContent = '×'; del.className = 'delete-chip'; del.title = t('remove');
-        del.addEventListener('click', async () => { try { await fetchJSON(`/api/saved-searches/${item.id}`, { method: 'DELETE' }); loadSavedSearches(); } catch (e) { toast(e.message, 'error'); } });
-        wrapper.append(apply, del); list.append(wrapper);
+      const res = await fetchJSON('/api/saved-searches', {
+        method: 'POST',
+        body: JSON.stringify({ name, q, category: cat, min_price: min, max_price: max }),
       });
-    } catch (error) { toast(error.message, 'error'); }
+      filterDialog.close();
+      $('save-filter-form').reset();
+      toast(t('filterSaved'), 'success');
+
+      currentFilters = { q, category: cat, min_price: min, max_price: max };
+      activeSavedFilterId = res.item ? res.item.id : null;
+      currentPage = 1;
+      await loadSavedSearches();
+      await loadBooks();
+    } catch (error) {
+      toast(error.message, 'error');
+    }
+  });
+
+  async function loadSavedSearches() {
+    const bar = $('saved-search-bar'), list = $('saved-search-list');
+    if (!bar || !list) return;
+    try {
+      const data = await fetchJSON('/api/saved-searches');
+      bar.hidden = data.items.length === 0;
+      list.replaceChildren();
+      data.items.forEach(item => {
+        const wrapper = document.createElement('span');
+        wrapper.className = 'saved-search-pill';
+        if (activeSavedFilterId === item.id) wrapper.classList.add('is-active');
+
+        const apply = document.createElement('button');
+        apply.type = 'button';
+        apply.textContent = item.name;
+        apply.title = [
+          item.query ? `Từ khóa: "${item.query}"` : '',
+          item.category ? `Thể loại: ${item.category}` : '',
+          (item.min_price || item.max_price) ? `Giá: ${item.min_price || '0'}–${item.max_price || '∞'} £` : '',
+        ].filter(Boolean).join(' · ') || 'Bộ lọc';
+
+        apply.addEventListener('click', () => {
+          activeSavedFilterId = item.id;
+          document.querySelectorAll('.saved-search-pill').forEach(p => p.classList.remove('is-active'));
+          wrapper.classList.add('is-active');
+
+          currentFilters = {
+            q: item.query || '',
+            category: item.category || '',
+            min_price: item.min_price || '',
+            max_price: item.max_price || '',
+          };
+
+          $('search-query').value = currentFilters.q;
+          if ($('category-filter')) $('category-filter').value = currentFilters.category;
+          $('min-price').value = currentFilters.min_price;
+          $('max-price').value = currentFilters.max_price;
+
+          currentPage = 1;
+          loadBooks();
+          toast(locale === 'vi' ? `Đã áp dụng bộ lọc "${item.name}".` : `Applied filter "${item.name}".`, 'info');
+        });
+
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.textContent = '×';
+        del.className = 'delete-chip';
+        del.title = t('remove');
+        del.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          try {
+            await fetchJSON(`/api/saved-searches/${item.id}`, { method: 'DELETE' });
+            if (activeSavedFilterId === item.id) activeSavedFilterId = null;
+            loadSavedSearches();
+          } catch (err) {
+            toast(err.message, 'error');
+          }
+        });
+
+        wrapper.append(apply, del);
+        list.append(wrapper);
+      });
+    } catch (error) {
+      toast(error.message, 'error');
+    }
   }
   fetchJSON('/api/auth/me').then(data => { if (data.preferences.book_layout === 'list') $('book-grid').classList.add('list-view'); }).catch(() => { });
   loadCategories();

@@ -303,17 +303,18 @@ class AccountService
         ];
     }
 
-    public static function saveSearch(int $userId, mixed $name, mixed $query, mixed $low, mixed $high): array
+    public static function saveSearch(int $userId, mixed $name, mixed $query, mixed $low, mixed $high, mixed $category = ''): array
     {
-        if (!is_string($name) || !is_string($query) || !is_string($low) || !is_string($high)) {
+        if (!is_string($name) || !is_string($query) || !is_string($low) || !is_string($high) || ($category !== null && !is_string($category))) {
             throw new \DomainException('Dữ liệu bộ lọc không hợp lệ.');
         }
         $cleanName = preg_replace('/\s+/u', ' ', trim($name)) ?? '';
         $query = (string) $query;
+        $category = (string) ($category ?? '');
         $low = (string) $low;
         $high = (string) $high;
-        if (mb_strlen($cleanName) < 1 || mb_strlen($cleanName) > 60 || mb_strlen($query) > 100) {
-            throw new \DomainException('Tên bộ lọc hoặc từ khóa quá dài.');
+        if (mb_strlen($cleanName) < 1 || mb_strlen($cleanName) > 60 || mb_strlen($query) > 100 || mb_strlen($category) > 100) {
+            throw new \DomainException('Tên bộ lọc, từ khóa hoặc thể loại quá dài.');
         }
         $min = self::parsePrice($low, 'min_price');
         $max = self::parsePrice($high, 'max_price');
@@ -327,12 +328,13 @@ class AccountService
             'user_id' => $userId,
             'name' => $cleanName,
             'query' => $query,
+            'category' => $category,
             'min_price' => $low,
             'max_price' => $high,
             'created_at' => self::now(),
         ]);
 
-        return ['id' => $id, 'name' => $cleanName];
+        return ['id' => $id, 'name' => $cleanName, 'query' => $query, 'category' => $category, 'min_price' => $low, 'max_price' => $high];
     }
 
     public static function parsePrice(string $value, string $key): ?int
