@@ -186,6 +186,7 @@
       renderJob(job);
       if (TERMINAL.has(job.status) && trackedJobId === jobId) {
         stopPolling();
+        await window.CrawlInsight.refreshNotifications();
         await loadSummary();
       }
     } catch (error) {
@@ -212,7 +213,7 @@
 
   $('crawl-form').addEventListener('submit', async (event) => {
     event.preventDefault();
-    const maxPages = 5;
+    const maxPages = 3;
     const sourceSelect = $('source-select');
     const sourceId = sourceSelect ? Number(sourceSelect.value) || 1 : 1;
     setStartDisabled(true);
@@ -220,7 +221,9 @@
       const { job } = await fetchJSON('/api/jobs', {
         method: 'POST', body: JSON.stringify({ max_pages: maxPages, source_id: sourceId }),
       });
-      toast(locale === 'vi' ? `Phiên crawl #${job.id} đã được thêm vào hàng đợi.` : `Crawl #${job.id} has been queued.`, 'success');
+      const displayNumber = Number(job.user_job_number || job.id || 0);
+      toast(locale === 'vi' ? `Phiên crawl #${displayNumber} đã được thêm vào hàng đợi.` : `Crawl #${displayNumber} has been queued.`, 'success');
+      await window.CrawlInsight.refreshNotifications();
       trackJob(job.id);
       await loadSummary();
     } catch (error) {

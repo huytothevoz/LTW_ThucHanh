@@ -6,6 +6,51 @@ use Illuminate\Support\Facades\DB;
 
 class CrawlJobService
 {
+    public static function delete(int $jobId, int $userId): bool
+    {
+        return DB::transaction(function () use ($jobId, $userId): bool {
+            $job = DB::table('crawl_jobs')
+                ->where('id', $jobId)
+                ->where('user_id', $userId)
+                ->lockForUpdate()
+                ->first(['id', 'status']);
+
+            if (!$job) {
+                return false;
+            }
+
+            if (in_array($job->status, ['PENDING', 'RUNNING'], true)) {
+                throw new \DomainException('JOB_ALREADY_ACTIVE');
+            }
+
+            $priceHistoryIds = DB::table('book_price_history')
+                ->where('job_id', $jobId)
+                ->pluck('id')
+                ->all();
+
+            if ($priceHistoryIds !== []) {
+                DB::table('price_change_notifications')
+                    ->whereIn('price_history_id', $priceHistoryIds)
+                    ->delete();
+                DB::table('book_price_history')->whereIn('id', $priceHistoryIds)->delete();
+            }
+
+            DB::table('crawl_job_books')->where('job_id', $jobId)->delete();
+            DB::table('crawl_events')->where('job_id', $jobId)->delete();
+            DB::table('crawl_pages')->where('job_id', $jobId)->delete();
+            DB::table('crawl_notifications')->where('job_id', $jobId)->delete();
+            DB::table('books')
+                ->where('user_id', $userId)
+                ->where('last_crawl_job_id', $jobId)
+                ->update(['last_crawl_job_id' => null]);
+
+            return DB::table('crawl_jobs')
+                ->where('id', $jobId)
+                ->where('user_id', $userId)
+                ->delete() === 1;
+        });
+    }
+
     public static function create(int $maxPages, int $userId, int $sourceId = 1): array
     {
         return DB::transaction(function () use ($maxPages, $userId, $sourceId): array {
@@ -30,6 +75,12 @@ class CrawlJobService
                 "INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,'INFO','CREATED',?,?)",
                 [$id, "Crawl job created for {$sourceName}", $now],
             );
+            DB::table('crawl_notifications')->insert([
+                'user_id' => $userId,
+                'job_id' => $id,
+                'status' => 'QUEUED',
+                'created_at' => $now,
+            ]);
 
             return (array) DB::selectOne(
                 'SELECT c.id,c.status,c.max_pages,c.created_at,
@@ -101,6 +152,9 @@ class CrawlJobService
                     "INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,'ERROR','FAILED',?,?)",
                     [$jobId, $message, $now],
                 );
+                DB::table('crawl_notifications')
+                    ->where('job_id', $jobId)
+                    ->update(['status' => 'FAILED', 'read_at' => null]);
             }
         });
     }

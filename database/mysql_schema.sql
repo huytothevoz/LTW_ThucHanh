@@ -23,7 +23,8 @@ CREATE TABLE IF NOT EXISTS users (
     session_version INT UNSIGNED NOT NULL DEFAULT 0,
     created_at VARCHAR(32) NOT NULL,
     updated_at VARCHAR(32) NOT NULL,
-    last_login_at VARCHAR(32) NULL
+    last_login_at VARCHAR(32) NULL,
+    avatar_path VARCHAR(255) NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS categories (
@@ -60,7 +61,7 @@ CREATE TABLE IF NOT EXISTS crawl_jobs (
     KEY idx_crawl_jobs_user (user_id, id DESC),
     CONSTRAINT fk_crawl_jobs_source FOREIGN KEY (source_id) REFERENCES sources(id) ON DELETE RESTRICT,
     CONSTRAINT fk_crawl_jobs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
-    CHECK (max_pages BETWEEN 1 AND 5),
+    CHECK (max_pages BETWEEN 1 AND 3),
     CHECK (status IN ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED')),
     CHECK (items_saved = new_books + existing_books),
     CHECK (catalogue_pages_done <= max_pages),
@@ -181,6 +182,7 @@ CREATE TABLE IF NOT EXISTS saved_searches (
     user_id BIGINT UNSIGNED NOT NULL,
     name VARCHAR(60) NOT NULL,
     query VARCHAR(100) NOT NULL DEFAULT '',
+    category VARCHAR(100) NOT NULL DEFAULT '',
     min_price VARCHAR(12) NOT NULL DEFAULT '',
     max_price VARCHAR(12) NOT NULL DEFAULT '',
     created_at VARCHAR(32) NOT NULL,
@@ -220,6 +222,20 @@ CREATE TABLE IF NOT EXISTS price_change_notifications (
     CONSTRAINT fk_price_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_price_notifications_book FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE,
     CONSTRAINT fk_price_notifications_history FOREIGN KEY (price_history_id) REFERENCES book_price_history(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS crawl_notifications (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT UNSIGNED NOT NULL,
+    job_id BIGINT UNSIGNED NOT NULL,
+    status VARCHAR(16) NOT NULL,
+    created_at VARCHAR(32) NOT NULL,
+    read_at VARCHAR(32) NULL,
+    UNIQUE KEY uq_crawl_notifications_job (job_id),
+    KEY idx_crawl_notifications_user_unread (user_id, read_at, id DESC),
+    CONSTRAINT fk_crawl_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_crawl_notifications_job FOREIGN KEY (job_id) REFERENCES crawl_jobs(id) ON DELETE CASCADE,
+    CHECK (status IN ('QUEUED', 'RUNNING', 'COMPLETED', 'FAILED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS legacy_imports (

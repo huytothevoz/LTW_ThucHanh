@@ -276,6 +276,9 @@
   padding:14px;
   mix-blend-mode:multiply
 }
+:root[data-theme="dark"] .book-cover img {
+  mix-blend-mode:normal
+}
 .book-cover.no-image:before {
   content:"CI";
   font-size:50px;

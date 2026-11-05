@@ -1,5 +1,7 @@
 """Job lifecycle, page evidence and sanitized crawler event logging."""
 from __future__ import annotations
+import re
+from urllib.parse import parse_qs, urlsplit
 from .connection import connect, now_utc, row_dict
 
 ACTIVE_STATUSES = {'PENDING','RUNNING'}
@@ -17,8 +19,8 @@ def sanitize_error(message: str | None) -> str | None:
 
 
 def create_job(max_pages: int, source_id: int = 1, user_id: int | None = None) -> dict:
-    if type(max_pages) is not int or max_pages not in (1, 2, 3, 4, 5):
-        raise ValueError('max_pages must be an integer from 1 to 5')
+    if type(max_pages) is not int or max_pages not in (1, 2, 3):
+        raise ValueError('max_pages must be an integer from 1 to 3')
     if type(source_id) is not int or source_id not in (1, 2, 3):
         raise ValueError('source_id must be 1, 2, or 3')
     with connect() as con:
@@ -35,6 +37,12 @@ def create_job(max_pages: int, source_id: int = 1, user_id: int | None = None) -
             (source_id,max_pages,now_utc(),user_id),
         )
         con.execute("INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,'INFO','CREATED','Crawl job created',?)", (cur.lastrowid,now_utc()))
+        if user_id is not None:
+            con.execute(
+                "INSERT OR IGNORE INTO crawl_notifications(user_id,job_id,status,created_at) "
+                "VALUES(?,?,'QUEUED',?)",
+                (user_id, cur.lastrowid, now_utc()),
+            )
         return dict(con.execute('SELECT * FROM crawl_jobs WHERE id=?',(cur.lastrowid,)).fetchone())
 
 
@@ -48,6 +56,10 @@ def mark_job_running(job_id: int) -> bool:
         result = con.execute("UPDATE crawl_jobs SET status='RUNNING',started_at=? WHERE id=? AND status='PENDING'", (now_utc(),job_id))
         if result.rowcount:
             con.execute("INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,'INFO','STARTED','Crawler process started',?)",(job_id,now_utc()))
+            con.execute(
+                "UPDATE crawl_notifications SET status='RUNNING',read_at=NULL WHERE job_id=?",
+                (job_id,),
+            )
         return result.rowcount == 1
 
 
@@ -59,6 +71,40 @@ def finish_job(job_id: int, status: str, reason: str | None = None) -> None:
         updated = con.execute("UPDATE crawl_jobs SET status=?,finished_at=?,last_error=COALESCE(?,last_error),error_count=error_count+? WHERE id=? AND status IN ('PENDING','RUNNING')",(status,now_utc(),clean,int(bool(clean)),job_id))
         if updated.rowcount:
             con.execute("INSERT INTO crawl_events(job_id,level,event_type,message,created_at) VALUES(?,?,?,?,?)",(job_id,'ERROR' if status=='FAILED' else 'INFO',status,clean or f'Job {status.lower()}',now_utc()))
+            con.execute(
+                "UPDATE crawl_notifications SET status=?,read_at=NULL WHERE job_id=?",
+                (status, job_id),
+            )
+
+
+def next_source_page(job_id: int, source_id: int) -> int:
+    """Continue after the user's latest completed crawl for this source."""
+    with connect() as con:
+        job = con.execute(
+            'SELECT user_id FROM crawl_jobs WHERE id=?',
+            (job_id,),
+        ).fetchone()
+        if job is None:
+            raise ValueError('Unknown crawl job')
+        previous = con.execute(
+            "SELECT p.page_url FROM crawl_pages p "
+            "JOIN crawl_jobs j ON j.id=p.job_id "
+            "WHERE j.user_id IS ? AND j.source_id=? AND j.status='COMPLETED' AND j.id<? "
+            "ORDER BY j.id DESC,p.page_number DESC LIMIT 1",
+            (job['user_id'], source_id, job_id),
+        ).fetchone()
+    if previous is None:
+        return 1
+
+    url = urlsplit(previous['page_url'])
+    if source_id == 1:
+        match = re.search(r'/catalogue/page-(\d+)\.html$', url.path)
+        last_page = int(match.group(1)) if match else 1
+        return 1 if last_page >= 50 else last_page + 1
+
+    page_values = parse_qs(url.query).get('page', [])
+    last_page = int(page_values[-1]) if page_values and page_values[-1].isdigit() else 1
+    return last_page + 1
 
 
 def record_error(job_id: int, message: str) -> None:

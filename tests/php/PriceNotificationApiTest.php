@@ -21,7 +21,8 @@ class PriceNotificationApiTest extends TestCase
                 session_version INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                last_login_at TEXT
+                last_login_at TEXT,
+                avatar_path TEXT
             );
             CREATE TABLE user_preferences (
                 user_id INTEGER PRIMARY KEY,
@@ -46,6 +47,24 @@ class PriceNotificationApiTest extends TestCase
                 user_id INTEGER NOT NULL,
                 book_id INTEGER NOT NULL,
                 price_history_id INTEGER NOT NULL,
+                created_at TEXT NOT NULL,
+                read_at TEXT
+            );
+            CREATE TABLE sources (
+                id INTEGER PRIMARY KEY,
+                name TEXT NOT NULL
+            );
+            CREATE TABLE crawl_jobs (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                source_id INTEGER NOT NULL,
+                status TEXT NOT NULL
+            );
+            CREATE TABLE crawl_notifications (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                job_id INTEGER NOT NULL,
+                status TEXT NOT NULL,
                 created_at TEXT NOT NULL,
                 read_at TEXT
             );
@@ -74,6 +93,18 @@ class PriceNotificationApiTest extends TestCase
             ['id' => 1, 'user_id' => 1, 'book_id' => 1, 'price_history_id' => 1, 'created_at' => '2026-10-23T00:00:00Z', 'read_at' => null],
             ['id' => 2, 'user_id' => 2, 'book_id' => 2, 'price_history_id' => 2, 'created_at' => '2026-10-23T00:00:00Z', 'read_at' => null],
         ]);
+        DB::table('sources')->insert([
+            ['id' => 1, 'name' => 'Books to Scrape'],
+            ['id' => 2, 'name' => 'Open Library'],
+        ]);
+        DB::table('crawl_jobs')->insert([
+            ['id' => 20, 'user_id' => 1, 'source_id' => 1, 'status' => 'RUNNING'],
+            ['id' => 21, 'user_id' => 2, 'source_id' => 2, 'status' => 'COMPLETED'],
+        ]);
+        DB::table('crawl_notifications')->insert([
+            ['id' => 1, 'user_id' => 1, 'job_id' => 20, 'status' => 'RUNNING', 'created_at' => '2026-10-24T00:00:00Z', 'read_at' => null],
+            ['id' => 2, 'user_id' => 2, 'job_id' => 21, 'status' => 'COMPLETED', 'created_at' => '2026-10-24T00:00:00Z', 'read_at' => null],
+        ]);
     }
 
     public function test_notifications_are_scoped_to_the_signed_in_user(): void
@@ -81,11 +112,11 @@ class PriceNotificationApiTest extends TestCase
         $this->withSession(['user_id' => 1, 'session_version' => 0])
             ->getJson('/api/notifications')
             ->assertOk()
-            ->assertJsonPath('unread_count', 1)
-            ->assertJsonCount(1, 'items')
-            ->assertJsonPath('items.0.title', 'Book One')
-            ->assertJsonPath('items.0.old_price_pence', 1000)
-            ->assertJsonPath('items.0.new_price_pence', 900);
+            ->assertJsonPath('unread_count', 2)
+            ->assertJsonCount(2, 'items')
+            ->assertJsonPath('items.0.title', 'Crawl #1')
+            ->assertJsonPath('items.0.kind', 'crawl')
+            ->assertJsonPath('items.0.status', 'RUNNING');
     }
 
     public function test_notification_read_endpoints_only_update_the_signed_in_users_rows(): void
@@ -94,8 +125,13 @@ class PriceNotificationApiTest extends TestCase
             ->patchJson('/api/notifications/2/read')
             ->assertNotFound()
             ->assertJsonPath('error.code', 'NOTIFICATION_NOT_FOUND');
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->patchJson('/api/notifications/crawl-21/read')
+            ->assertNotFound()
+            ->assertJsonPath('error.code', 'NOTIFICATION_NOT_FOUND');
 
         $this->assertNull(DB::table('price_change_notifications')->where('id', 2)->value('read_at'));
+        $this->assertNull(DB::table('crawl_notifications')->where('job_id', 21)->value('read_at'));
 
         $this->withSession(['user_id' => 1, 'session_version' => 0])
             ->patchJson('/api/notifications/read')
@@ -104,5 +140,18 @@ class PriceNotificationApiTest extends TestCase
 
         $this->assertNotNull(DB::table('price_change_notifications')->where('id', 1)->value('read_at'));
         $this->assertNull(DB::table('price_change_notifications')->where('id', 2)->value('read_at'));
+        $this->assertNotNull(DB::table('crawl_notifications')->where('job_id', 20)->value('read_at'));
+        $this->assertNull(DB::table('crawl_notifications')->where('job_id', 21)->value('read_at'));
+    }
+
+    public function test_crawl_notification_can_only_be_marked_read_by_its_owner(): void
+    {
+        $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->patchJson('/api/notifications/crawl-20/read')
+            ->assertOk()
+            ->assertJsonPath('ok', true);
+
+        $this->assertNotNull(DB::table('crawl_notifications')->where('job_id', 20)->value('read_at'));
+        $this->assertNull(DB::table('crawl_notifications')->where('job_id', 21)->value('read_at'));
     }
 }

@@ -21,7 +21,8 @@ class BookDiscoveryAndBookmarkTest extends TestCase
                 session_version INTEGER NOT NULL DEFAULT 0,
                 created_at TEXT NOT NULL,
                 updated_at TEXT NOT NULL,
-                last_login_at TEXT
+                last_login_at TEXT,
+                avatar_path TEXT
             );
             CREATE TABLE user_preferences (
                 user_id INTEGER PRIMARY KEY,
@@ -73,6 +74,14 @@ class BookDiscoveryAndBookmarkTest extends TestCase
                 event_type TEXT NOT NULL,
                 message TEXT NOT NULL,
                 created_at TEXT NOT NULL
+            );
+            CREATE TABLE crawl_notifications (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER NOT NULL,
+                job_id INTEGER NOT NULL,
+                status TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                read_at TEXT
             );
             CREATE VIEW v_books_detail AS
             SELECT b.id,b.source_url,b.title,b.price_pence,
@@ -267,17 +276,41 @@ class BookDiscoveryAndBookmarkTest extends TestCase
             ->assertJsonPath('total_books', 2);
     }
 
-    public function test_create_job_max_pages_validation_up_to_5(): void
+    public function test_create_job_max_pages_validation_up_to_3(): void
     {
         $this->withSession(['user_id' => 1, 'session_version' => 0])
-            ->postJson('/api/jobs', ['max_pages' => 6])
+            ->postJson('/api/jobs', ['max_pages' => 4])
             ->assertStatus(400)
             ->assertJsonPath('error.code', 'INVALID_MAX_PAGES');
 
+        DB::table('users')->insert([
+            'id' => 2,
+            'full_name' => 'Other User',
+            'email' => 'other_user@example.com',
+            'password_hash' => 'hash',
+            'created_at' => '2026-10-24T00:00:00Z',
+            'updated_at' => '2026-10-24T00:00:00Z',
+        ]);
+        for ($id = 2; $id <= 19; $id++) {
+            DB::table('crawl_jobs')->insert([
+                'id' => $id,
+                'user_id' => 2,
+                'status' => 'COMPLETED',
+                'max_pages' => 1,
+                'created_at' => '2026-10-24T00:00:00Z',
+            ]);
+        }
+
         $this->withSession(['user_id' => 1, 'session_version' => 0])
-            ->postJson('/api/jobs', ['max_pages' => 5])
+            ->postJson('/api/jobs', ['max_pages' => 3])
             ->assertStatus(202)
-            ->assertJsonPath('job.max_pages', 5);
+            ->assertJsonPath('job.max_pages', 3)
+            ->assertJsonPath('job.user_job_number', 2);
+
+        $this->assertDatabaseHas('crawl_notifications', [
+            'user_id' => 1,
+            'job_id' => 20,
+        ]);
     }
 
 
@@ -348,4 +381,3 @@ class BookDiscoveryAndBookmarkTest extends TestCase
         $this->assertSame('70', $items[0]['max_price']);
     }
 }
-

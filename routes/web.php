@@ -38,6 +38,8 @@ Route::post('/api/auth/logout', [ApiController::class, 'logout'])->middleware('a
 Route::post('/api/auth/request-reset', [ApiController::class, 'requestReset']);
 Route::post('/api/auth/reset-password', [ApiController::class, 'resetPassword']);
 Route::patch('/api/me/profile', [ApiController::class, 'updateProfile'])->middleware('authenticated');
+Route::get('/api/me/avatar', [ApiController::class, 'avatar'])->middleware('authenticated');
+Route::post('/api/me/avatar', [ApiController::class, 'updateAvatar'])->middleware('authenticated');
 Route::patch('/api/me/preferences', [ApiController::class, 'updatePreferences'])->middleware('authenticated');
 Route::post('/api/me/password', [ApiController::class, 'updatePassword'])->middleware('authenticated');
 
@@ -45,6 +47,7 @@ Route::middleware('authenticated')->group(function (): void {
     Route::get('/api/summary', [ApiController::class, 'summary']);
     Route::post('/api/jobs', [ApiController::class, 'createJob']);
     Route::get('/api/jobs/{jobId}', [ApiController::class, 'getJob'])->whereNumber('jobId');
+    Route::delete('/api/jobs/{jobId}', [ApiController::class, 'deleteJob'])->whereNumber('jobId');
     Route::get('/api/categories', [ApiController::class, 'categories']);
     Route::get('/api/books', [ApiController::class, 'books']);
     Route::get('/api/books/{bookId}', [ApiController::class, 'bookDetail'])->whereNumber('bookId');
@@ -56,7 +59,7 @@ Route::middleware('authenticated')->group(function (): void {
     Route::get('/api/history', [ApiController::class, 'history']);
     Route::get('/api/notifications', [ApiController::class, 'notifications']);
     Route::patch('/api/notifications/read', [ApiController::class, 'markAllNotificationsRead']);
-    Route::patch('/api/notifications/{notificationId}/read', [ApiController::class, 'markNotificationRead'])->whereNumber('notificationId');
+    Route::patch('/api/notifications/{notificationId}/read', [ApiController::class, 'markNotificationRead']);
     Route::get('/api/analytics', [ApiController::class, 'analytics']);
     Route::get('/api/sources', [ApiController::class, 'sources']);
     Route::get('/api/exports/books.csv', [ApiController::class, 'exportBooks']);

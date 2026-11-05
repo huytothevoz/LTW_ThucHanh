@@ -65,6 +65,18 @@
   .settings-grid {
     grid-template-columns:1fr
   }
+  .avatar-editor {
+    align-items:flex-start;
+    gap:14px;
+    padding:14px
+  }
+  .avatar-crop-frame {
+    width:112px;
+    height:112px
+  }
+  .avatar-crop-frame span {
+    font-size:38px
+  }
   .settings-security {
     grid-column:auto
   }
@@ -228,6 +240,24 @@
   }
   .catalog-tools .currency-note {
     flex-basis:100%
+  }
+  .book-grid.list-view .book-body {
+    grid-template-columns:minmax(0,1fr) auto;
+    gap:5px 12px;
+    padding:11px 12px
+  }
+  .book-grid.list-view .book-price-row {
+    grid-column:2;
+    grid-row:1 / 3
+  }
+  .book-grid.list-view .book-link {
+    grid-column:1;
+    grid-row:3;
+    justify-content:flex-start
+  }
+  .book-grid.list-view .book-quick-actions {
+    grid-column:2;
+    grid-row:3
   }
 
 }

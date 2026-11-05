@@ -35,24 +35,93 @@
 
   async function historyPage() {
     const tbody = $('history-tbody');
-    try {
-      const data = await fetchJSON('/api/history'); tbody.replaceChildren();
-      if (!data.items.length) { const row = document.createElement('tr'); const td = document.createElement('td'); td.colSpan = 8; td.textContent = locale === 'vi' ? 'Chưa có phiên nào.' : 'No sessions yet.'; row.append(td); tbody.append(row); return; }
-      for (const job of data.items) {
-        const row = document.createElement('tr');
-        const values = [`#${job.id}`, job.status, formatDate(job.created_at), `${job.catalogue_pages_done}/${job.max_pages}`, job.books_found, job.items_saved, job.error_count];
-        values.forEach((v, i) => { const td = text('td', i === 1 ? `status-text s-${String(v).toLowerCase()}` : '', v); row.append(td); });
-        const button = document.createElement('button'); button.type = 'button'; button.className = 'text-action'; button.textContent = t('details') + ' →';
-        button.addEventListener('click', async () => {
-          try {
-            const data = await fetchJSON(`/api/jobs/${job.id}`); const detail = $('history-detail'); detail.hidden = false; detail.replaceChildren();
-            detail.append(text('h3', '', 'Crawl #' + job.id), text('p', '', `${t('status')}: ${data.job.status} · ${t('found')}: ${data.job.books_found} · ${t('errors')}: ${data.job.error_count}`));
-            (data.events || []).forEach(ev => detail.append(text('p', 'event-row', `${formatDate(ev.created_at)} · ${ev.level} · ${ev.message}`)));
-            detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-          } catch (e) { toast(e.message, 'error'); }
-        }); const cell = document.createElement('td'); cell.append(button); row.append(cell); tbody.append(row);
-      }
-    } catch (e) { tbody.replaceChildren(); $('history-error').textContent = e.message; $('history-error').hidden = false; }
+
+    async function loadHistory() {
+      try {
+        const data = await fetchJSON('/api/history');
+        tbody.replaceChildren();
+        if (!data.items.length) {
+          const row = document.createElement('tr');
+          const td = document.createElement('td');
+          td.colSpan = 8;
+          td.textContent = locale === 'vi' ? 'Chưa có phiên nào.' : 'No sessions yet.';
+          row.append(td);
+          tbody.append(row);
+          return;
+        }
+
+        for (const job of data.items) {
+          const row = document.createElement('tr');
+          const jobNumber = Number(job.user_job_number || job.id || 0);
+          const values = [
+            `#${jobNumber}`,
+            job.status,
+            formatDate(job.created_at),
+            `${job.catalogue_pages_done}/${job.max_pages}`,
+            job.books_found,
+            job.items_saved,
+            job.error_count,
+          ];
+          values.forEach((value, index) => {
+            const className = index === 1 ? `status-text s-${String(value).toLowerCase()}` : '';
+            row.append(text('td', className, value));
+          });
+
+          const details = document.createElement('button');
+          details.type = 'button';
+          details.className = 'text-action';
+          details.textContent = t('details') + ' →';
+          details.addEventListener('click', async () => {
+            try {
+              const result = await fetchJSON(`/api/jobs/${job.id}`);
+              const detail = $('history-detail');
+              detail.hidden = false;
+              detail.replaceChildren();
+              const number = Number(result.job.user_job_number || result.job.id || 0);
+              detail.append(
+                text('h3', '', `Crawl #${number}`),
+                text('p', '', `${t('status')}: ${result.job.status} · ${t('found')}: ${result.job.books_found} · ${t('errors')}: ${result.job.error_count}`),
+              );
+              (result.events || []).forEach(event => {
+                detail.append(text('p', 'event-row', `${formatDate(event.created_at)} · ${event.level} · ${event.message}`));
+              });
+              detail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (error) {
+              toast(error.message, 'error');
+            }
+          });
+
+          const remove = document.createElement('button');
+          remove.type = 'button';
+          remove.className = 'danger-link';
+          remove.textContent = t('deleteCrawl');
+          remove.disabled = ['PENDING', 'RUNNING'].includes(job.status);
+          remove.title = remove.disabled ? t('crawlActiveCannotDelete') : '';
+          remove.addEventListener('click', async () => {
+            if (!confirm(t('deleteCrawlConfirm').replace('{id}', String(jobNumber)))) return;
+            remove.disabled = true;
+            try {
+              await fetchJSON(`/api/jobs/${job.id}`, { method: 'DELETE' });
+              $('history-detail').hidden = true;
+              toast(t('crawlDeleted'), 'success');
+              await loadHistory();
+            } catch (error) {
+              toast(error.message, 'error');
+              remove.disabled = false;
+            }
+          });
+
+          const actions = el('div', 'history-actions');
+          actions.append(details, remove);
+          const cell = document.createElement('td');
+          cell.append(actions);
+          row.append(cell);
+          tbody.append(row);
+        }
+      } catch (e) { tbody.replaceChildren(); $('history-error').textContent = e.message; $('history-error').hidden = false; }
+    }
+
+    await loadHistory();
   }
 
   async function analyticsPage() {
@@ -83,6 +152,7 @@
       const button = form.querySelector('[type="submit"]'); button.disabled = true;
       try { const data = await fetchJSON(endpoint, { method, body: JSON.stringify(values) }); toast(t('confirmed'), 'success'); after?.(data); } catch (e) { toast(e.message, 'error'); } finally { button.disabled = false; }
     }
+    setupAvatarEditor();
     $('profile-form').addEventListener('submit', e => { e.preventDefault(); submit(e.currentTarget, '/api/me/profile', 'PATCH', { full_name: $('profile-name').value }, () => location.reload()); });
     $('preferences-form').addEventListener('submit', e => { e.preventDefault(); submit(e.currentTarget, '/api/me/preferences', 'PATCH', { locale: $('pref-locale').value, theme: $('pref-theme').value, book_layout: $('pref-layout').value }, () => location.reload()); });
     $('change-password-form').addEventListener('submit', e => {
@@ -91,5 +161,151 @@
     });
     $('logout-settings').addEventListener('click', async () => { if (!confirm(t('logout'))) return; try { await fetchJSON('/api/auth/logout', { method: 'POST', body: '{}' }); location.assign('/'); } catch (e) { toast(e.message, 'error'); } });
   }
+
+  function setupAvatarEditor() {
+    const canvas = $('avatar-canvas');
+    const context = canvas.getContext('2d');
+    const input = $('avatar-file');
+    const zoomControl = $('avatar-zoom');
+    const saveButton = $('save-avatar');
+    const placeholder = $('avatar-placeholder');
+    const status = $('avatar-status');
+    let image = null;
+    let zoom = 1;
+    let offsetX = 0;
+    let offsetY = 0;
+    let drag = null;
+
+    const showStatus = message => {
+      status.textContent = message;
+      status.hidden = !message;
+    };
+    const clampOffset = () => {
+      if (!image) return;
+      const scale = Math.max(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight) * zoom;
+      const centeredX = (canvas.width - image.naturalWidth * scale) / 2;
+      const centeredY = (canvas.height - image.naturalHeight * scale) / 2;
+      offsetX = Math.max(canvas.width - image.naturalWidth * scale - centeredX, Math.min(-centeredX, offsetX));
+      offsetY = Math.max(canvas.height - image.naturalHeight * scale - centeredY, Math.min(-centeredY, offsetY));
+    };
+    const render = () => {
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      if (!image) return;
+      clampOffset();
+      const scale = Math.max(canvas.width / image.naturalWidth, canvas.height / image.naturalHeight) * zoom;
+      const width = image.naturalWidth * scale;
+      const height = image.naturalHeight * scale;
+      context.drawImage(
+        image,
+        (canvas.width - width) / 2 + offsetX,
+        (canvas.height - height) / 2 + offsetY,
+        width,
+        height,
+      );
+    };
+    const useImage = nextImage => {
+      image = nextImage;
+      zoom = 1;
+      offsetX = 0;
+      offsetY = 0;
+      zoomControl.value = '1';
+      zoomControl.disabled = false;
+      saveButton.disabled = false;
+      placeholder.hidden = true;
+      render();
+    };
+
+    const existing = $('avatar-source');
+    if (existing) {
+      existing.addEventListener('load', () => useImage(existing));
+      existing.addEventListener('error', () => showStatus(t('avatarLoadFailed')));
+      if (existing.complete && existing.naturalWidth) useImage(existing);
+    }
+
+    input.addEventListener('change', () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 12 * 1024 * 1024) {
+        showStatus(t('avatarInvalidFile'));
+        input.value = '';
+        return;
+      }
+      const nextImage = new Image();
+      nextImage.onload = () => {
+        if (nextImage.naturalWidth > 8192 || nextImage.naturalHeight > 8192
+          || nextImage.naturalWidth * nextImage.naturalHeight > 32000000) {
+          showStatus(t('avatarInvalidFile'));
+          return;
+        }
+        useImage(nextImage);
+        showStatus('');
+      };
+      nextImage.onerror = () => {
+        showStatus(t('avatarInvalidFile'));
+      };
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') nextImage.src = reader.result;
+        else showStatus(t('avatarInvalidFile'));
+      };
+      reader.onerror = () => showStatus(t('avatarInvalidFile'));
+      reader.readAsDataURL(file);
+    });
+
+    zoomControl.addEventListener('input', () => {
+      zoom = Number(zoomControl.value);
+      render();
+    });
+    canvas.addEventListener('pointerdown', event => {
+      if (!image) return;
+      canvas.setPointerCapture(event.pointerId);
+      const bounds = canvas.getBoundingClientRect();
+      drag = {
+        pointerId: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+        offsetX,
+        offsetY,
+        ratioX: canvas.width / bounds.width,
+        ratioY: canvas.height / bounds.height,
+      };
+    });
+    canvas.addEventListener('pointermove', event => {
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      offsetX = drag.offsetX + (event.clientX - drag.x) * drag.ratioX;
+      offsetY = drag.offsetY + (event.clientY - drag.y) * drag.ratioY;
+      render();
+    });
+    canvas.addEventListener('pointerup', () => { drag = null; });
+    canvas.addEventListener('pointercancel', () => { drag = null; });
+
+    saveButton.addEventListener('click', async () => {
+      if (!image) return;
+      saveButton.disabled = true;
+      showStatus('');
+      try {
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+        if (!blob || blob.size > 4 * 1024 * 1024) throw new Error(t('avatarInvalidFile'));
+        const formData = new FormData();
+        formData.append('avatar', blob, 'avatar.png');
+        await fetchJSON('/api/me/avatar', { method: 'POST', body: formData });
+        const avatarUrl = `/api/me/avatar?v=${Date.now()}`;
+        document.querySelectorAll('.user-avatar,.top-avatar').forEach(element => {
+          const avatar = document.createElement('img');
+          avatar.src = avatarUrl;
+          avatar.alt = '';
+          element.replaceChildren(avatar);
+        });
+        showStatus(t('avatarSaved'));
+        toast(t('avatarSaved'), 'success');
+      } catch (error) {
+        showStatus(error.message);
+        toast(error.message, 'error');
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+  }
+
   if ($('saved-grid')) savedPage(); if ($('history-tbody')) historyPage(); if ($('an-ratings')) analyticsPage(); if ($('profile-form')) settingsPage();
 })();

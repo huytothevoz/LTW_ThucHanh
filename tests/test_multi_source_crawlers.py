@@ -160,6 +160,14 @@ def test_gutenberg_spider_catalogue(monkeypatch):
     assert len(details) == 3
 
 
+def test_external_spiders_resume_at_requested_page():
+    openlibrary = OpenLibrarySpider(job_id=102, max_pages=2, start_page=4)
+    assert next(openlibrary.start_requests()).url == "https://openlibrary.org/trending/daily?page=4"
+    assert GutenbergSpider(job_id=103, max_pages=2, start_page=4).start_urls == [
+        "https://www.gutenberg.org/browse/scores/top?page=4"
+    ]
+
+
 def test_middleware_allows_approved_sources():
     assert is_approved_request_url("https://books.toscrape.com/catalogue/page-1.html") is True
     assert is_approved_request_url("https://openlibrary.org/trending/daily") is True

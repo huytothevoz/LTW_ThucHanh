@@ -27,45 +27,45 @@
 
 Mỗi ngày, thông tin trên web được trình bày dưới nhiều cấu trúc HTML khác nhau. Nếu cần thu thập và phân tích nhiều trang, việc sao chép bằng tay vừa tốn thời gian vừa khó quản lý. **CrawlInsight** được xây dựng để thể hiện một quy trình Web Crawling có tổ chức: **truy cập nguồn được phép → phân tích HTML → chuẩn hóa → lưu trữ → tìm kiếm và trực quan hóa dữ liệu**.
 
-Sản phẩm hiện tập trung vào dữ liệu sách từ [Books to Scrape](https://books.toscrape.com/) — một website sandbox dành cho việc học và thực hành web scraping. Nhóm lựa chọn nguồn này để có thể tập trung vào cơ chế kỹ thuật, xử lý dữ liệu và trải nghiệm người dùng, thay vì tìm cách vượt qua các biện pháp hạn chế của website thương mại.
+Ứng dụng hiện hỗ trợ crawl sách từ ba nguồn được giới hạn sẵn: [Books to Scrape](https://books.toscrape.com/), [Open Library](https://openlibrary.org/) và [Project Gutenberg](https://www.gutenberg.org/). Đây là các nguồn phục vụ học tập, khám phá dữ liệu và sách; ứng dụng không nhận URL crawl tùy ý.
 
 **Điểm khác biệt của dự án:** Không dừng lại ở một script lấy tiêu đề và giá sách, CrawlInsight xây dựng một **ứng dụng web đa người dùng**, nơi kết quả crawling có thể được khám phá qua giao diện hiện đại, lưu sách quan tâm, theo dõi các lượt thu thập và phân tích dữ liệu.
 
 > [!NOTE]
-> Đây là **dự án học thuật đang phát triển và kiểm thử**, chưa phải dịch vụ công khai/production. Chức năng đã có mã nguồn không đồng nghĩa tất cả luồng chạy thật đã được nghiệm thu. Nguồn sách, giá và đánh giá trên Books to Scrape là dữ liệu thử nghiệm; giá hiển thị theo **GBP**, không tự quy đổi sang VND.
+> Đây là **đồ án học thuật chạy local**, chưa phải dịch vụ public/production. Crawl job truy cập website thật nên kết quả phụ thuộc kết nối Internet, cấu trúc và chính sách hiện thời của từng nguồn. Với Open Library và Project Gutenberg, giá và đánh giá là **chỉ số tham chiếu được tạo ổn định để demo/so sánh**, không phải giá bán hay điểm đánh giá thật từ các nguồn đó. Đơn vị giá hiển thị là GBP; không tự quy đổi sang VND.
 
 ## ✨ Tính năng nổi bật
 
 | Nhóm chức năng | Trải nghiệm trong CrawlInsight |
 |---|---|
 | 🏠 **Trang giới thiệu** | Giới thiệu mục đích, lợi ích, cách hoạt động và hướng dẫn bắt đầu trước khi đăng ký. |
-| 🔐 **Tài khoản cá nhân** | Đăng ký, đăng nhập, đăng xuất, đổi mật khẩu; luồng quên mật khẩu qua SMTP khi đã cấu hình. |
-| 🕸️ **Web Crawling** | Thu thập trang danh sách và trang chi tiết sách bằng Scrapy; kiểm soát phạm vi, phân trang và lưu kết quả. |
+| 🔐 **Tài khoản cá nhân** | Đăng ký, đăng nhập, đăng xuất, đổi mật khẩu và đặt lại mật khẩu qua email khi SMTP được cấu hình. |
+| 🕸️ **Web Crawling** | Chọn một trong ba nguồn cho phép; giới hạn mỗi lượt ở 1–3 trang danh sách, theo dõi job và lưu kết quả theo tài khoản. |
 | 📊 **Dashboard** | Xem số lượng sách đã thu thập, dữ liệu tổng hợp và trạng thái lượt crawl gần đây. |
-| 📚 **Khám phá sách** | Tìm kiếm, lọc theo giá, duyệt danh sách, xem thông tin chi tiết và lịch sử giá đã ghi nhận. |
-| 🔖 **Không gian riêng** | Lưu sách yêu thích và bộ lọc tìm kiếm theo từng tài khoản. |
-| 🕘 **Lịch sử crawling** | Theo dõi các job do người dùng tạo, trạng thái và thông tin tiến độ. |
+| 📚 **Khám phá sách** | Tìm kiếm, lọc theo giá/danh mục, chọn dạng lưới hoặc danh sách, xem chi tiết và lịch sử giá. |
+| 🔖 **Không gian riêng** | Bookmark, bộ lọc tìm kiếm đã lưu và dữ liệu sách/crawl được giới hạn theo tài khoản. |
+| 🔔 **Thông báo** | Xem thông báo trạng thái crawl và thay đổi giá của sách đã lưu; dữ liệu thông báo được cá nhân hóa theo tài khoản. |
+| 🕘 **Lịch sử crawling** | Xem và xóa từng lượt crawl đã kết thúc; xóa lịch sử không xóa sách đã thu thập. |
 | 📈 **Phân tích dữ liệu** | Thống kê số sách, khoảng giá, phân bố đánh giá và danh mục; xuất dữ liệu CSV. |
 | 🌐 **Song ngữ** | Tiếng Việt là mặc định, hỗ trợ chuyển giao diện sang tiếng Anh. |
-| 🌗 **Giao diện cá nhân hóa** | Light / Dark / System, thiết lập cách hiển thị sách và bố cục responsive. |
+| 🌗 **Giao diện cá nhân hóa** | Light / Dark / System, bố cục sách và ảnh đại diện có thể tải lên, cắt, căn chỉnh trong Settings. |
+| 🛡️ **Quản trị** | Admin xem danh sách tài khoản, bật/tắt tài khoản và quản lý quyền theo chính sách ứng dụng. |
 
 ### Những trang chính
 
 | Đường dẫn | Vai trò |
 |---|---|
-| `/` | Trang giới thiệu công khai |
-| `/register`, `/login`, `/forgot-password` | Tài khoản và khôi phục mật khẩu |
-| `/workspace` | Tổng quan và điều khiển crawler |
+| `/` | Trang giới thiệu công khai; đăng nhập để vào workspace |
+| `/register`, `/login`, `/forgot-password` | Đăng ký, đăng nhập và yêu cầu đặt lại mật khẩu |
+| `/workspace` | Trang Overview sau đăng nhập; tạo và theo dõi crawl job |
 | `/books` | Khám phá sách |
 | `/saved` | Sách đã lưu |
 | `/history` | Lịch sử crawling |
 | `/analytics` | Phân tích dữ liệu |
 | `/sources` | Nguồn dữ liệu và chính sách thu thập |
-| `/settings` | Hồ sơ và tùy chọn cá nhân |
+| `/settings` | Hồ sơ, ảnh đại diện, giao diện, ngôn ngữ và mật khẩu |
 | `/help` | Hướng dẫn sử dụng |
 | `/admin/users` | Quản trị tài khoản (chỉ admin) |
-
-> **Minh họa giao diện:** Nhóm sẽ bổ sung ảnh chụp thực tế của Landing Page, Dashboard, Book Explorer và Dark Mode vào `docs/screenshots/` sau vòng nghiệm thu trình duyệt. README không sử dụng hình giao diện giả làm minh chứng cho sản phẩm đã chạy.
 
 ## 🔄 Cách CrawlInsight hoạt động
 
@@ -74,7 +74,7 @@ flowchart LR
     A[Người dùng] -->|Thao tác trên giao diện| B[Laravel PHP Backend]
     B -->|Tạo job / đọc dữ liệu| C[(MySQL :3306)]
     B -->|Khởi chạy tiến trình| D[Scrapy Crawler]
-    D -->|Đọc HTML trong phạm vi cho phép| E[Books to Scrape]
+    D -->|Đọc HTML trong allowlist| E[Books to Scrape / Open Library / Project Gutenberg]
     E -->|HTML| D
     D -->|Parse / Validate / Upsert| C
     C -->|Sách / thống kê / trạng thái job| B
@@ -84,61 +84,73 @@ flowchart LR
 Quy trình sử dụng điển hình:
 
 1. **Tạo tài khoản** và đăng nhập vào workspace.
-2. **Khởi chạy một crawl job** với giới hạn 1–3 trang danh sách.
-3. **Theo dõi trạng thái** job và kết quả xử lý; crawler đi qua liên kết danh sách/chi tiết, phân tích HTML và lưu MySQL.
+2. **Chọn nguồn dữ liệu** và giới hạn lượt crawl từ 1–3 trang danh sách.
+3. **Theo dõi trạng thái** job; Laravel khởi chạy worker Scrapy riêng để phân tích trang danh sách/chi tiết và lưu MySQL.
 4. **Khám phá dữ liệu** đã thu thập qua bộ lọc và trang chi tiết sách.
 5. **Lưu sách yêu thích, xem thống kê hoặc xuất CSV** để phục vụ phân tích.
 
 ### Thu thập dữ liệu có trách nhiệm
 
-Crawler chỉ làm việc với `https://books.toscrape.com/`, kiểm tra giới hạn domain/URL, tuân thủ `robots.txt` và đặt giới hạn tốc độ. Bản hiện tại **không cung cấp crawling URL tùy ý**, không hỗ trợ vượt CAPTCHA hoặc bỏ qua chính sách website nguồn. Mỗi tài khoản có thể chạy tối đa một job tại một thời điểm.
+Crawler chỉ truy cập HTTPS trên allowlist gồm `books.toscrape.com`, `openlibrary.org` và `gutenberg.org`; middleware kiểm tra URL kể cả khi redirect. Scrapy bật tuân thủ `robots.txt`, giới hạn một request đồng thời cho mỗi domain và đặt trễ tải một giây. Ứng dụng **không nhận URL tùy ý**, không vượt CAPTCHA hoặc né chính sách nguồn. Mỗi tài khoản chỉ có thể có một job đang chờ/chạy tại một thời điểm.
 
 ## 🧱 Công nghệ sử dụng
 
 | Thành phần | Công nghệ | Công dụng |
 |---|---|---|
-| **Frontend** | HTML, CSS, JavaScript, Twig | Giao diện, responsive, đa ngôn ngữ, tương tác với API |
+| **Frontend** | HTML, CSS, JavaScript, Twig | Giao diện responsive, đa ngôn ngữ và tương tác với API |
 | **Web Backend** | PHP 8.2+, Laravel 12 | Routes, session, API JSON, xử lý nghiệp vụ |
 | **Crawler** | Python 3.11/3.12, Scrapy | Duyệt URL hợp lệ, request HTML, parsing, crawling pipeline |
-| **Database** | MySQL/MariaDB (XAMPP, cổng 3306) | Sách, nguồn, job, lịch sử, tài khoản và tùy chọn cá nhân |
-| **Testing** | pytest | Kiểm thử database, parser, bảo mật và API ở mức phù hợp |
+| **Database** | MySQL/MariaDB (XAMPP, cổng 3306) | Dữ liệu runtime dùng chung giữa Laravel và worker |
+| **Testing** | pytest, PHPUnit 11 | Kiểm thử crawler/parser, database, migrations và các API/tính năng PHP |
 | **Môi trường phát triển** | Windows, PHP/Composer, Python venv, Git/GitHub | Chạy local và phối hợp nhóm |
 
-MySQL là database chạy thật dùng chung giữa Laravel và crawler Python; catalog sách, lịch sử crawl, bookmark, phân tích và export được giới hạn theo `user_id`. Quyền admin được tách qua `role` và `/admin/users`. Setup có thể nhập dữ liệu từ SQLite cũ một lần và giữ file nguồn để sao lưu. Tài liệu schema: [`database/DATA_DICTIONARY.md`](database/DATA_DICTIONARY.md), [`database/README.md`](database/README.md).
+MySQL/MariaDB là database runtime dùng chung giữa Laravel và crawler Python. Sách, crawl job, bookmark, bộ lọc đã lưu, thông báo, phân tích và export được truy vấn theo `user_id`; metadata nguồn/danh mục được dùng chung. Quyền admin được kiểm soát bằng `role` và middleware tại `/admin/users`. Setup có thể nhập database SQLite cũ một lần, giữ file SQLite nguồn và tạo backup khi cần nâng cấp. Schema runtime: [`database/mysql_schema.sql`](database/mysql_schema.sql); hướng dẫn: [`database/README.md`](database/README.md), [`database/DATA_DICTIONARY.md`](database/DATA_DICTIONARY.md).
 
-Để tạo admin: tạo tài khoản và xác minh email với chủ tài khoản, đặt `ADMIN_EMAIL=<email>` trong `.env`, rồi chạy `php artisan admin:promote`. Lệnh này chỉ nâng tài khoản được người vận hành chỉ định; đăng ký công khai/đăng nhập không tự cấp quyền. Sau đó đăng nhập lại và mở `/admin/users`.
+Ảnh đại diện được cắt thành PNG vuông ngay trên trình duyệt, lưu ngoài public web root trong `storage/app/avatars` và chỉ được phục vụ cho tài khoản đã đăng nhập. Khi triển khai, cần thư mục lưu trữ bền vững và có quyền ghi cho PHP; có thể cấu hình `AVATAR_STORAGE_PATH` bằng đường dẫn tuyệt đối. Không cần tạo public storage symlink.
+
+Khi chạy setup với `APP_ENV=local`, ứng dụng tự tạo sẵn hai tài khoản:
+
+| Vai trò | Email | Mật khẩu |
+|---|---|---|
+| Admin | `admin@crawlinsight.local` | `CrawlInsightAdmin2026!` |
+| Demo | `demo@crawlinsight.local` | `CrawlInsightDemo2026!` |
+
+Đăng nhập tại `/login`; admin mở `/admin/users`, còn tài khoản demo có sẵn sách mẫu trong `/books`. Đây là thông tin cố định chỉ dành cho máy local, không dùng khi triển khai public. Mật khẩu trong database chỉ được lưu dạng hash. Chạy setup lại không đổi mật khẩu hoặc quyền của tài khoản đã tồn tại; nếu email mặc định đã tồn tại nhưng sai vai trò hoặc bị vô hiệu hóa, setup sẽ báo lỗi thay vì tự sửa tài khoản đó.
 
 ## 🗂️ Cấu trúc dự án
 
 ```text
 LTW-TH/
-├── app.py                     # Compatibility launcher forwarding to Laravel
+├── app/                       # Laravel controllers, middleware, services, Twig renderer
+├── bootstrap/                 # Khởi tạo Laravel
+├── config/                    # Cấu hình ứng dụng, database, session và mail
+├── resources/lang/            # Chuỗi giao diện tiếng Việt và tiếng Anh
+├── routes/web.php             # Các route trang web và JSON API
+├── public/                    # Laravel public entry point
 ├── artisan                    # Laravel CLI
-├── composer.json              # PHP dependencies and scripts
-├── START_HERE.bat             # Thiết lập và chạy trên Windows
-├── requirements.txt           # Python dependencies
-├── .env.example               # Mẫu cấu hình, không chứa credentials
-│
-├── templates/                 # Twig-rendered HTML pages
+├── composer.json / lock       # Dependencies PHP và PHPUnit
+├── START_HERE.bat             # Cài đặt và khởi chạy local trên Windows
+├── scripts/                   # Setup, start và chạy test trên Windows
+├── requirements.txt           # Dependencies Python cho crawler/tests
+├── .env.example               # Mẫu cấu hình local
+├── templates/                 # Các trang Twig
 ├── static/
-│   ├── css/                   # Thiết kế giao diện và dark mode
-│   ├── js/                    # Tương tác UI, fetch API, i18n
-│   └── img/                   # Hình ảnh giao diện
-│
-├── src/
-│   ├── web/                   # Authentication, API, session/security
-│   └── database/              # Repository/query, users, books, jobs...
-├── crawler/                   # Scrapy spider, parser, pipeline, worker
+│   ├── css/                   # Giao diện và responsive styles
+│   ├── js/                    # Tương tác giao diện và API client
+│   └── img/                   # Asset giao diện
+├── crawler/                   # Scrapy spiders, parser, middleware, worker
+├── src/database/              # Kết nối MySQL và logic persistence cho crawler
 ├── database/
-│   ├── migrations/            # SQL migration 001–004
-│   ├── tools/                 # Công cụ xem/kiểm tra database
-│   └── examples/              # Dữ liệu minh họa được đánh dấu DEMO
-├── tests/                     # Automated tests
-├── scripts/                   # PowerShell setup/start/test
-└── docs/                      # SRS, API, implementation status, report
+│   ├── mysql_schema.sql       # Schema runtime
+│   ├── migrations/            # SQLite legacy migrations và avatar v8
+│   ├── tools/                 # CLI kiểm tra/export/import dữ liệu
+│   └── examples/              # Database demo
+├── tests/php/                 # PHPUnit feature tests
+├── tests/*.py                 # pytest crawler/database tests
+└── docs/                      # API, cấu trúc, trạng thái và hướng dẫn kỹ thuật
 ```
 
-Xem chi tiết trách nhiệm từng module: [`PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md).
+Xem chi tiết trách nhiệm từng module: [`docs/PROJECT_STRUCTURE.md`](docs/PROJECT_STRUCTURE.md).
 
 ## 🚀 Chạy dự án trên máy cá nhân
 
@@ -156,9 +168,9 @@ Clone hoặc tải repository, mở thư mục dự án rồi chạy:
 START_HERE.bat
 ```
 
-Chỉ cần double-click `START_HERE.bat`. Script dùng XAMPP MariaDB trên cổng `3306`, khởi động nó nếu chưa chạy, cài/cập nhật dependencies khi cần, tự tạo/cập nhật database `crawlinsight`, nhập SQLite cũ nếu tìm thấy và khởi chạy Laravel. Nếu cổng `3306` thuộc về dịch vụ MySQL khác, setup sẽ dừng và báo lỗi thay vì kết nối nhầm. Không cần mở XAMPP Control Panel trước.
+Double-click `START_HERE.bat` hoặc chạy từ terminal tại thư mục dự án. Script dùng XAMPP MariaDB trên cổng `3306`, khởi động nếu chưa chạy, cài dependencies khi cần, tạo/cập nhật database `crawlinsight`, nhập SQLite cũ nếu tìm thấy, tạo tài khoản local mẫu và khởi chạy Laravel. Các lần sau Composer/pip được bỏ qua nếu manifest và dấu vân tay cài đặt không đổi. Nếu cổng `3306` đang do một MySQL khác sử dụng, setup dừng để tránh kết nối nhầm. Không cần mở XAMPP Control Panel trước.
 
-**http://127.0.0.1:8000/**
+Mở **http://127.0.0.1:8090/** để xem trang giới thiệu. Đăng nhập tại `/login`; sau khi đăng nhập, Overview ở **http://127.0.0.1:8090/workspace**. Logo CrawlInsight trong sidebar workspace cũng dẫn về Overview.
 
 ### Cách 2: Chạy bằng PowerShell
 
@@ -170,10 +182,10 @@ Chỉ cần double-click `START_HERE.bat`. Script dùng XAMPP MariaDB trên cổ
 .\scripts\start_windows.ps1
 ```
 
-Ứng dụng mặc định **không có tài khoản mẫu** và cơ sở dữ liệu chạy thật **không chứa sẵn sách giả**. Hãy tự đăng ký tài khoản, đăng nhập và chạy thử một lượt crawl 1 trang. Thông tin MySQL được đặt trong `.env` (`DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=crawlinsight`); setup truyền cùng cấu hình cho PHP và worker Python.
+Setup tạo sẵn tài khoản admin/demo cho môi trường local (thông tin đăng nhập ở trên); tài khoản demo có sách mẫu. Bạn cũng có thể đăng ký tài khoản riêng và chạy crawl từ một trong ba nguồn. Cấu hình database nằm trong `.env` (`DB_HOST=127.0.0.1`, `DB_PORT=3306`, `DB_DATABASE=crawlinsight`); PHP và worker Python dùng chung các giá trị này.
 
 > [!IMPORTANT]
-> Nếu lưu project ở `C:\xampp\htdocs\LTW-TH`, không truy cập qua Apache; hãy dùng `http://127.0.0.1:8000/`. MySQL chạy ngoài document root. Setup tạo backup SQLite trước khi nhập dữ liệu; hãy sao lưu MySQL trước khi nâng cấp.
+> Nếu lưu project ở `C:\xampp\htdocs\LTW-TH`, không truy cập qua Apache; hãy dùng `http://127.0.0.1:8090/`. MySQL chạy ngoài document root. Setup tạo backup SQLite trước khi nhập dữ liệu; hãy sao lưu MySQL trước khi nâng cấp.
 
 ### Kiểm thử
 
@@ -181,7 +193,14 @@ Chỉ cần double-click `START_HERE.bat`. Script dùng XAMPP MariaDB trên cổ
 .\scripts\run_tests_windows.ps1
 ```
 
-PHP và Composer chưa có trong môi trường nơi migration được viết nên PHP/Laravel build, PHPUnit, HTTP, SMTP và crawler end-to-end chưa được chạy. Chạy script kiểm thử trên máy có PHP/Composer và Python; cập nhật kết quả tại [`Implementation Status`](docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md).
+Sau khi setup dependencies, script trên chạy cả pytest và PHPUnit. Có thể chạy riêng từng bộ:
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest -q
+composer test
+```
+
+Hai bộ test dùng SQLite tạm/độc lập để không sửa database MySQL đang dùng. Test bao phủ parser/spider ở chế độ offline, logic database/migration, API và các luồng PHP có kiểm thử; chúng không thay thế việc kiểm tra crawl live qua Internet, gửi/nhận email SMTP hoặc triển khai production. Trạng thái dự án: [`docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md`](docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md).
 
 ### Quên mật khẩu và cấu hình email
 
@@ -191,24 +210,24 @@ Xem hướng dẫn chi tiết: [`docs/README_TECHNICAL.md`](docs/README_TECHNICA
 
 ## 🧪 Tình trạng phát triển
 
-| Hạng mục | Trạng thái theo mã nguồn V4 |
+| Hạng mục | Trạng thái hiện tại |
 |---|---|
-| Landing, tài khoản, workspace nhiều trang, VI/EN và dark mode | **Đã có mã nguồn**; cần nghiệm thu UI/HTTP trên máy thực |
-| Scrapy, parsing, giới hạn nguồn, lưu dữ liệu | **Đã có mã nguồn**; chưa xác minh crawl live từ đầu đến cuối trong môi trường build |
-| MySQL/MariaDB, bootstrap schema, truy vấn và import SQLite | **Đã triển khai; cần kiểm thử với XAMPP đang chạy trên cổng 3306** |
-| Gửi email SMTP thực tế | **Có cơ chế**, phụ thuộc cấu hình và cần kiểm tra gửi/nhận |
+| Landing, xác thực, workspace, VI/EN, dark mode, hồ sơ/ảnh đại diện | **Đã triển khai**; test PHP và kiểm tra giao diện local |
+| Tìm kiếm sách, bookmark, saved searches, thông báo, analytics/CSV | **Đã triển khai**; dữ liệu người dùng được phân tách theo tài khoản |
+| Crawl Books to Scrape, Open Library, Project Gutenberg | **Đã có spider/parser và test offline**; crawl live phụ thuộc mạng, website và `robots.txt` |
+| MySQL/MariaDB, khởi tạo schema, SQLite import | **Đã triển khai**; MySQL local được cấu hình dùng chung cho PHP và crawler |
+| Gửi email đặt lại mật khẩu | **Phụ thuộc cấu hình SMTP**; cần kiểm tra bằng thông tin SMTP của môi trường |
 | Triển khai production public / HTTPS | **Chưa triển khai** |
 
-Định hướng tiếp theo là kiểm thử E2E trên Windows, hoàn thiện UI/UX đa thiết bị, bảo đảm an toàn xác thực và xuất CSV, bổ sung hình ảnh thực tế và chuẩn bị bản release ổn định. Những chức năng như đăng nhập Google, crawler đa nguồn và tự động đặt lịch **chưa nằm trong tính năng hiện có**.
+Đây là bản chạy local phục vụ đồ án. Ứng dụng hiện không hỗ trợ đăng nhập Google, URL crawl tùy ý, tự động lập lịch crawl hoặc triển khai production có sẵn.
 
 ## 📚 Tài liệu dự án
 
 | Tài liệu | Mục đích |
 |---|---|
-| [SRS hợp nhất V4.2](docs/02_elaboration/SRS_CrawlInsight_Consolidated.md) | Đặc tả yêu cầu chức năng, phi chức năng và nghiệm thu |
-| [API Specification V4.2](docs/02_elaboration/API_CrawlInsight_Consolidated.md) | Hợp đồng Frontend–Backend |
-| [Implementation Status V4.2](docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md) | Những gì đã code, đã test và còn cần làm |
-| [Database Dictionary](database/DATA_DICTIONARY.md) | Giải thích cấu trúc 15 bảng và dữ liệu |
+| [API Specification](docs/02_elaboration/API_CrawlInsight_Consolidated.md) | Mô tả API Frontend–Backend |
+| [Implementation Status](docs/03_construction/IMPLEMENTATION_STATUS_Consolidated.md) | Trạng thái triển khai và các hạng mục cần xác nhận |
+| [Database Dictionary](database/DATA_DICTIONARY.md) | Giải thích bảng, cột và quan hệ dữ liệu |
 | [Project Structure](docs/PROJECT_STRUCTURE.md) | Sơ đồ module, chức năng và file trong source |
 | [Technical README](docs/README_TECHNICAL.md) | Cài đặt, cấu hình bảo mật và kiểm thử chi tiết |
 
@@ -233,9 +252,9 @@ Dự án giữa kỳ học phần **Lập trình Web & Ứng dụng (503073)** �
 
 ## 🌍 English summary
 
-**CrawlInsight** is a Vietnamese-first, bilingual web crawling and book analytics project developed for the *Web Programming & Applications* course at Ton Duc Thang University. **Laravel/PHP** provides the web backend and **Scrapy/Python** remains the isolated crawler worker; both share **MySQL/MariaDB** on port 3306. Setup can import an existing SQLite database once.
+**CrawlInsight** is a Vietnamese-first, bilingual academic web application for crawling and analyzing book data from three allowlisted sources: Books to Scrape, Open Library, and Project Gutenberg. **Laravel/PHP** serves the pages and APIs; **Scrapy/Python** runs as a separate worker; both share **MySQL/MariaDB**. Open Library and Gutenberg price/rating fields are generated reference values, not source-provided commercial data. Windows setup can import an existing SQLite database once and creates local-only admin/demo accounts.
 
-**Current status:** Source implementation and offline database tests are available, while live crawling, browser-based end-to-end flows and SMTP delivery still require verification. The application is intended for local academic development, not production deployment.
+The application includes account-scoped books, crawl history and notifications, saved books/searches, analytics/CSV export, settings and private avatar uploads. Automated Python and PHP tests are available. Live crawling and SMTP delivery depend on the network and local configuration; production deployment is not provided.
 
 ---
 

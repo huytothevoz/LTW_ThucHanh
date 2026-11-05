@@ -16,18 +16,29 @@ class BooksSpider(scrapy.Spider):
     allowed_domains = ["books.toscrape.com"]
     start_urls = ["https://books.toscrape.com/"]
 
-    def __init__(self, job_id: int, max_pages: int = 1, *args, **kwargs):
+    def __init__(self, job_id: int, max_pages: int = 1, start_page: int = 1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.job_id = int(job_id)
         self.max_pages = int(max_pages)
+        self.start_page = int(start_page)
         if self.max_pages not in (1, 2, 3, 4, 5):
             raise ValueError("max_pages outside SRS scope")
+        if self.start_page not in range(1, 51):
+            raise ValueError("start_page outside catalogue range")
+        self.start_urls = [self.catalogue_url(self.start_page)]
         self.seen_urls: set[str] = set()
 
-    def parse(self, response):
-        return self.parse_catalogue(response, page_number=1)
+    @staticmethod
+    def catalogue_url(page_number: int) -> str:
+        if page_number == 1:
+            return "https://books.toscrape.com/"
+        return f"https://books.toscrape.com/catalogue/page-{page_number}.html"
 
-    def parse_catalogue(self, response, page_number: int):
+    def parse(self, response):
+        return self.parse_catalogue(response, page_number=1, source_page_number=self.start_page)
+
+    def parse_catalogue(self, response, page_number: int, source_page_number: int | None = None):
+        source_page_number = source_page_number or self.start_page + page_number - 1
         cards = response.css("article.product_pod")
         if not cards:
             db.record_error(self.job_id, f"Catalogue page {page_number} has no book cards")
@@ -68,7 +79,10 @@ class BooksSpider(scrapy.Spider):
                 return
             yield scrapy.Request(
                 next_url, callback=self.parse_catalogue,
-                cb_kwargs={"page_number": page_number + 1},
+                cb_kwargs={
+                    "page_number": page_number + 1,
+                    "source_page_number": source_page_number + 1,
+                },
                 errback=self.on_request_error,
                 meta={"kind": "catalogue"},
             )

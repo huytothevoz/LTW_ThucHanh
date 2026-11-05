@@ -23,33 +23,39 @@ class OpenLibrarySpider(scrapy.Spider):
     allowed_domains = ["openlibrary.org", "www.openlibrary.org"]
     start_urls = ["https://openlibrary.org/trending/daily"]
 
-    def __init__(self, job_id: int, max_pages: int = 1, *args, **kwargs):
+    def __init__(self, job_id: int, max_pages: int = 1, start_page: int = 1, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.job_id = int(job_id)
         self.max_pages = int(max_pages)
+        self.start_page = int(start_page)
         if self.max_pages not in (1, 2, 3, 4, 5):
             raise ValueError("max_pages outside SRS scope")
+        if self.start_page < 1:
+            raise ValueError("start_page must be positive")
         self.seen_urls: set[str] = set()
 
     def start_requests(self):
+        start_url = f"https://openlibrary.org/trending/daily?page={self.start_page}"
         yield scrapy.Request(
-            "https://openlibrary.org/trending/daily",
+            start_url,
             callback=self.parse,
             errback=self.on_catalogue_error,
             dont_filter=True,
-            meta={"page_number": 1, "kind": "catalogue"},
+            meta={"page_number": 1, "source_page_number": self.start_page, "kind": "catalogue"},
         )
 
     def on_catalogue_error(self, failure):
         req = getattr(failure, "request", None)
         page_number = req.meta.get("page_number", 1) if req else 1
+        source_page_number = req.meta.get("source_page_number", page_number) if req else page_number
         self.logger.warning("Open Library live network catalogue failed (%s). Activating resilient archive snapshot.", failure)
-        yield from self.yield_archive_snapshot(page_number)
+        yield from self.yield_archive_snapshot(page_number, source_page_number)
 
-    def yield_archive_snapshot(self, page_number: int):
+    def yield_archive_snapshot(self, page_number: int, source_page_number: int | None = None):
         from crawler.spiders.openlibrary_data import OPENLIBRARY_SNAPSHOT
+        source_page_number = source_page_number or page_number
         page_size = 20
-        start_idx = (page_number - 1) * page_size
+        start_idx = (source_page_number - 1) * page_size
         end_idx = start_idx + page_size
         batch = OPENLIBRARY_SNAPSHOT[start_idx:end_idx]
         if not batch:
@@ -62,7 +68,7 @@ class OpenLibrarySpider(scrapy.Spider):
                 self.seen_urls.add(u)
                 new_items.append(item)
 
-        catalogue_url = f"https://openlibrary.org/trending/daily?page={page_number}"
+        catalogue_url = f"https://openlibrary.org/trending/daily?page={source_page_number}"
         db.record_catalogue_page(self.job_id, catalogue_url, page_number, len(new_items))
         self.logger.info("Open Library resilient snapshot %s/%s: %s books", page_number, self.max_pages, len(new_items))
 
@@ -79,12 +85,13 @@ class OpenLibrarySpider(scrapy.Spider):
             }
 
         if page_number < self.max_pages and end_idx < len(OPENLIBRARY_SNAPSHOT):
-            yield from self.yield_archive_snapshot(page_number + 1)
+            yield from self.yield_archive_snapshot(page_number + 1, source_page_number + 1)
 
     def parse(self, response):
-        return self.parse_catalogue(response, page_number=1)
+        return self.parse_catalogue(response, page_number=1, source_page_number=self.start_page)
 
-    def parse_catalogue(self, response, page_number: int):
+    def parse_catalogue(self, response, page_number: int, source_page_number: int | None = None):
+        source_page_number = source_page_number or self.start_page + page_number - 1
         cards = response.css("li.searchResultItem")
         if not cards:
             cards = response.css(".list-books li, .work, li.book-item")
@@ -117,11 +124,11 @@ class OpenLibrarySpider(scrapy.Spider):
 
         if not unique_ordered:
             self.logger.warning("Catalogue page %s returned no book cards from live source. Activating resilient archive snapshot.", page_number)
-            yield from self.yield_archive_snapshot(page_number)
+            yield from self.yield_archive_snapshot(page_number, source_page_number)
             return
 
         page_size = 20
-        start_idx = (page_number - 1) * page_size
+        start_idx = (source_page_number - 1) * page_size
         end_idx = start_idx + page_size
         batch = unique_ordered[start_idx:end_idx] if len(unique_ordered) > page_size else unique_ordered
 
@@ -131,7 +138,7 @@ class OpenLibrarySpider(scrapy.Spider):
                 self.seen_urls.add(url)
                 new_items.append((url, title, cover))
 
-        catalogue_url = f"https://openlibrary.org/trending/daily?page={page_number}"
+        catalogue_url = f"https://openlibrary.org/trending/daily?page={source_page_number}"
         db.record_catalogue_page(self.job_id, catalogue_url, page_number, len(new_items))
         self.logger.info("Open Library catalogue %s/%s: %s unique books", page_number, self.max_pages, len(new_items))
 
@@ -145,14 +152,21 @@ class OpenLibrarySpider(scrapy.Spider):
 
         has_next = (end_idx < len(unique_ordered)) or bool(response.css("a[rel='next'], a.next, a[title*='Next']"))
         if page_number < self.max_pages and has_next:
-            next_url = f"https://openlibrary.org/trending/daily?page={page_number + 1}"
+            next_url = f"https://openlibrary.org/trending/daily?page={source_page_number + 1}"
             yield scrapy.Request(
                 next_url,
                 callback=self.parse_catalogue,
-                cb_kwargs={"page_number": page_number + 1},
+                cb_kwargs={
+                    "page_number": page_number + 1,
+                    "source_page_number": source_page_number + 1,
+                },
                 errback=self.on_catalogue_error,
                 dont_filter=True,
-                meta={"page_number": page_number + 1, "kind": "catalogue"},
+                meta={
+                    "page_number": page_number + 1,
+                    "source_page_number": source_page_number + 1,
+                    "kind": "catalogue",
+                },
             )
 
     def parse_detail(self, response):

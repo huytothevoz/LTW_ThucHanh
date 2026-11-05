@@ -20,6 +20,8 @@ FILES = (
     '004_identity_and_workspace.sql',
     '005_price_change_notifications.sql',
     '006_user_isolation_and_admin.sql',
+    '007_crawl_notifications.sql',
+    '008_user_avatars.sql',
 )
 SOURCE_NAME = 'Books to Scrape'
 SOURCE_URL = 'https://books.toscrape.com/'
@@ -60,6 +62,8 @@ def init_db() -> None:
                 {1, 2, 3, 4},
                 {1, 2, 3, 4, 5},
                 {1, 2, 3, 4, 5, 6},
+                {1, 2, 3, 4, 5, 6, 7},
+                {1, 2, 3, 4, 5, 6, 7, 8},
             ):
                 raise RuntimeError(f'Incomplete/unrecognized migration history: {versions}')
             if versions == {1, 2, 3}:
@@ -67,6 +71,8 @@ def init_db() -> None:
                 _apply_identity_upgrade(con)
             _apply_notifications_upgrade(con)
             _apply_user_isolation_upgrade(con)
+            _apply_crawl_notifications_upgrade(con)
+            _apply_avatar_upgrade(con)
             issues=con.execute('PRAGMA foreign_key_check').fetchall()
             if issues: raise RuntimeError(f'Foreign key check failed: {issues}')
             return
@@ -123,6 +129,8 @@ def init_db() -> None:
         _apply_identity_upgrade(con)
         _apply_notifications_upgrade(con)
         _apply_user_isolation_upgrade(con)
+        _apply_crawl_notifications_upgrade(con)
+        _apply_avatar_upgrade(con)
         bad_fks = con.execute('PRAGMA foreign_key_check').fetchall()
         if bad_fks:
             raise RuntimeError(f'Schema created but foreign key check failed: {bad_fks}')
@@ -179,6 +187,24 @@ def _apply_user_isolation_upgrade(con: sqlite3.Connection) -> None:
     con.executescript(script.replace('__APPLIED_AT__', now_utc()))
 
 
+def _apply_crawl_notifications_upgrade(con: sqlite3.Connection) -> None:
+    """Add per-user crawl status notifications after the account isolation migration."""
+    existing = con.execute('SELECT 1 FROM schema_migrations WHERE version=7').fetchone()
+    if existing:
+        return
+    script = (MIGRATIONS_DIR / FILES[6]).read_text(encoding='utf-8')
+    con.executescript(script.replace('__APPLIED_AT__', now_utc()))
+
+
+def _apply_avatar_upgrade(con: sqlite3.Connection) -> None:
+    """Add the private user avatar reference."""
+    existing = con.execute('SELECT 1 FROM schema_migrations WHERE version=8').fetchone()
+    if existing:
+        return
+    script = (MIGRATIONS_DIR / FILES[7]).read_text(encoding='utf-8')
+    con.executescript(script.replace('__APPLIED_AT__', now_utc()))
+
+
 def _backup_v5(connection: sqlite3.Connection) -> Path:
     p = database_path()
     out = p.with_name(f'{p.stem}.before-v6-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}.sqlite3')
@@ -221,6 +247,15 @@ def _init_mysql() -> None:
             statement = statement.strip()
             if statement:
                 con.execute(statement)
+        if not con.execute(
+            "SHOW COLUMNS FROM saved_searches LIKE 'category'"
+        ).fetchone():
+            con.execute(
+                "ALTER TABLE saved_searches ADD COLUMN category "
+                "VARCHAR(100) NOT NULL DEFAULT '' AFTER `query`"
+            )
+        if not con.execute("SHOW COLUMNS FROM users LIKE 'avatar_path'").fetchone():
+            con.execute('ALTER TABLE users ADD COLUMN avatar_path VARCHAR(255) NULL')
         for version, filename in enumerate(FILES, 1):
             con.execute(
                 'INSERT IGNORE INTO schema_migrations(version,filename,applied_at) VALUES(?,?,?)',
@@ -255,7 +290,7 @@ def _import_legacy_sqlite() -> None:
     finally:
         source.close()
 
-    if versions != {1, 2, 3, 4, 5, 6}:
+    if versions != {1, 2, 3, 4, 5, 6, 7, 8}:
         previous_driver = os.environ.get('DB_CONNECTION')
         previous_path = os.environ.get('CRAWLINSIGHT_DB_PATH')
         previous_import = os.environ.get('CRAWLINSIGHT_SQLITE_IMPORT')
@@ -366,11 +401,9 @@ def _seed_mysql_sources() -> None:
         (3, 'Project Gutenberg', 'https://www.gutenberg.org/', 'www.gutenberg.org'),
     )
     with connect() as con:
-        if con.execute('SELECT COUNT(*) FROM sources').fetchone()[0]:
-            return
         for source_id, name, url, host in sources:
             con.execute(
-                'INSERT INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) '
+                'INSERT IGNORE INTO sources(id,name,base_url,allowed_host,is_enabled,created_at) '
                 'VALUES(?,?,?,?,1,?)',
                 (source_id, name, url, host, now_utc()),
             )

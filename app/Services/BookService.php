@@ -211,7 +211,7 @@ class BookService
 
             $jobIds = DB::table('crawl_jobs')->where('user_id', $userId)->pluck('id')->all();
             if (count($jobIds) > 0) {
-                foreach (['crawl_events', 'crawl_pages'] as $table) {
+                foreach (['crawl_events', 'crawl_pages', 'crawl_notifications'] as $table) {
                     if (\Illuminate\Support\Facades\Schema::hasTable($table)) {
                         DB::table($table)->whereIn('job_id', $jobIds)->delete();
                     }
@@ -227,4 +227,3 @@ class BookService
         });
     }
 }
-

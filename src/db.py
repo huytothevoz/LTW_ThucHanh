@@ -4,7 +4,7 @@ from .database.migrations import init_db
 from .database.jobs import (ACTIVE_STATUSES,TERMINAL_STATUSES,ActiveJobError,
                             sanitize_error,create_job,get_job,mark_job_running,
                             finish_job,record_error,increment_catalogue,
-                            record_catalogue_page,list_job_events)
+                            record_catalogue_page,list_job_events,next_source_page)
 from .database.books import (InvalidBookError,validate_book,save_book_for_job,
                              parse_price_filter,search_books,reset_user_books)
 from .database.analytics import summary

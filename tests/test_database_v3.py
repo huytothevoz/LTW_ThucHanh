@@ -12,13 +12,14 @@ from database.tools.sqlite_legacy import open_ro,seed_demo,rows_of
 def test_tables_views_and_empty_initial_state(isolated_db):
     with db.connect() as con:
         tables={r[0] for r in con.execute("SELECT name FROM sqlite_master WHERE type='table'")}
-        assert {'sources','categories','books','crawl_jobs','crawl_pages','crawl_job_books','crawl_events','book_price_history','price_change_notifications','schema_migrations'} <= tables
+        assert {'sources','categories','books','crawl_jobs','crawl_pages','crawl_job_books','crawl_events','book_price_history','price_change_notifications','crawl_notifications','schema_migrations'} <= tables
         assert con.execute('SELECT COUNT(*) FROM sources').fetchone()[0]==1
-        for name in ('books','categories','crawl_jobs','crawl_pages','crawl_events','book_price_history','price_change_notifications'):
+        for name in ('books','categories','crawl_jobs','crawl_pages','crawl_job_books','crawl_events','book_price_history','price_change_notifications','crawl_notifications'):
             assert con.execute(f'SELECT COUNT(*) FROM {name}').fetchone()[0]==0
         assert con.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
         assert con.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert {r[0] for r in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6}
+        assert {r[0] for r in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6,7,8}
+        assert 'avatar_path' in {row['name'] for row in con.execute('PRAGMA table_info(users)')}
     db.init_db()  # idempotent, no duplicate source
     with db.connect() as con:
         assert con.execute('SELECT COUNT(*) FROM sources').fetchone()[0]==1
@@ -102,7 +103,19 @@ def test_current_database_migration_is_idempotent(isolated_db):
         assert con.execute(
             "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='price_change_notifications'",
         ).fetchone()[0]==1
-        assert {row[0] for row in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6}
+        assert {row[0] for row in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6,7,8}
+
+
+def test_v7_database_migrates_user_avatar_storage(isolated_db):
+    with db.connect() as con:
+        con.execute('ALTER TABLE users DROP COLUMN avatar_path')
+        con.execute('DELETE FROM schema_migrations WHERE version=8')
+
+    db.init_db()
+
+    with db.connect() as con:
+        assert 'avatar_path' in {row['name'] for row in con.execute('PRAGMA table_info(users)')}
+        assert con.execute('SELECT filename FROM schema_migrations WHERE version=8').fetchone()[0] == '008_user_avatars.sql'
 
 
 def test_users_have_separate_crawl_jobs_and_book_catalogs(isolated_db,example_book):
