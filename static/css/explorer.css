@@ -140,7 +140,7 @@
 }
 .filter-form {
   display:grid;
-  grid-template-columns:minmax(180px,1.2fr) minmax(140px,0.8fr) 110px 110px auto auto;
+  grid-template-columns:minmax(160px,1.2fr) minmax(130px,0.9fr) minmax(130px,0.9fr) 95px 95px minmax(130px,0.9fr) auto auto;
   align-items:end;
   gap:12px;
   margin-bottom:24px
@@ -152,7 +152,7 @@
   color:#59677e;
   margin-bottom:9px
 }
-.category-field select {
+.source-field select,.category-field select,.sort-field select {
   border:0;
   outline:none;
   width:100%;

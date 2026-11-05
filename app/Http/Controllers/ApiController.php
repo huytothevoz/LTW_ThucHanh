@@ -320,7 +320,10 @@ class ApiController
 
     public function categories(Request $request): JsonResponse
     {
-        return response()->json(['items' => BookService::categories($this->user($request)['id'])]);
+        $sourceId = $request->query('source_id');
+        $sourceIdInt = ($sourceId !== null && ctype_digit((string) $sourceId)) ? (int) $sourceId : null;
+
+        return response()->json(['items' => BookService::categories($this->user($request)['id'], $sourceIdInt)]);
     }
 
     public function books(Request $request): JsonResponse
@@ -331,12 +334,15 @@ class ApiController
         $category = $request->query('category');
         $low = $request->query('min_price');
         $high = $request->query('max_price');
-        if (!is_string($query) || ($category !== null && !is_string($category)) || ($low !== null && !is_string($low)) || ($high !== null && !is_string($high))) {
+        $sourceId = $request->query('source_id');
+        $sourceIdInt = ($sourceId !== null && ctype_digit((string) $sourceId)) ? (int) $sourceId : null;
+        $sort = $request->query('sort');
+        if (!is_string($query) || ($category !== null && !is_string($category)) || ($low !== null && !is_string($low)) || ($high !== null && !is_string($high)) || ($sort !== null && !is_string($sort))) {
             return $this->error('INVALID_FILTER', 'Bộ lọc không hợp lệ.', 400);
         }
 
         try {
-            $result = BookService::search($this->user($request)['id'], $query, $low, $high, $page, $category);
+            $result = BookService::search($this->user($request)['id'], $query, $low, $high, $page, $category, $sourceIdInt, $sort);
         } catch (\DomainException $exception) {
             return $this->error('INVALID_FILTER', $exception->getMessage(), 400);
         }

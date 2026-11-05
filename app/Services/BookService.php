@@ -40,16 +40,23 @@ class BookService
         ];
     }
 
-    public static function categories(int $userId): array
+    public static function categories(int $userId, ?int $sourceId = null): array
     {
-        $rows = DB::select(
-            'SELECT DISTINCT c.id,c.name FROM categories c JOIN books b ON b.category_id=c.id WHERE b.user_id=? ORDER BY c.name ASC',
-            [$userId],
-        );
+        if ($sourceId !== null && $sourceId > 0) {
+            $rows = DB::select(
+                'SELECT DISTINCT c.id,c.name FROM categories c JOIN books b ON b.category_id=c.id WHERE b.user_id=? AND b.source_id=? ORDER BY c.name ASC',
+                [$userId, $sourceId],
+            );
+        } else {
+            $rows = DB::select(
+                'SELECT DISTINCT c.id,c.name FROM categories c JOIN books b ON b.category_id=c.id WHERE b.user_id=? ORDER BY c.name ASC',
+                [$userId],
+            );
+        }
         return array_map(static fn (object $row): array => (array) $row, $rows);
     }
 
-    public static function search(int $userId, string $query, ?string $minPrice, ?string $maxPrice, int $page, ?string $category = null): array
+    public static function search(int $userId, string $query, ?string $minPrice, ?string $maxPrice, int $page, ?string $category = null, ?int $sourceId = null, ?string $sort = null): array
     {
         if (mb_strlen($query) > 100) {
             throw new \DomainException('q must be <=100 characters');
@@ -69,6 +76,10 @@ class BookService
 
         $conditions = ['b.user_id=?'];
         $bindings = [$userId];
+        if ($sourceId !== null && $sourceId > 0) {
+            $conditions[] = 'b.source_id=?';
+            $bindings[] = $sourceId;
+        }
         if (trim($query) !== '') {
             $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], trim($query));
             $conditions[] = "b.title LIKE ? ESCAPE '!'";
@@ -89,9 +100,19 @@ class BookService
         $where = $conditions ? ' WHERE '.implode(' AND ', $conditions) : '';
         $join = ' FROM books b JOIN categories c ON c.id=b.category_id';
         $total = (int) DB::scalar('SELECT COUNT(*)'.$join.$where, $bindings);
+
+        $orderBy = match ($sort) {
+            'price_asc' => 'b.price_pence ASC, b.id DESC',
+            'price_desc' => 'b.price_pence DESC, b.id DESC',
+            'rating_desc' => 'b.rating DESC, b.id DESC',
+            'title_asc' => 'b.title ASC, b.id DESC',
+            'title_desc' => 'b.title DESC, b.id DESC',
+            default => 'b.id DESC',
+        };
+
         $items = DB::select(
-            'SELECT b.id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'
-            .$join.$where.' ORDER BY b.id DESC LIMIT 20 OFFSET ?',
+            'SELECT b.id,b.source_id,b.title,b.price_pence,b.rating,c.name AS category,b.availability,b.image_url,b.source_url'
+            .$join.$where.' ORDER BY '.$orderBy.' LIMIT 20 OFFSET ?',
             [...$bindings, ($page - 1) * 20],
         );
 

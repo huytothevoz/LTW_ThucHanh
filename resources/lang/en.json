@@ -213,5 +213,16 @@
     "contact_support": "Help center",
     "reset_books": "Reset crawled books",
     "reset_books_confirm": "Are you sure you want to reset all crawled books? This will delete all your books and crawl history.",
-    "reset_books_success": "Successfully reset all crawled books."
+    "reset_books_success": "Successfully reset all crawled books.",
+    "all_sources": "All sources",
+    "sort": "Sort by",
+    "sort_newest": "Newest",
+    "sort_price_asc": "Price: Low to High",
+    "sort_price_desc": "Price: High to Low",
+    "sort_rating_desc": "Top Rated",
+    "sort_title_asc": "Title: A → Z",
+    "sort_title_desc": "Title: Z → A",
+    "toggle_view": "Toggle view mode",
+    "grid_view": "Grid",
+    "list_view": "List"
 }

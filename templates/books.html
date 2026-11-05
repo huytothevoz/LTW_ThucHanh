@@ -6,7 +6,7 @@
   <div class="page-heading books-heading">
     <div>
       <div class="eyebrow">DATA LIBRARY <span class="eyebrow-line"></span> BOOK CATALOGUE</div>
-      <h1>{{ t('catalog') }}<span class="heading-period">.</span></h1>
+      <h1>{{ t('catalog') }}</h1>
       <p>{{ t('catalog_sub') }}</p>
     </div>
     <a href="/workspace" class="outlined-action">{{ icon('arrow-left',17) }} {{ t('overview') }}</a>
@@ -35,10 +35,21 @@
     </div>
     <form id="filter-form" class="filter-form">
       <div class="search-field">
-        <label for="search-query">{{ t('catalog') }}</label>
+        <label for="search-query">{{ t('search_books') | default('Tìm sách theo tên...') }}</label>
         <div class="input-with-icon">
           {{ icon('search',19) }}
           <input id="search-query" name="q" type="search" autocomplete="off" maxlength="100" placeholder="{{ t('search_books') }}" />
+        </div>
+      </div>
+      <div class="source-field">
+        <label for="source-filter">{{ t('sources') | default('Nguồn dữ liệu') }}</label>
+        <div class="input-with-prefix select-wrapper">
+          <select id="source-filter" name="source_id">
+            <option value="">{{ t('all_sources') | default('Tất cả nguồn') }}</option>
+            <option value="1">Books to Scrape</option>
+            <option value="2">Open Library</option>
+            <option value="3">Project Gutenberg</option>
+          </select>
         </div>
       </div>
       <div class="category-field">
@@ -50,17 +61,30 @@
         </div>
       </div>
       <div class="price-field">
-        <label for="min-price">{{ t('minimum_price') }}</label>
+        <label for="min-price">{{ t('minimum_price') | default('Giá từ (£)') }}</label>
         <div class="input-with-prefix">
           <span>£</span>
           <input id="min-price" name="min_price" type="text" inputmode="decimal" placeholder="0.00" />
         </div>
       </div>
       <div class="price-field">
-        <label for="max-price">{{ t('maximum_price') }}</label>
+        <label for="max-price">{{ t('maximum_price') | default('Giá đến (£)') }}</label>
         <div class="input-with-prefix">
           <span>£</span>
           <input id="max-price" name="max_price" type="text" inputmode="decimal" placeholder="99.99" />
+        </div>
+      </div>
+      <div class="sort-field">
+        <label for="sort-filter">{{ t('sort') | default('Sắp xếp') }}</label>
+        <div class="input-with-prefix select-wrapper">
+          <select id="sort-filter" name="sort">
+            <option value="newest">{{ t('sort_newest') | default('Mới nhất') }}</option>
+            <option value="price_asc">{{ t('sort_price_asc') | default('Giá: Thấp đến cao') }}</option>
+            <option value="price_desc">{{ t('sort_price_desc') | default('Giá: Cao đến thấp') }}</option>
+            <option value="rating_desc">{{ t('sort_rating_desc') | default('Đánh giá cao nhất') }}</option>
+            <option value="title_asc">{{ t('sort_title_asc') | default('Tên: A → Z') }}</option>
+            <option value="title_desc">{{ t('sort_title_desc') | default('Tên: Z → A') }}</option>
+          </select>
         </div>
       </div>
       <button type="submit" class="filter-button">{{ icon('filter',17) }} {{ t('apply') }}</button>
@@ -69,6 +93,10 @@
     <div class="catalog-tools">
       <button type="button" id="save-filter" class="outlined-action">{{ icon('bookmark',16) }} {{ t('save_filter') }}</button>
       <a class="outlined-action" href="/api/exports/books.csv">{{ icon('file-text',16) }} CSV</a>
+      <button type="button" id="toggle-layout" class="outlined-action" title="{{ t('toggle_view') | default('Chuyển chế độ xem') }}">
+        <span id="layout-icon">{{ icon('grid',16) }}</span>
+        <span id="layout-label">{{ t('grid') | default('Lưới') }}</span>
+      </button>
       <button type="button" id="reset-books-btn" class="outlined-action" title="{{ t('reset_books') }}" style="color:#ef4444;border-color:rgba(239,68,68,0.35);">{{ icon('trash',16) }} {{ t('reset_books') }}</button>
       <span class="currency-note">{{ t('price_notice') }}</span>
     </div>
