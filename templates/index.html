@@ -20,84 +20,132 @@
           </a>
         </div>
         <div class="hero-trust">
-          <span>{{ icon('shield',17) }} Web Crawling</span>
-          <span>{{ icon('database',17) }} SQLite</span>
-          <span>{{ icon('chart',17) }} Analytics</span>
+          <span>{{ icon('shield',17) }} {{ t('hero_trust_one') }}</span>
+          <span>{{ icon('database',17) }} {{ t('hero_trust_two') }}</span>
+          <span>{{ icon('chart',17) }} {{ t('hero_trust_three') }}</span>
         </div>
       </div>
-      <div class="landing-preview" aria-hidden="true">
-        <div class="preview-top">
-          <span class="preview-circle"></span>
-          <span class="preview-circle"></span>
-          <span class="preview-circle"></span>
-          <span class="preview-domain">CrawlInsight / Workspace</span>
+      <div class="landing-art" aria-label="{{ t('hero_art_label') }}" role="img">
+        <div class="art-grid"></div>
+        <div class="art-orbit orbit-outer"></div>
+        <div class="art-orbit orbit-inner"></div>
+        <div class="orbit-spark spark-one"></div>
+        <div class="orbit-spark spark-two"></div>
+        <div class="orbit-spark spark-three"></div>
+        <div class="source-node node-books">
+          <span class="source-node-icon">{{ icon('books',18) }}</span>
+          <span><strong>Books to Scrape</strong><small>Sandbox</small></span>
         </div>
-        <div class="preview-body">
-          <div class="preview-side">
-            <div class="preview-side-line wide"></div>
-            <div class="preview-side-line"></div>
-            <div class="preview-side-line"></div>
-            <div class="preview-side-line short"></div>
-          </div>
-          <div class="preview-canvas">
-            <span class="preview-badge">DATA OVERVIEW</span>
-            <h3>{{ t('collected_books') }}</h3>
-            <div class="preview-metrics">
-              <div>
-                <strong>01</strong>
-                <span>Source</span>
-              </div>
-              <div>
-                <strong>5★</strong>
-                <span>Ratings</span>
-              </div>
-              <div>
-                <strong>24/7</strong>
-                <span>Explore</span>
-              </div>
-            </div>
-            <div class="preview-bars">
-              <i style="height:43%"></i>
-              <i style="height:67%"></i>
-              <i style="height:85%"></i>
-              <i style="height:56%"></i>
-              <i style="height:95%"></i>
-              <i style="height:72%"></i>
-              <i style="height:80%"></i>
-              <i style="height:58%"></i>
-            </div>
-            <span class="preview-fine">Illustrative interface · not live metrics</span>
-          </div>
+        <div class="source-node node-library">
+          <span class="source-node-icon">{{ icon('search',18) }}</span>
+          <span><strong>Open Library</strong><small>Open knowledge</small></span>
         </div>
-        <div class="floating-tag">
-          {{ icon('check-circle',16) }} Responsible crawling
+        <div class="source-node node-gutenberg">
+          <span class="source-node-icon">{{ icon('books',18) }}</span>
+          <span><strong>Project Gutenberg</strong><small>Public-domain books</small></span>
+        </div>
+        <div class="scout-character">
+          <div class="scout-aura"></div>
+          <svg class="scout-figure" viewBox="0 0 220 230" role="presentation" focusable="false">
+            <defs>
+              <linearGradient id="scout-shell" x1="30" y1="24" x2="184" y2="196" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fff" />
+                <stop offset="1" stop-color="#dce5ff" />
+              </linearGradient>
+              <linearGradient id="scout-book" x1="60" y1="121" x2="164" y2="203" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#8ef0d2" />
+                <stop offset="1" stop-color="#43bca9" />
+              </linearGradient>
+              <linearGradient id="scout-glass" x1="61" y1="48" x2="157" y2="139" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#7486ff" />
+                <stop offset="1" stop-color="#4552d8" />
+              </linearGradient>
+              <filter id="scout-shadow" x="15" y="12" width="190" height="210" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+                <feGaussianBlur stdDeviation="8" />
+              </filter>
+            </defs>
+            <ellipse cx="109" cy="205" fill="#121c49" opacity=".18" rx="63" ry="12" filter="url(#scout-shadow)" />
+            <path d="M75 143 50 164a11 11 0 0 0 14 17l23-18m54-20 27 17a11 11 0 0 1-12 19l-26-16" fill="url(#scout-shell)" stroke="#c7d2f0" stroke-width="4" stroke-linecap="round" />
+            <path d="M85 164a12 12 0 0 0-24 0v12h24v-12Zm73 0a12 12 0 0 0-24 0v12h24v-12Z" fill="#5f6de7" />
+            <path d="M64 164a12 12 0 0 0-24 0v12h24v-12Zm73 0a12 12 0 0 0-24 0v12h24v-12Z" fill="#5f6de7" />
+            <path d="M69 85a41 41 0 0 1 82 0v51a14 14 0 0 1-14 14H83a14 14 0 0 1-14-14V85Z" fill="url(#scout-shell)" stroke="#c7d2f0" stroke-width="4" />
+            <path d="M82 84a28 28 0 0 1 56 0v29H82V84Z" fill="url(#scout-glass)" />
+            <ellipse cx="99" cy="94" fill="#fff" rx="5" ry="7" />
+            <ellipse cx="122" cy="94" fill="#fff" rx="5" ry="7" />
+            <circle cx="100" cy="95" r="2" fill="#3441a7" />
+            <circle cx="123" cy="95" r="2" fill="#3441a7" />
+            <path d="M105 103a7 7 0 0 0 11 0" fill="none" stroke="#d7e2ff" stroke-linecap="round" stroke-width="2.5" />
+            <path d="M109 56V43" stroke="#aab7ea" stroke-linecap="round" stroke-width="4" />
+            <circle cx="109" cy="37" r="9" fill="#ffca72" stroke="#fff" stroke-width="4" />
+            <path d="M77 124h67v28H77z" fill="#eaf0ff" />
+            <path d="m88 132 12 7-12 7v-14Zm22 1h22m-22 6h17" fill="none" stroke="#6978e6" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" />
+            <path d="M64 154c11-8 20-8 31 0v41c-11-8-20-8-31 0v-41Zm31 0c11-8 20-8 31 0v41c-11-8-20-8-31 0v-41Z" fill="url(#scout-book)" stroke="#fff" stroke-linejoin="round" stroke-width="3" />
+            <path d="M75 165h11m-11 7h11m20-7h11m-11 7h11" stroke="#267f78" stroke-linecap="round" stroke-width="2" />
+            <circle cx="161" cy="59" r="6" fill="#ff8f7e" />
+            <path d="m44 94-5 9m135 44 8 4" stroke="#f8c56d" stroke-linecap="round" stroke-width="4" />
+          </svg>
+        </div>
+        <div class="data-card">
+          <div class="data-card-heading">
+            <span class="data-live-dot"></span>
+            <span>{{ t('art_pipeline') }}</span>
+            <span class="data-card-index">01 — 03</span>
+          </div>
+          <div class="data-pipeline">
+            <span>{{ t('art_step_source') }}</span><i></i>
+            <span>{{ t('art_step_parse') }}</span><i></i>
+            <span>{{ t('art_step_insight') }}</span>
+          </div>
+          <div class="data-card-foot">
+            <span>{{ icon('shield',14) }} {{ t('art_responsible') }}</span>
+            <span>{{ t('art_illustration') }}</span>
+          </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="landing-manifesto" aria-label="{{ t('manifesto_label') }}">
+    <div class="landing-container manifesto-flow">
+      <div class="manifesto-intro">
+        <span>{{ t('manifesto_label') }}</span>
+        <strong>{{ t('manifesto_title') }}</strong>
+      </div>
+      <div class="manifesto-step"><b>01</b><span>{{ t('manifesto_step_one') }}</span></div>
+      <span class="manifesto-arrow">{{ icon('arrow-right',16) }}</span>
+      <div class="manifesto-step"><b>02</b><span>{{ t('manifesto_step_two') }}</span></div>
+      <span class="manifesto-arrow">{{ icon('arrow-right',16) }}</span>
+      <div class="manifesto-step"><b>03</b><span>{{ t('manifesto_step_three') }}</span></div>
+      <span class="manifesto-arrow">{{ icon('arrow-right',16) }}</span>
+      <div class="manifesto-step"><b>04</b><span>{{ t('manifesto_step_four') }}</span></div>
     </div>
   </section>
 
   <section class="landing-section" id="features">
     <div class="landing-container">
       <div class="section-center">
-        <span class="section-kicker">WHY CRAWLINSIGHT</span>
-        <h2>{{ t('feature_three') }}</h2>
-        <p>{{ t('hero_desc') }}</p>
+        <span class="section-kicker">{{ t('feature_kicker') }}</span>
+        <h2>{{ t('features_title') }}</h2>
+        <p>{{ t('features_intro') }}</p>
       </div>
       <div class="feature-grid">
         <article class="feature-card">
           <div class="feature-icon violet">{{ icon('globe',25) }}</div>
           <h3>{{ t('feature_one') }}</h3>
           <p>{{ t('feature_one_desc') }}</p>
+          <span class="feature-index">01 / SOURCES</span>
         </article>
         <article class="feature-card">
-          <div class="feature-icon mint">{{ icon('search',25) }}</div>
+          <div class="feature-icon mint">{{ icon('chart',25) }}</div>
           <h3>{{ t('feature_two') }}</h3>
           <p>{{ t('feature_two_desc') }}</p>
+          <span class="feature-index">02 / INSIGHTS</span>
         </article>
         <article class="feature-card">
           <div class="feature-icon peach">{{ icon('user',25) }}</div>
           <h3>{{ t('feature_three') }}</h3>
           <p>{{ t('feature_three_desc') }}</p>
+          <span class="feature-index">03 / YOUR SPACE</span>
         </article>
       </div>
     </div>
@@ -106,25 +154,91 @@
   <section class="landing-section workflow" id="workflow">
     <div class="landing-container">
       <div class="section-center">
-        <span class="section-kicker">3 SIMPLE STEPS</span>
+        <span class="section-kicker">{{ t('workflow_kicker') }}</span>
         <h2>{{ t('how_it_works') }}</h2>
+        <p>{{ t('workflow_intro') }}</p>
       </div>
       <div class="workflow-grid">
         <article>
-          <span>01</span>
+          <span>01 <i>{{ icon('user',18) }}</i></span>
           <h3>{{ t('step_one') }}</h3>
           <p>{{ t('step_one_desc') }}</p>
         </article>
         <article>
-          <span>02</span>
+          <span>02 <i>{{ icon('globe',18) }}</i></span>
           <h3>{{ t('step_two') }}</h3>
           <p>{{ t('step_two_desc') }}</p>
         </article>
         <article>
-          <span>03</span>
+          <span>03 <i>{{ icon('chart',18) }}</i></span>
           <h3>{{ t('step_three') }}</h3>
           <p>{{ t('step_three_desc') }}</p>
         </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="cosmic-section" aria-labelledby="cosmic-title">
+    <div class="landing-container">
+      <div class="section-center cosmic-heading">
+        <span class="section-kicker">{{ t('cosmic_kicker') }}</span>
+        <h2 id="cosmic-title">{{ t('cosmic_title') }}</h2>
+        <p>{{ t('cosmic_intro') }}</p>
+      </div>
+      <div class="galaxy-scene" data-galaxy-scene>
+        <div class="galaxy-world" aria-hidden="true">
+          <div class="galaxy-nebula"></div>
+          <div class="galaxy-stars">
+            <i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i>
+            <i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i>
+            <i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i>
+            <i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i>
+            <i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i><i class="galaxy-star"></i>
+          </div>
+          <div class="galaxy-orbit galaxy-orbit-one"></div>
+          <div class="galaxy-orbit galaxy-orbit-two"></div>
+          <div class="galaxy-orbit galaxy-orbit-three"></div>
+          <div class="galaxy-planet">
+            <span class="planet-crater crater-one"></span>
+            <span class="planet-crater crater-two"></span>
+            <span class="planet-crater crater-three"></span>
+            <span class="planet-glow"></span>
+          </div>
+          <span class="galaxy-moon"></span>
+          <span class="galaxy-satellite"><i></i></span>
+          <span class="galaxy-data galaxy-data-one">{{ t('cosmic_source') }}</span>
+          <span class="galaxy-data galaxy-data-two">{{ t('cosmic_structure') }}</span>
+          <span class="galaxy-data galaxy-data-three">{{ t('cosmic_insight') }}</span>
+          <span class="galaxy-coordinate">{{ t('cosmic_coordinate') }}</span>
+          <span class="galaxy-scanline"></span>
+        </div>
+        <div class="galaxy-ship" data-galaxy-ship aria-hidden="true">
+          <svg viewBox="0 0 96 116" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="ship-shell" x1="20" y1="14" x2="78" y2="92" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#fff"/><stop offset=".58" stop-color="#cfdcff"/><stop offset="1" stop-color="#7788de"/>
+              </linearGradient>
+              <linearGradient id="ship-engine" x1="48" y1="68" x2="48" y2="114" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#a7fff1"/><stop offset="1" stop-color="#4c83ff" stop-opacity="0"/>
+              </linearGradient>
+              <filter id="ship-glow" x="0" y="0" width="96" height="116" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse">
+                <feGaussianBlur stdDeviation="5"/>
+              </filter>
+            </defs>
+            <path d="M48 4 78 79 48 69 18 79 48 4Z" fill="#77dfff" opacity=".3" filter="url(#ship-glow)"/>
+            <path d="m43 68-10 38q15-9 30 0L53 68" fill="url(#ship-engine)" opacity=".95"/>
+            <path d="m48 8 19 61-19-7-19 7L48 8Z" fill="url(#ship-shell)" stroke="#fff" stroke-width="2"/>
+            <path d="m48 19 8 33-8-3-8 3 8-33Z" fill="#7084ed"/>
+            <path d="M34 59 20 78l21-7m21-12 14 19-21-7" fill="#63e6d3" stroke="#d8fffb" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="48" cy="37" r="3" fill="#d9ffff"/>
+            <path d="M44 74 40 91m12-17 4 17" stroke="#fff" stroke-linecap="round" stroke-width="2" opacity=".8"/>
+          </svg>
+          <span></span>
+        </div>
+        <div class="galaxy-hud" aria-hidden="true">
+          <span><i></i>{{ t('cosmic_status') }}</span>
+          <span>{{ t('cosmic_hint') }}</span>
+        </div>
       </div>
     </div>
   </section>
@@ -142,6 +256,10 @@
     </div>
   </section>
   <div class="source-disclaimer">
-    {{ icon('shield',16) }} {{ t('source_disclaimer') }}
+    <div class="landing-container disclaimer-inner">
+      {{ icon('shield',16) }}
+      <span>{{ t('source_disclaimer') }}</span>
+      <a href="/sources">{{ t('sources') }} {{ icon('arrow-right',14) }}</a>
+    </div>
   </div>
 {% endblock %}

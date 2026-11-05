@@ -226,11 +226,36 @@
   });
   document.querySelectorAll('[data-language-switch]').forEach(b=>b.addEventListener('click',async()=>{
     const next=locale==='vi'?'en':'vi';
-    if(!document.body.classList.contains('is-workspace')){
+    if(!document.body.classList.contains('is-authenticated')){
       const url=new URL(location.href);url.searchParams.set('lang',next);location.assign(url.pathname+url.search+url.hash);return;
     }
     try{await fetchJSON('/api/me/preferences',{method:'PATCH',body:JSON.stringify({locale:next})});location.reload();}
     catch(e){toast(e.message,'error');}
   }));
+  const galaxyScene=document.querySelector('[data-galaxy-scene]');
+  const galaxyShip=galaxyScene?.querySelector('[data-galaxy-ship]');
+  const reducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)');
+  if(galaxyScene&&galaxyShip&&!reducedMotion.matches){
+    galaxyScene.addEventListener('pointerenter',event=>{
+      if(event.pointerType==='mouse')galaxyScene.classList.add('is-exploring');
+    });
+    galaxyScene.addEventListener('pointermove',event=>{
+      if(event.pointerType!=='mouse')return;
+      const bounds=galaxyScene.getBoundingClientRect();
+      const x=event.clientX-bounds.left;
+      const y=event.clientY-bounds.top;
+      const tiltX=((x/bounds.width)-.5)*8;
+      const tiltY=((y/bounds.height)-.5)*-8;
+      galaxyScene.style.setProperty('--ship-x',`${x}px`);
+      galaxyScene.style.setProperty('--ship-y',`${y}px`);
+      galaxyScene.style.setProperty('--tilt-x',`${tiltX}deg`);
+      galaxyScene.style.setProperty('--tilt-y',`${tiltY}deg`);
+    });
+    galaxyScene.addEventListener('pointerleave',()=>{
+      galaxyScene.classList.remove('is-exploring');
+      galaxyScene.style.setProperty('--tilt-x','0deg');
+      galaxyScene.style.setProperty('--tilt-y','0deg');
+    });
+  }
   window.CrawlInsight={fetchJSON,toast,formatDate,pounds,t,locale,setTheme,refreshNotifications};
 })();
