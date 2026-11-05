@@ -4,7 +4,7 @@
   const { fetchJSON, toast, pounds, t, locale } = window.CrawlInsight;
   const $ = (id) => document.getElementById(id);
   let currentPage = 1;
-  let currentFilters = { q: '', category: '', min_price: '', max_price: '' };
+  let currentFilters = { q: '', source_id: '', category: '', min_price: '', max_price: '', sort: 'newest' };
   let lastRequestController = null;
   const pricePattern = /^(?:0|[1-9]\d{0,3})(?:\.\d{1,2})?$/;
   let bookmarkedIds = new Set();
@@ -109,7 +109,7 @@
     grid.replaceChildren();
     for (const book of items) grid.append(createBookCard(book));
     if (!items.length) {
-      const isFiltered = Boolean(currentFilters.q || currentFilters.category || currentFilters.min_price || currentFilters.max_price);
+      const isFiltered = Boolean(currentFilters.q || currentFilters.source_id || currentFilters.category || currentFilters.min_price || currentFilters.max_price || (currentFilters.sort && currentFilters.sort !== 'newest'));
       $('books-empty-description').textContent = isFiltered
         ? t('emptyBooks')
         : data.total ? 'This page is empty. Go to the previous page.'
@@ -171,6 +171,8 @@
     const min = $('min-price').value.trim();
     const max = $('max-price').value.trim();
     const cat = $('category-filter') ? $('category-filter').value.trim() : '';
+    const src = $('source-filter') ? $('source-filter').value.trim() : '';
+    const srt = $('sort-filter') ? $('sort-filter').value.trim() : 'newest';
     if (!validatePrice(min) || !validatePrice(max)) {
       toast(t('invalidPrice'), 'error');
       return;
@@ -179,18 +181,21 @@
       toast(t('invalidRange'), 'error');
       return;
     }
-    currentFilters = { q: $('search-query').value.trim(), category: cat, min_price: min, max_price: max };
+    currentFilters = { q: $('search-query').value.trim(), source_id: src, category: cat, min_price: min, max_price: max, sort: srt };
     currentPage = 1;
     loadBooks();
   }
 
   $('filter-form').addEventListener('submit', (event) => { event.preventDefault(); submitFilters(); });
-  $('reset-filters').addEventListener('click', () => {
+  $('reset-filters').addEventListener('click', async () => {
     $('filter-form').reset();
+    if ($('source-filter')) $('source-filter').value = '';
     if ($('category-filter')) $('category-filter').value = '';
-    currentFilters = { q: '', category: '', min_price: '', max_price: '' };
+    if ($('sort-filter')) $('sort-filter').value = 'newest';
+    currentFilters = { q: '', source_id: '', category: '', min_price: '', max_price: '', sort: 'newest' };
     clearActiveSavedFilter();
     currentPage = 1;
+    await loadCategories('', false);
     loadBooks();
   });
   $('prev-page').addEventListener('click', () => { if (currentPage > 1) { currentPage--; loadBooks(); } });
@@ -203,24 +208,37 @@
     if (value && value.length <= 100) currentFilters[key] = value;
   }
   $('search-query').value = currentFilters.q;
-  if ($('category-filter')) $('category-filter').value = currentFilters.category;
+  if ($('source-filter')) $('source-filter').value = currentFilters.source_id;
+  if ($('sort-filter')) $('sort-filter').value = currentFilters.sort || 'newest';
   $('min-price').value = currentFilters.min_price;
   $('max-price').value = currentFilters.max_price;
 
-  async function loadCategories() {
+  async function loadCategories(sourceId = '', keepCurrent = true) {
     const select = $('category-filter');
     if (!select) return;
     try {
-      const data = await fetchJSON('/api/categories');
+      const url = sourceId ? `/api/categories?source_id=${encodeURIComponent(sourceId)}` : '/api/categories';
+      const data = await fetchJSON(url);
       const items = data.items || [];
+      const prevVal = keepCurrent ? (select.value || currentFilters.category) : '';
+      select.replaceChildren();
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = locale === 'vi' ? 'Tất cả thể loại' : 'All categories';
+      select.append(defaultOpt);
+      let matched = false;
       for (const item of items) {
         const opt = document.createElement('option');
         opt.value = item.name;
         opt.textContent = item.name;
-        if (item.name.toLowerCase() === currentFilters.category.toLowerCase()) {
+        if (prevVal && item.name.toLowerCase() === prevVal.toLowerCase()) {
           opt.selected = true;
+          matched = true;
         }
         select.append(opt);
+      }
+      if (!matched && !keepCurrent) {
+        currentFilters.category = '';
       }
     } catch (_) { }
   }
@@ -340,13 +358,19 @@
 
           currentFilters = {
             q: item.query || '',
+            source_id: '',
             category: item.category || '',
             min_price: item.min_price || '',
             max_price: item.max_price || '',
+            sort: 'newest',
           };
 
           $('search-query').value = currentFilters.q;
-          if ($('category-filter')) $('category-filter').value = currentFilters.category;
+          if ($('source-filter')) $('source-filter').value = '';
+          if ($('sort-filter')) $('sort-filter').value = 'newest';
+          loadCategories('', true).then(() => {
+            if ($('category-filter')) $('category-filter').value = currentFilters.category;
+          });
           $('min-price').value = currentFilters.min_price;
           $('max-price').value = currentFilters.max_price;
 
@@ -378,10 +402,53 @@
       toast(error.message, 'error');
     }
   }
-  fetchJSON('/api/auth/me').then(data => { if (data.preferences.book_layout === 'list') $('book-grid').classList.add('list-view'); }).catch(() => { });
-  loadCategories();
+  const GRID_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>';
+  const LIST_SVG = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>';
+
+  function updateLayoutUI(layout) {
+    const isList = layout === 'list';
+    $('book-grid').classList.toggle('list-view', isList);
+    const iconSpan = $('layout-icon');
+    const labelSpan = $('layout-label');
+    if (iconSpan) iconSpan.innerHTML = isList ? LIST_SVG : GRID_SVG;
+    if (labelSpan) labelSpan.textContent = isList ? (locale === 'vi' ? 'Danh sách' : 'List') : (locale === 'vi' ? 'Lưới' : 'Grid');
+  }
+
+  async function setLayout(layout, persist = true) {
+    updateLayoutUI(layout);
+    if (persist) {
+      try {
+        await fetchJSON('/api/me/preferences', {
+          method: 'PATCH',
+          body: JSON.stringify({ book_layout: layout }),
+        });
+      } catch (_) { }
+    }
+  }
+
+  $('toggle-layout')?.addEventListener('click', () => {
+    const currentIsList = $('book-grid').classList.contains('list-view');
+    const nextLayout = currentIsList ? 'grid' : 'list';
+    setLayout(nextLayout, true);
+  });
+
+  fetchJSON('/api/auth/me').then(data => {
+    const layout = data?.preferences?.book_layout || 'grid';
+    updateLayoutUI(layout);
+  }).catch(() => { });
+
+  $('source-filter')?.addEventListener('change', async () => {
+    const src = $('source-filter').value;
+    await loadCategories(src, false);
+    submitFilters();
+  });
+  $('category-filter')?.addEventListener('change', () => submitFilters());
+  $('sort-filter')?.addEventListener('change', () => submitFilters());
+
+  loadCategories(currentFilters.source_id, true);
   loadSavedSearches();
   loadBooks();
+
   const resetBooksBtn = $('reset-books-btn');
   if (resetBooksBtn) {
     resetBooksBtn.addEventListener('click', async () => {
@@ -393,7 +460,7 @@
         toast(t('resetSuccess') || `Đã đặt lại dữ liệu sách (${res.deleted_books || 0} sách).`, 'success');
         currentPage = 1;
         await loadBooks();
-        await loadCategories();
+        await loadCategories($('source-filter')?.value || '', false);
       } catch (err) {
         toast(err.message || 'Không thể reset sách.', 'error');
       } finally {
@@ -401,6 +468,4 @@
       }
     });
   }
-
-  $('category-filter')?.addEventListener('change', () => submitFilters());
 })();

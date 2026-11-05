@@ -1987,13 +1987,19 @@ body {
 :root[data-theme="dark"] .filter-form label {
   color: var(--ink-2);
 }
+:root[data-theme="dark"] .source-field .input-with-prefix,
+:root[data-theme="dark"] .source-field select,
 :root[data-theme="dark"] .category-field .input-with-prefix,
-:root[data-theme="dark"] .category-field select {
+:root[data-theme="dark"] .category-field select,
+:root[data-theme="dark"] .sort-field .input-with-prefix,
+:root[data-theme="dark"] .sort-field select {
   background: var(--white);
   border-color: var(--line);
   color: var(--ink);
 }
-:root[data-theme="dark"] .category-field select option {
+:root[data-theme="dark"] .source-field select option,
+:root[data-theme="dark"] .category-field select option,
+:root[data-theme="dark"] .sort-field select option {
   background: var(--white);
   color: var(--ink);
 }
@@ -2101,13 +2107,19 @@ body {
   :root[data-theme="system"] .filter-form label {
     color: var(--ink-2);
   }
+  :root[data-theme="system"] .source-field .input-with-prefix,
+  :root[data-theme="system"] .source-field select,
   :root[data-theme="system"] .category-field .input-with-prefix,
-  :root[data-theme="system"] .category-field select {
+  :root[data-theme="system"] .category-field select,
+  :root[data-theme="system"] .sort-field .input-with-prefix,
+  :root[data-theme="system"] .sort-field select {
     background: var(--white);
     border-color: var(--line);
     color: var(--ink);
   }
-  :root[data-theme="system"] .category-field select option {
+  :root[data-theme="system"] .source-field select option,
+  :root[data-theme="system"] .category-field select option,
+  :root[data-theme="system"] .sort-field select option {
     background: var(--white);
     color: var(--ink);
   }

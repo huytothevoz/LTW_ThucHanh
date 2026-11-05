@@ -380,4 +380,53 @@ class BookDiscoveryAndBookmarkTest extends TestCase
         $this->assertSame('30', $items[0]['min_price']);
         $this->assertSame('70', $items[0]['max_price']);
     }
+
+    public function test_filter_by_source_and_sorting(): void
+    {
+        // Add a second book from Open Library (source_id = 2)
+        DB::table('books')->insert([
+            'id' => 10,
+            'user_id' => 1,
+            'source_id' => 2,
+            'category_id' => 1,
+            'title' => 'Alpha Open Library Book',
+            'price_pence' => 1000,
+            'rating' => 5,
+            'availability' => 'In stock',
+            'source_url' => 'https://openlibrary.org/works/OL1W',
+            'first_seen_at' => '2026-10-24T00:00:00Z',
+            'last_seen_at' => '2026-10-24T00:00:00Z',
+        ]);
+
+        // Filter by source_id = 2
+        $resSource2 = $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/books?source_id=2')
+            ->assertOk();
+        $this->assertSame(1, $resSource2->json('total'));
+        $this->assertSame(10, $resSource2->json('items.0.id'));
+
+        // Sort by price_asc
+        $resPriceAsc = $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/books?sort=price_asc')
+            ->assertOk();
+        $this->assertSame(10, $resPriceAsc->json('items.0.id')); // 1000 pence < 5000 pence
+
+        // Sort by price_desc
+        $resPriceDesc = $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/books?sort=price_desc')
+            ->assertOk();
+        $this->assertSame(2, $resPriceDesc->json('items.0.id')); // 2500 pence > 1500 pence > 1000 pence
+
+        // Sort by title_asc
+        $resTitleAsc = $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/books?sort=title_asc')
+            ->assertOk();
+        $this->assertSame('Alpha Open Library Book', $resTitleAsc->json('items.0.title'));
+
+        // Test categories filtered by source_id
+        $catRes = $this->withSession(['user_id' => 1, 'session_version' => 0])
+            ->getJson('/api/categories?source_id=2')
+            ->assertOk();
+        $this->assertCount(1, $catRes->json('items'));
+    }
 }

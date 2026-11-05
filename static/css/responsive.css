@@ -16,7 +16,7 @@
     padding-right:34px
   }
   .filter-form {
-    grid-template-columns:minmax(160px,1fr) 110px 110px auto auto;
+    grid-template-columns:repeat(auto-fit, minmax(130px, 1fr));
     gap:9px
   }
   .book-grid {
@@ -54,8 +54,8 @@
     min-height:240px
   }
   .filter-form {
-    grid-template-columns:minmax(140px,1fr) 105px 105px;
-
+    grid-template-columns:repeat(auto-fit, minmax(120px, 1fr));
+    gap:9px
   }
   .filter-button,.reset-button {
     width:max-content
@@ -343,7 +343,7 @@
     grid-template-columns:1fr 1fr;
     gap:11px
   }
-  .search-field,.category-field {
+  .search-field,.source-field,.category-field,.sort-field {
     grid-column:1/-1
   }
   .price-field {
