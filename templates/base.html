@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="{{ asset('static/css/platform-responsive.css') }}">
   {% block head %}{% endblock %}
 </head>
-<body class="{% if user and active_page %}is-workspace{% else %}is-marketing{% endif %}">
+<body class="{% if user and active_page %}is-workspace{% else %}is-marketing{% endif %}{% if user %} is-authenticated{% endif %}">
   {% if user and active_page %}
     <div id="mobile-overlay" class="mobile-overlay" hidden></div>
     <div class="app-shell">
