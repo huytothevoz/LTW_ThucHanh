@@ -1854,10 +1854,6 @@ body {
 .theme-toggle-button:hover {
   transform: scale(1.05);
 }
-.theme-toggle-button:focus-within {
-  outline: 2px solid var(--brand);
-  outline-offset: 3px;
-}
 .theme-toggle-button input.theme-toggle-input {
   opacity: 0;
   width: 100%;
@@ -1878,7 +1874,7 @@ body {
   transition: fill 0.25s ease;
 }
 .theme-svg-button {
-  translate: 0 -5px;
+  translate: 3px -5px;
   transition: translate 0.25s cubic-bezier(.4,0,.2,1);
 }
 .theme-svg-sun,
