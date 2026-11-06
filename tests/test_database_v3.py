@@ -18,7 +18,7 @@ def test_tables_views_and_empty_initial_state(isolated_db):
             assert con.execute(f'SELECT COUNT(*) FROM {name}').fetchone()[0]==0
         assert con.execute('PRAGMA integrity_check').fetchone()[0]=='ok'
         assert con.execute('PRAGMA foreign_key_check').fetchall()==[]
-        assert {r[0] for r in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6,7,8}
+        assert {r[0] for r in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6,7,8,9}
         assert 'avatar_path' in {row['name'] for row in con.execute('PRAGMA table_info(users)')}
     db.init_db()  # idempotent, no duplicate source
     with db.connect() as con:
@@ -103,13 +103,13 @@ def test_current_database_migration_is_idempotent(isolated_db):
         assert con.execute(
             "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='price_change_notifications'",
         ).fetchone()[0]==1
-        assert {row[0] for row in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6,7,8}
+        assert {row[0] for row in con.execute('SELECT version FROM schema_migrations')}=={1,2,3,4,5,6,7,8,9}
 
 
 def test_v7_database_migrates_user_avatar_storage(isolated_db):
     with db.connect() as con:
         con.execute('ALTER TABLE users DROP COLUMN avatar_path')
-        con.execute('DELETE FROM schema_migrations WHERE version=8')
+        con.execute('DELETE FROM schema_migrations WHERE version IN (8, 9)')
 
     db.init_db()
 

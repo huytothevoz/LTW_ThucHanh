@@ -36,6 +36,7 @@ Route::post('/api/auth/register', [ApiController::class, 'register']);
 Route::post('/api/auth/login', [ApiController::class, 'login']);
 Route::post('/api/auth/logout', [ApiController::class, 'logout'])->middleware('authenticated');
 Route::post('/api/auth/request-reset', [ApiController::class, 'requestReset']);
+Route::post('/api/auth/verify-otp', [ApiController::class, 'verifyOtp']);
 Route::post('/api/auth/reset-password', [ApiController::class, 'resetPassword']);
 Route::patch('/api/me/profile', [ApiController::class, 'updateProfile'])->middleware('authenticated');
 Route::get('/api/me/avatar', [ApiController::class, 'avatar'])->middleware('authenticated');
