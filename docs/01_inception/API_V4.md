@@ -10,7 +10,7 @@ All endpoints return JSON (except the CSV export). Same-origin cookies are used 
 | POST | `/api/auth/login` | No | `email`, `password` |
 | POST | `/api/auth/logout` | Yes | Invalidate browser session |
 | POST | `/api/auth/request-reset` | No | `email`; generic response, SMTP or local opt-in |
-| POST | `/api/auth/reset-password` | No | One-use `token`, `password` |
+| POST | `/api/auth/reset-password` | No | One-use `token`, 6-digit email `otp`, `password` |
 | PATCH | `/api/me/profile` | Yes | Update `full_name` |
 | PATCH | `/api/me/preferences` | Yes | Partial `locale=vi/en`, `theme=light/dark/system`, `book_layout=grid/list` |
 | POST | `/api/me/password` | Yes | `current_password`, `new_password`; forces re-login |

@@ -37,6 +37,15 @@ class RegistrationTest extends TestCase
                 attempted_at TEXT NOT NULL,
                 success INTEGER NOT NULL
             );
+            CREATE TABLE password_reset_tokens (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                token_hash TEXT NOT NULL UNIQUE,
+                otp_hash TEXT,
+                expires_at TEXT NOT NULL,
+                used_at TEXT,
+                created_at TEXT NOT NULL
+            );
             SQL);
     }
 
@@ -49,6 +58,48 @@ class RegistrationTest extends TestCase
             ->assertSee('name="email"', false)
             ->assertSee('name="password"', false)
             ->assertSee('name="confirm"', false);
+    }
+
+    public function test_password_reset_requires_the_email_otp_after_opening_the_link(): void
+    {
+        $this->postJson('/api/auth/register', [
+            'full_name' => 'Test User',
+            'email' => 'reset.user@example.com',
+            'password' => 'InitialPassword123',
+        ])->assertCreated();
+
+        $reset = $this->postJson('/api/auth/request-reset', [
+            'email' => 'reset.user@example.com',
+        ])->assertOk()->json();
+        $this->assertSame(1, preg_match('~/reset-password/([A-Za-z0-9_-]+)~', $reset['local_test_link'], $matches));
+        $token = $matches[1];
+        $this->assertSame(
+            hash('sha256', $reset['local_test_otp']),
+            DB::table('password_reset_tokens')->value('otp_hash'),
+        );
+
+        $this->get('/reset-password/'.$token)
+            ->assertOk()
+            ->assertSee('id="auth-otp"', false)
+            ->assertSee('name="otp"', false);
+
+        $this->postJson('/api/auth/reset-password', [
+            'token' => $token,
+            'otp' => '000000',
+            'password' => 'NewPassword123',
+        ])->assertBadRequest()
+            ->assertJsonPath('error.code', 'INVALID_TOKEN');
+
+        $this->postJson('/api/auth/reset-password', [
+            'token' => $token,
+            'otp' => $reset['local_test_otp'],
+            'password' => 'NewPassword123',
+        ])->assertOk()->assertJsonPath('ok', true);
+
+        $this->postJson('/api/auth/login', [
+            'email' => 'reset.user@example.com',
+            'password' => 'NewPassword123',
+        ])->assertOk();
     }
 
     public function test_user_can_register_and_log_in_with_the_created_account(): void

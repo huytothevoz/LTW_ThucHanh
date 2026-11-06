@@ -122,7 +122,7 @@ if (!res.ok) throw new Error(data.error?.message || 'Request failed');
 ```
 
 - **200:** `{"message":"Nếu email đã tồn tại, bạn sẽ nhận được hướng dẫn khôi phục."}`; không tiết lộ email tồn tại hay không.
-- Nếu có user và SMTP được cấu hình: gửi email chứa link reset (chưa xác nhận email thật trong môi trường bàn giao).
+- Nếu có user và SMTP được cấu hình: gửi email chứa link reset và OTP 6 chữ số (hiệu lực 20 phút).
 - Khi `TESTING=true` hoặc `ALLOW_LOCAL_RESET_LINKS=1` **và** request xuất phát từ localhost, có thể trả thêm `local_test_link` cho thử nghiệm; **không phải chế độ production**.
 - **503 `MAIL_NOT_CONFIGURED`** nếu SMTP không sẵn sàng và không bật local opt-in; **503 `EMAIL_DELIVERY_FAILED`** khi có lỗi gửi email đã được bắt; **429** khi quá ngưỡng.
 - Token khôi phục: 20 phút, một lần dùng, hash trong DB; yêu cầu thực nghiệm ở TC-07/08.
@@ -130,11 +130,12 @@ if (!res.ok) throw new Error(data.error?.message || 'Request failed');
 ### 4.6. POST `/api/auth/reset-password`
 
 ```json
-{"token":"TOKEN_FROM_EMAIL_OR_LOCAL_TEST","password":"NewSecure12345"}
+{"token":"TOKEN_FROM_EMAIL_OR_LOCAL_TEST","otp":"123456","password":"NewSecure12345"}
 ```
 
 - **200:** `{"ok":true}`; xóa session đang dùng và tăng `session_version` để vô hiệu hóa phiên cũ.
-- **400 `INVALID_TOKEN`** token sai/đã dùng/hết hạn; **400 `VALIDATION_ERROR`** password không hợp lệ.
+- Link token và OTP đều phải hợp lệ, chưa dùng và còn hạn; tối đa 5 lần nhập sai trong 30 phút cho mỗi link.
+- **400 `INVALID_TOKEN`** token hoặc OTP sai/đã dùng/hết hạn; **400 `VALIDATION_ERROR`** password không hợp lệ.
 
 ### 4.7. Hồ sơ & tùy chọn
 

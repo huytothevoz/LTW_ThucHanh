@@ -186,13 +186,20 @@ class ApiController
     public function resetPassword(Request $request): JsonResponse
     {
         $data = $request->json()->all();
+        $token = $data['token'] ?? '';
+        $subject = 'reset-verify:'.hash('sha256', is_string($token) ? $token : '').':'.($request->ip() ?: 'local');
+        if (AccountService::rateLimited($subject, 5, 30)) {
+            return $this->error('TOO_MANY_ATTEMPTS', 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 30 phút.', 429);
+        }
+
         try {
-            $valid = AccountService::resetPassword($data['token'] ?? '', $data['password'] ?? '');
+            $valid = AccountService::resetPassword($token, $data['otp'] ?? '', $data['password'] ?? '');
         } catch (\DomainException $exception) {
             return $this->error('VALIDATION_ERROR', $exception->getMessage(), 400);
         }
+        AccountService::recordAuthAttempt($subject, $valid);
         if (!$valid) {
-            return $this->error('INVALID_TOKEN', 'Liên kết không hợp lệ, đã sử dụng hoặc hết hạn.', 400);
+            return $this->error('INVALID_TOKEN', 'Liên kết hoặc mã OTP không hợp lệ, đã sử dụng hoặc hết hạn.', 400);
         }
 
         $request->session()->invalidate();

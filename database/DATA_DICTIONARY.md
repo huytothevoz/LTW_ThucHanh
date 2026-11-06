@@ -176,7 +176,7 @@ The previous nine crawler tables remain unchanged except `crawl_jobs.user_id` (n
 | `user_preferences` | `user_id` (PK + FK), `locale` (vi/en), `theme` (light/dark/system), `book_layout` (grid/list), `updated_at` | One preference set per account. |
 | `bookmarks` | `id`, `user_id`, `book_id`, `note`, `created_at`; `UNIQUE(user_id,book_id)` | Per-account saves; API allows saving only a book owned by the same account. |
 | `saved_searches` | `id`, `user_id`, `name`, `query`, `min_price`, `max_price`, `created_at` | Personal search presets; max 20 per account, enforced in service logic. |
-| `password_reset_tokens` | `id`, `user_id`, `token_hash`, `expires_at`, `used_at`, `created_at` | One-time 20-minute reset proof; stores SHA-256 of random token, **not** raw token. |
+| `password_reset_tokens` | `id`, `user_id`, `token_hash`, `otp_hash`, `expires_at`, `used_at`, `created_at` | One-time 20-minute reset proof; stores SHA-256 hashes of the random link token and emailed OTP, **not** their raw values. |
 | `auth_attempts` | `id`, `subject_hash`, `attempted_at`, `success` | Login/reset request rate limiter; subject is hashed, not stored as raw IP/email. |
 | `price_change_notifications` | `id`, `user_id`, `book_id`, `price_history_id`, `created_at`, `read_at` | One notification per bookmarked user and observed price-history row; unique `price_history_id` prevents duplicate alerts. |
 | `crawl_notifications` | `id`, `user_id`, `job_id`, `status`, `created_at`, `read_at` | One personal bell notification per crawl job; status follows queued, running, completed or failed, and read state is account-scoped. |

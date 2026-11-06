@@ -56,6 +56,14 @@
               <input id="auth-email" type="email" name="email" autocomplete="email" maxlength="254" required placeholder="ban@example.com">
             </div>
           {% endif %}
+          {% if mode=='reset' %}
+            <label for="auth-otp">{{ t('auth_otp') }}</label>
+            <div class="form-control">
+              {{ icon('shield',18) }}
+              <input id="auth-otp" type="text" name="otp" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required placeholder="000000">
+            </div>
+            <p class="form-hint">{{ t('auth_otp_desc') }}</p>
+          {% endif %}
           {% if mode in ['login','register','reset'] %}
             <label for="auth-password">{{ mode == 'reset' ? t('new_password') : t('password') }}</label>
             <div class="form-control">

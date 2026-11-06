@@ -194,6 +194,7 @@ CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NOT NULL,
     token_hash CHAR(64) NOT NULL UNIQUE,
+    otp_hash CHAR(64) NULL,
     expires_at VARCHAR(32) NOT NULL,
     used_at VARCHAR(32) NULL,
     created_at VARCHAR(32) NOT NULL,

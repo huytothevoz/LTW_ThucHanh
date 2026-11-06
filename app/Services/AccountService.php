@@ -186,29 +186,38 @@ class AccountService
                 [$now, $user->id],
             );
             DB::insert(
-                'INSERT INTO password_reset_tokens(user_id,token_hash,expires_at,created_at) VALUES(?,?,?,?)',
-                [$user->id, hash('sha256', $token), $expiry, $now],
+                'INSERT INTO password_reset_tokens(user_id,token_hash,otp_hash,expires_at,created_at) VALUES(?,?,?,?,?)',
+                [$user->id, hash('sha256', $token), hash('sha256', $otp), $expiry, $now],
             );
 
             return ['token' => $token, 'otp' => $otp, 'user' => self::publicUser($user)];
         });
     }
 
-    public static function resetPassword(mixed $token, mixed $password): bool
+    public static function resetPassword(mixed $token, mixed $otp, mixed $password): bool
     {
-        self::validatePassword($password);
         if (!is_string($token) || strlen($token) < 24 || strlen($token) > 200) {
             return false;
         }
+        if (!is_string($otp) || !preg_match('/^\d{6}$/D', $otp)) {
+            return false;
+        }
 
-        return DB::transaction(function () use ($token, $password): bool {
+        return DB::transaction(function () use ($token, $otp, $password): bool {
             $row = DB::selectOne(
-                'SELECT id,user_id,expires_at,used_at FROM password_reset_tokens WHERE token_hash=?',
+                'SELECT id,user_id,otp_hash,expires_at,used_at FROM password_reset_tokens WHERE token_hash=?',
                 [hash('sha256', $token)],
             );
-            if (!$row || $row->used_at || $row->expires_at <= self::now()) {
+            if (
+                !$row
+                || $row->used_at
+                || $row->expires_at <= self::now()
+                || !is_string($row->otp_hash)
+                || !hash_equals($row->otp_hash, hash('sha256', $otp))
+            ) {
                 return false;
             }
+            self::validatePassword($password);
 
             $now = self::now();
             DB::update(

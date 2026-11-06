@@ -22,6 +22,7 @@ FILES = (
     '006_user_isolation_and_admin.sql',
     '007_crawl_notifications.sql',
     '008_user_avatars.sql',
+    '009_password_reset_otp.sql',
 )
 SOURCE_NAME = 'Books to Scrape'
 SOURCE_URL = 'https://books.toscrape.com/'
@@ -64,6 +65,7 @@ def init_db() -> None:
                 {1, 2, 3, 4, 5, 6},
                 {1, 2, 3, 4, 5, 6, 7},
                 {1, 2, 3, 4, 5, 6, 7, 8},
+                {1, 2, 3, 4, 5, 6, 7, 8, 9},
             ):
                 raise RuntimeError(f'Incomplete/unrecognized migration history: {versions}')
             if versions == {1, 2, 3}:
@@ -73,6 +75,7 @@ def init_db() -> None:
             _apply_user_isolation_upgrade(con)
             _apply_crawl_notifications_upgrade(con)
             _apply_avatar_upgrade(con)
+            _apply_password_reset_otp_upgrade(con)
             issues=con.execute('PRAGMA foreign_key_check').fetchall()
             if issues: raise RuntimeError(f'Foreign key check failed: {issues}')
             return
@@ -131,6 +134,7 @@ def init_db() -> None:
         _apply_user_isolation_upgrade(con)
         _apply_crawl_notifications_upgrade(con)
         _apply_avatar_upgrade(con)
+        _apply_password_reset_otp_upgrade(con)
         bad_fks = con.execute('PRAGMA foreign_key_check').fetchall()
         if bad_fks:
             raise RuntimeError(f'Schema created but foreign key check failed: {bad_fks}')
@@ -205,6 +209,20 @@ def _apply_avatar_upgrade(con: sqlite3.Connection) -> None:
     con.executescript(script.replace('__APPLIED_AT__', now_utc()))
 
 
+def _apply_password_reset_otp_upgrade(con: sqlite3.Connection) -> None:
+    """Persist hashed OTPs for password-reset tokens."""
+    existing = con.execute('SELECT 1 FROM schema_migrations WHERE version=9').fetchone()
+    if existing:
+        return
+    script = (MIGRATIONS_DIR / FILES[8]).read_text(encoding='utf-8')
+    con.executescript(
+        'BEGIN IMMEDIATE;\n' + script + '\n'
+        "INSERT INTO schema_migrations(version,filename,applied_at) "
+        "VALUES(9,'009_password_reset_otp.sql','" + now_utc() + "');\n"
+        'PRAGMA user_version=9;\nCOMMIT;'
+    )
+
+
 def _backup_v5(connection: sqlite3.Connection) -> Path:
     p = database_path()
     out = p.with_name(f'{p.stem}.before-v6-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}.sqlite3')
@@ -256,6 +274,8 @@ def _init_mysql() -> None:
             )
         if not con.execute("SHOW COLUMNS FROM users LIKE 'avatar_path'").fetchone():
             con.execute('ALTER TABLE users ADD COLUMN avatar_path VARCHAR(255) NULL')
+        if not con.execute("SHOW COLUMNS FROM password_reset_tokens LIKE 'otp_hash'").fetchone():
+            con.execute('ALTER TABLE password_reset_tokens ADD COLUMN otp_hash CHAR(64) NULL')
         for version, filename in enumerate(FILES, 1):
             con.execute(
                 'INSERT IGNORE INTO schema_migrations(version,filename,applied_at) VALUES(?,?,?)',
