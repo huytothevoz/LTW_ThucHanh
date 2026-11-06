@@ -194,20 +194,85 @@ class AccountService
         });
     }
 
-    public static function resetPassword(mixed $token, mixed $otp, mixed $password): bool
+    public static function verifyOtp(string $otp, ?string $token = null, ?string $email = null): array
     {
-        if (!is_string($token) || strlen($token) < 24 || strlen($token) > 200) {
+        if (!preg_match('/^\d{6}$/D', $otp)) {
+            return ['valid' => false, 'code' => 'INVALID_OTP_FORMAT', 'message' => 'Mã OTP phải gồm đúng 6 chữ số.'];
+        }
+
+        $row = null;
+        if ($token && strlen($token) >= 24 && strlen($token) <= 200) {
+            $row = DB::selectOne(
+                'SELECT id, user_id, token_hash, otp_hash, expires_at, used_at FROM password_reset_tokens WHERE token_hash=?',
+                [hash('sha256', $token)],
+            );
+        }
+
+        if (!$row && $email) {
+            $row = DB::selectOne(
+                'SELECT prt.id, prt.user_id, prt.token_hash, prt.otp_hash, prt.expires_at, prt.used_at
+                 FROM password_reset_tokens prt
+                 JOIN users u ON u.id = prt.user_id
+                 WHERE LOWER(u.email) = ?
+                 ORDER BY prt.id DESC LIMIT 1',
+                [strtolower(trim($email))],
+            );
+        }
+
+        if (!$row) {
+            return ['valid' => false, 'code' => 'INVALID_OTP', 'message' => 'Yêu cầu đặt lại mật khẩu không tồn tại hoặc đã hết hạn.'];
+        }
+
+        if ($row->used_at) {
+            return ['valid' => false, 'code' => 'OTP_ALREADY_USED', 'message' => 'Mã OTP này đã được sử dụng. Vui lòng yêu cầu mã mới.'];
+        }
+
+        if ($row->expires_at <= self::now()) {
+            return ['valid' => false, 'code' => 'OTP_EXPIRED', 'message' => 'Mã OTP đã hết hạn (sau 20 phút). Vui lòng yêu cầu mã mới.'];
+        }
+
+        if (!is_string($row->otp_hash) || !hash_equals($row->otp_hash, hash('sha256', $otp))) {
+            return ['valid' => false, 'code' => 'INVALID_OTP', 'message' => 'Mã OTP không chính xác. Vui lòng kiểm tra lại.'];
+        }
+
+        return [
+            'valid' => true,
+            'user_id' => $row->user_id,
+            'token' => $token,
+        ];
+    }
+
+    public static function resetPassword(mixed $token, mixed $otp, mixed $password, ?string $email = null): bool
+    {
+        $hasToken = is_string($token) && strlen($token) >= 24 && strlen($token) <= 200;
+        $hasEmail = is_string($email) && filter_var($email, FILTER_VALIDATE_EMAIL);
+
+        if (!$hasToken && !$hasEmail) {
             return false;
         }
         if (!is_string($otp) || !preg_match('/^\d{6}$/D', $otp)) {
             return false;
         }
 
-        return DB::transaction(function () use ($token, $otp, $password): bool {
-            $row = DB::selectOne(
-                'SELECT id,user_id,otp_hash,expires_at,used_at FROM password_reset_tokens WHERE token_hash=?',
-                [hash('sha256', $token)],
-            );
+        return DB::transaction(function () use ($token, $otp, $password, $email, $hasToken): bool {
+            $row = null;
+            if ($hasToken) {
+                $row = DB::selectOne(
+                    'SELECT id,user_id,otp_hash,expires_at,used_at FROM password_reset_tokens WHERE token_hash=?',
+                    [hash('sha256', $token)],
+                );
+            }
+            if (!$row && $email) {
+                $row = DB::selectOne(
+                    'SELECT prt.id,prt.user_id,prt.otp_hash,prt.expires_at,prt.used_at
+                     FROM password_reset_tokens prt
+                     JOIN users u ON u.id=prt.user_id
+                     WHERE LOWER(u.email)=? AND prt.used_at IS NULL
+                     ORDER BY prt.id DESC LIMIT 1',
+                    [strtolower(trim($email))],
+                );
+            }
+
             if (
                 !$row
                 || $row->used_at

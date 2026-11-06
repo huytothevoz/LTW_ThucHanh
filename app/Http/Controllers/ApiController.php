@@ -148,19 +148,24 @@ class ApiController
 
         AccountService::recordAuthAttempt($subject, false);
         $created = AccountService::createResetToken($email);
-        $response = ['message' => 'Nếu email đã tồn tại, bạn sẽ nhận được hướng dẫn khôi phục.'];
+        $response = [
+            'message' => 'Nếu email đã tồn tại, bạn sẽ nhận được mã OTP khôi phục.',
+            'email' => $email,
+        ];
         if (!$created) {
             return response()->json($response);
         }
 
-        $link = url('/reset-password/'.rawurlencode($created['token']));
+        $token = $created['token'];
         $otp = $created['otp'] ?? sprintf('%06d', random_int(100000, 999999));
+        $response['reset_token'] = $token;
+
         if ($smtpReady) {
             $name = $created['user']['full_name'];
             $locale = $request->attributes->get('locale', 'vi');
             $body = $locale === 'en'
-                ? "Hello {$name},\n\nYour OTP verification code is: {$otp}\n\nYou can also click this link to reset your CrawlInsight password within 20 minutes:\n{$link}\n\nIf you did not request this, please ignore this message."
-                : "Xin chào {$name},\n\nMã xác thực OTP của bạn là: {$otp}\n(Mã có hiệu lực trong vòng 20 phút).\n\nBạn cũng có thể bấm vào liên kết bên dưới để đặt lại mật khẩu:\n{$link}\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.";
+                ? "Hello {$name},\n\nYour OTP verification code is: {$otp}\n(Valid for 20 minutes).\n\nPlease enter this OTP code on the website to proceed with resetting your password.\n\nIf you did not request this, please ignore this message."
+                : "Xin chào {$name},\n\nMã xác thực OTP của bạn là: {$otp}\n(Mã có hiệu lực trong vòng 20 phút).\n\nVui lòng nhập mã OTP này trên trang web để tiếp tục đặt lại mật khẩu.\n\nNếu bạn không yêu cầu, hãy bỏ qua email này.";
             try {
                 Mail::raw($body, static function ($message) use ($created, $locale, $otp): void {
                     $message->to($created['user']['email'])
@@ -176,24 +181,64 @@ class ApiController
                 );
             }
         } elseif ($testing || $localOptIn) {
-            $response['local_test_link'] = $link;
+            $response['local_test_link'] = url('/reset-password/'.rawurlencode($token));
             $response['local_test_otp'] = $otp;
         }
 
         return response()->json($response);
     }
 
+    public function verifyOtp(Request $request): JsonResponse
+    {
+        $data = $request->json()->all();
+        $otp = trim(is_string($data['otp'] ?? null) ? $data['otp'] : '');
+        $token = is_string($data['token'] ?? null) ? trim($data['token']) : null;
+        $email = is_string($data['email'] ?? null) ? substr(strtolower(trim($data['email'])), 0, 254) : null;
+
+        if ($otp === '') {
+            return $this->error('MISSING_OTP', 'Vui lòng nhập mã OTP.', 400);
+        }
+
+        if (!preg_match('/^\d{6}$/D', $otp)) {
+            return $this->error('INVALID_OTP_FORMAT', 'Mã OTP phải gồm đúng 6 chữ số.', 400);
+        }
+
+        $subjectKey = $token ? ('token:'.hash('sha256', $token)) : ('email:'.$email);
+        $subject = 'otp-verify:'.$subjectKey.':'.($request->ip() ?: 'local');
+        if (AccountService::rateLimited($subject, 5, 30)) {
+            return $this->error('TOO_MANY_ATTEMPTS', 'Bạn đã nhập sai mã OTP quá nhiều lần. Vui lòng thử lại sau 30 phút.', 429);
+        }
+
+        $verification = AccountService::verifyOtp($otp, $token, $email);
+        AccountService::recordAuthAttempt($subject, $verification['valid']);
+
+        if (!$verification['valid']) {
+            $code = $verification['code'] ?? 'INVALID_OTP';
+            $message = $verification['message'] ?? 'Mã OTP không chính xác. Vui lòng kiểm tra lại.';
+
+            return $this->error($code, $message, 400);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'message' => 'Mã OTP chính xác.',
+            'reset_token' => $verification['token'] ?? $token,
+        ]);
+    }
+
     public function resetPassword(Request $request): JsonResponse
     {
         $data = $request->json()->all();
         $token = $data['token'] ?? '';
-        $subject = 'reset-verify:'.hash('sha256', is_string($token) ? $token : '').':'.($request->ip() ?: 'local');
+        $email = $data['email'] ?? null;
+        $otp = $data['otp'] ?? '';
+        $subject = 'reset-verify:'.hash('sha256', (is_string($token) ? $token : '').':'.(is_string($email) ? $email : '')).':'.($request->ip() ?: 'local');
         if (AccountService::rateLimited($subject, 5, 30)) {
             return $this->error('TOO_MANY_ATTEMPTS', 'Bạn đã nhập sai quá nhiều lần. Vui lòng thử lại sau 30 phút.', 429);
         }
 
         try {
-            $valid = AccountService::resetPassword($token, $data['otp'] ?? '', $data['password'] ?? '');
+            $valid = AccountService::resetPassword($token, $otp, $data['password'] ?? '', is_string($email) ? $email : null);
         } catch (\DomainException $exception) {
             return $this->error('VALIDATION_ERROR', $exception->getMessage(), 400);
         }

@@ -83,6 +83,35 @@ class RegistrationTest extends TestCase
             ->assertSee('id="auth-otp"', false)
             ->assertSee('name="otp"', false);
 
+        // Test verify-otp endpoint exceptions
+        $this->postJson('/api/auth/verify-otp', [
+            'token' => $token,
+            'email' => 'reset.user@example.com',
+            'otp' => '',
+        ])->assertBadRequest()
+            ->assertJsonPath('error.code', 'MISSING_OTP');
+
+        $this->postJson('/api/auth/verify-otp', [
+            'token' => $token,
+            'email' => 'reset.user@example.com',
+            'otp' => 'abc12',
+        ])->assertBadRequest()
+            ->assertJsonPath('error.code', 'INVALID_OTP_FORMAT');
+
+        $this->postJson('/api/auth/verify-otp', [
+            'token' => $token,
+            'email' => 'reset.user@example.com',
+            'otp' => '000000',
+        ])->assertBadRequest()
+            ->assertJsonPath('error.code', 'INVALID_OTP');
+
+        $this->postJson('/api/auth/verify-otp', [
+            'token' => $token,
+            'email' => 'reset.user@example.com',
+            'otp' => $reset['local_test_otp'],
+        ])->assertOk()
+            ->assertJsonPath('ok', true);
+
         $this->postJson('/api/auth/reset-password', [
             'token' => $token,
             'otp' => '000000',
@@ -95,6 +124,14 @@ class RegistrationTest extends TestCase
             'otp' => $reset['local_test_otp'],
             'password' => 'NewPassword123',
         ])->assertOk()->assertJsonPath('ok', true);
+
+        // After password is reset, OTP cannot be verified again
+        $this->postJson('/api/auth/verify-otp', [
+            'token' => $token,
+            'email' => 'reset.user@example.com',
+            'otp' => $reset['local_test_otp'],
+        ])->assertBadRequest()
+            ->assertJsonPath('error.code', 'OTP_ALREADY_USED');
 
         $this->postJson('/api/auth/login', [
             'email' => 'reset.user@example.com',

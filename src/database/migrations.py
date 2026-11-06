@@ -214,13 +214,16 @@ def _apply_password_reset_otp_upgrade(con: sqlite3.Connection) -> None:
     existing = con.execute('SELECT 1 FROM schema_migrations WHERE version=9').fetchone()
     if existing:
         return
-    script = (MIGRATIONS_DIR / FILES[8]).read_text(encoding='utf-8')
-    con.executescript(
-        'BEGIN IMMEDIATE;\n' + script + '\n'
+    cols = {row[1] for row in con.execute('PRAGMA table_info(password_reset_tokens)')}
+    if 'otp_hash' not in cols:
+        con.execute('ALTER TABLE password_reset_tokens ADD COLUMN otp_hash TEXT')
+    con.execute(
         "INSERT INTO schema_migrations(version,filename,applied_at) "
-        "VALUES(9,'009_password_reset_otp.sql','" + now_utc() + "');\n"
-        'PRAGMA user_version=9;\nCOMMIT;'
+        "VALUES(9,'009_password_reset_otp.sql',?)",
+        (now_utc(),),
     )
+    con.execute('PRAGMA user_version=9')
+    con.commit()
 
 
 def _backup_v5(connection: sqlite3.Connection) -> Path:
