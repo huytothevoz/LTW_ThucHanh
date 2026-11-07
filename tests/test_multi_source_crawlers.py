@@ -181,14 +181,38 @@ def test_openlibrary_spider_resilient_snapshot(monkeypatch):
     records = []
     monkeypatch.setattr("crawler.spiders.openlibrary_spider.db.record_catalogue_page",
                         lambda job_id, url, page_number, count: records.append((job_id, url, page_number, count)))
-    spider = OpenLibrarySpider(job_id=101, max_pages=2)
+    spider = OpenLibrarySpider(job_id=101, max_pages=3)
     items = list(spider.yield_archive_snapshot(page_number=1))
-    assert len(items) == 40
-    assert len(records) == 2
+    assert len(items) == 60
+    assert len(records) == 3
     assert records[0][2] == 1
     assert records[1][2] == 2
+    assert records[2][2] == 3
     for item in items:
         assert item["price_pence"] > 0
         assert 1 <= item["rating"] <= 5
         assert item["source_url"].startswith("https://openlibrary.org/works/")
         assert item["image_url"].startswith("https://covers.openlibrary.org/b/id/")
+
+
+def test_openlibrary_spider_paginates_20_items_without_rel_next(monkeypatch):
+    records = []
+    monkeypatch.setattr("crawler.spiders.openlibrary_spider.db.record_catalogue_page",
+                        lambda job_id, url, page_number, count: records.append((job_id, url, page_number, count)))
+    spider = OpenLibrarySpider(job_id=105, max_pages=3)
+    # 20 work links with NO rel="next" in HTML (simulating live Open Library trending daily)
+    works_html = "".join([f'<li class="searchResultItem"><h3 class="booktitle"><a href="/works/OL{i}W">Book {i}</a></h3></li>' for i in range(1, 21)])
+    html = f"<html><body><ul class='list-books'>{works_html}</ul></body></html>".encode("utf-8")
+    url = "https://openlibrary.org/trending/daily?page=1"
+    response = HtmlResponse(url=url, body=html, encoding="utf-8", request=Request(url))
+
+    emitted = list(spider.parse_catalogue(response, page_number=1, source_page_number=1))
+    details = [req for req in emitted if req.meta.get("kind") == "detail"]
+    catalogues = [req for req in emitted if req.meta.get("kind") == "catalogue"]
+
+    assert len(records) == 1
+    assert records[0] == (105, "https://openlibrary.org/trending/daily?page=1", 1, 20)
+    assert len(details) == 20
+    assert len(catalogues) == 1
+    assert catalogues[0].url == "https://openlibrary.org/trending/daily?page=2"
+

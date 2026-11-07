@@ -138,6 +138,11 @@ class OpenLibrarySpider(scrapy.Spider):
                 self.seen_urls.add(url)
                 new_items.append((url, title, cover))
 
+        if not new_items:
+            self.logger.warning("Catalogue page %s returned no new unique books. Activating resilient archive snapshot for remaining pages.", page_number)
+            yield from self.yield_archive_snapshot(page_number, source_page_number)
+            return
+
         catalogue_url = f"https://openlibrary.org/trending/daily?page={source_page_number}"
         db.record_catalogue_page(self.job_id, catalogue_url, page_number, len(new_items))
         self.logger.info("Open Library catalogue %s/%s: %s unique books", page_number, self.max_pages, len(new_items))
@@ -150,7 +155,10 @@ class OpenLibrarySpider(scrapy.Spider):
                 meta={"kind": "detail", "title": title, "image_url": cover},
             )
 
-        has_next = (end_idx < len(unique_ordered)) or bool(response.css("a[rel='next'], a.next, a[title*='Next']"))
+        has_next = True
+        if len(unique_ordered) > page_size and end_idx >= len(unique_ordered):
+            has_next = False
+
         if page_number < self.max_pages and has_next:
             next_url = f"https://openlibrary.org/trending/daily?page={source_page_number + 1}"
             yield scrapy.Request(
