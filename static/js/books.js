@@ -445,6 +445,21 @@
   $('category-filter')?.addEventListener('change', () => submitFilters());
   $('sort-filter')?.addEventListener('change', () => submitFilters());
 
+  let searchDebounceTimer = null;
+  const searchInput = $('search-query');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        submitFilters();
+      }, 250);
+    });
+    searchInput.addEventListener('search', () => {
+      clearTimeout(searchDebounceTimer);
+      submitFilters();
+    });
+  }
+
   loadCategories(currentFilters.source_id, true);
   loadSavedSearches();
   loadBooks();
